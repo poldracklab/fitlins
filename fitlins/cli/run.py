@@ -118,8 +118,9 @@ def create_workflow(opts):
 
     # First check that bids_dir looks like a BIDS folder
     bids_dir = op.abspath(opts.bids_dir)
-    subject_list = collect_participants(
-        bids_dir, participant_label=opts.participant_label)
+    # subject_list = collect_participants(
+    #     bids_dir, participant_label=opts.participant_label)
+    subject_list = []
 
     # Nipype plugin configuration
     plugin_settings = {'plugin': 'Linear'}
@@ -160,10 +161,10 @@ def create_workflow(opts):
     os.makedirs(work_dir, exist_ok=True)
 
     # Nipype config (logs and execution)
-    ncfg.update_config({
-        'logging': {'log_directory': log_dir, 'log_to_file': True},
-        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
-    })
+    # ncfg.update_config({
+    #     'logging': {'log_directory': log_dir, 'log_to_file': True},
+    #     'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
+    # })
 
     # Called with reports only
     if opts.reports_only:
