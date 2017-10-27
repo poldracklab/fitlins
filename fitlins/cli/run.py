@@ -208,7 +208,6 @@ def create_workflow(opts):
     for subject in subject_list:
         run(model, bids_dir, preproc_dir, deriv_dir, subject=subject,
             session=opts.session_id, task=opts.task_id, space=opts.space)
-    print(opts)
     sys.exit(0)
 
     fitlins_wf = pe.Workflow(name='fitlins_wf')

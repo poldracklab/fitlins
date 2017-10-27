@@ -1,11 +1,19 @@
 import os
+from os import path as op
 import json
 import numpy as np
 import pandas as pd
 import nibabel as nb
 from nistats import design_matrix as dm
+from nistats import first_level_model as level1
 
 from bids import grabbids, events as be
+
+
+def snake_to_camel(string):
+    words = string.split('_')
+    return words[0] + ''.join(word.title() for word in words[1:])
+
 
 def run(model_fname, bids_dir, preproc_dir, deriv_dir,
         subject=None, session=None, task=None, space=None):
@@ -30,6 +38,7 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
         selectors.setdefault('space', space)
     prep_layout = grabbids.BIDSLayout(preproc_dir)
     preproc = prep_layout.get(type='preproc', **selectors)[0]
+    brainmask = prep_layout.get(type='brainmask', **selectors)[0]
 
     conditions = []
     durations = []
@@ -68,3 +77,23 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
 
     fname = os.path.join(out_dir, os.path.basename(preproc.filename).replace('_preproc.nii.gz', '_design.tsv'))
     mat.to_csv(fname, sep='\t')
+
+    # Run GLM
+    fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
+    fmri_glm.fit(preproc.filename, design_matrices=mat)
+
+    # Run contrast
+    contrast = block['contrasts']
+    cond_list = contrast['condition_list']
+
+    var_list = mat.columns.tolist()
+    indices = [var_list.index(cond) for cond in cond_list]
+
+    weights = np.zeros(len(mat.columns))
+    weights[indices] = contrast['weights']
+
+    stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
+
+    fname = op.join(out_dir, op.basename(preproc.filename)).replace(
+            '_preproc.nii.gz', '_contrast-{}_stat.nii.gz'.format(snake_to_camel(contrast['name'])))
+    stat.to_filename(fname)
