@@ -120,7 +120,9 @@ def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None
     brainmask = nli.math_img('img.any(axis=3)', img=brainmasks)
 
     fl_layout = grabbids.BIDSLayout(deriv_dir)
-    stat_files = fl_layout.get(type='stat', **selectors)
+    stat_files = fl_layout.get(type='stat',
+                               contrast=snake_to_camel(model['blocks'][0]['contrasts']['name']),
+                               **selectors)
 
     paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
     fmri_glm = level2.SecondLevelModel(mask=brainmask)
