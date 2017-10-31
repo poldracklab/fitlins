@@ -4,8 +4,9 @@ import json
 import numpy as np
 import pandas as pd
 import nibabel as nb
+import nilearn.image as nli
 from nistats import design_matrix as dm
-from nistats import first_level_model as level1
+from nistats import first_level_model as level1, second_level_model as level2
 
 from bids import grabbids, events as be
 
@@ -75,7 +76,9 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
 
     os.makedirs(out_dir, exist_ok=True)
 
-    fname = os.path.join(out_dir, os.path.basename(preproc.filename).replace('_preproc.nii.gz', '_design.tsv'))
+    fname = os.path.join(
+        out_dir, os.path.basename(preproc.filename).replace('_preproc.nii.gz',
+                                                            '_design.tsv'))
     mat.to_csv(fname, sep='\t')
 
     # Run GLM
@@ -96,4 +99,32 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
 
     fname = op.join(out_dir, op.basename(preproc.filename)).replace(
             '_preproc.nii.gz', '_contrast-{}_stat.nii.gz'.format(snake_to_camel(contrast['name'])))
+    stat.to_filename(fname)
+
+
+def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
+    with open(model_fname) as fobj:
+        model = json.load(fobj)
+
+    selectors = model['input'].copy()
+    for key, val in (('session', session), ('task', task)):
+        if val and selectors.setdefault(key, val) != val:
+            raise ValueError("Conflicting {} selection: {} {}".format(key, val, selectors[key]))
+
+    if space:
+        selectors.setdefault('space', space)
+
+    prep_layout = grabbids.BIDSLayout(preproc_dir)
+    brainmasks = nli.concat_imgs(img.filename
+                                 for img in prep_layout.get(type='brainmask', **selectors))
+    brainmask = nli.math_img('img.any(axis=3)', img=brainmasks)
+
+    fl_layout = grabbids.BIDSLayout(deriv_dir)
+    stat_files = fl_layout.get(type='stat', **selectors)
+
+    paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
+    fmri_glm = level2.SecondLevelModel(mask=brainmask)
+    fmri_glm.fit([img.filename for img in stat_files], design_matrix=paradigm)
+    stat = fmri_glm.compute_contrast(second_level_stat_type='t')
+    fname = os.path.join(deriv_dir, os.path.basename(stat_files[0].filename))
     stat.to_filename(fname)

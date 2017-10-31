@@ -117,7 +117,7 @@ def create_workflow(opts):
     from niworkflows.nipype.pipeline import engine as pe
     from fitlins.info import __version__
     from fitlins.utils.bids import collect_participants
-    from fitlins.base import run
+    from fitlins.base import run, ttest
 
     # Set up some instrumental utilities
     errno = 0
@@ -205,9 +205,13 @@ def create_workflow(opts):
 
     deriv_dir = op.join(output_dir, 'fitlins')
 
-    for subject in subject_list:
-        run(model, bids_dir, preproc_dir, deriv_dir, subject=subject,
-            session=opts.session_id, task=opts.task_id, space=opts.space)
+    if opts.analysis_level == 'run':
+        for subject in subject_list:
+            run(model, bids_dir, preproc_dir, deriv_dir, subject=subject,
+                session=opts.session_id, task=opts.task_id, space=opts.space)
+    elif opts.analysis_level == 'dataset':
+        ttest(model, bids_dir, preproc_dir, deriv_dir,
+              session=opts.session_id, task=opts.task_id, space=opts.space)
     sys.exit(0)
 
     fitlins_wf = pe.Workflow(name='fitlins_wf')
