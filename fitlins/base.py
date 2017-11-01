@@ -35,9 +35,11 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
     bec = be.BIDSEventCollection(bids_dir)
     bec.read(**selectors)
 
+    prep_layout = grabbids.BIDSLayout(preproc_dir)
+    confounds_file = prep_layout.get(type='confounds', **selectors)[0]
+
     if space:
         selectors.setdefault('space', space)
-    prep_layout = grabbids.BIDSLayout(preproc_dir)
     preproc = prep_layout.get(type='preproc', **selectors)[0]
     brainmask = prep_layout.get(type='brainmask', **selectors)[0]
 
@@ -63,11 +65,23 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
 
     paradigm = pd.DataFrame({'trial_type': conditions, 'onset': onsets,
                              'duration': durations})
+
+    confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
+    names = [col for col in confounds.columns
+             if col.startswith('NonSteadyStateOutlier') or
+             col in block['model']['variables']]
+    # a/tCompCor may be calculated assuming a low-pass filter
+    # If used, check for a DCT basis and include
+    if any(col.startswith('aCompCor') or col.startswith('tCompCor') for col in names):
+        names.extend(col for col in confounds.columns
+                     if col.startswith('Cosine') and col not in names)
+
     img = nb.load(preproc.filename)
     TR = img.header.get_zooms()[3]
     vols = img.shape[3]
 
-    mat = dm.make_design_matrix(np.arange(vols) * TR, paradigm)
+    mat = dm.make_design_matrix(np.arange(vols) * TR, paradigm, drift_model=None,
+                                add_regs=confounds[names], add_reg_names=names)
     out_dir = deriv_dir
     if subject:
         out_dir = os.path.join(out_dir, 'sub-' + subject)
