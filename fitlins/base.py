@@ -140,9 +140,9 @@ def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None
         stat_files = fl_layout.get(type='stat',
                                    contrast=snake_to_camel(contrast['name']),
                                    **selectors)
-        fname = os.path.join(deriv_dir, os.path.basename(stat_files[0].filename))
+        basename = os.path.basename(stat_files[0].filename).split('_', 1)[1]
 
         paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
         fmri_glm.fit([img.filename for img in stat_files], design_matrix=paradigm)
         stat = fmri_glm.compute_contrast(second_level_stat_type='t')
-        stat.to_filename(fname)
+        stat.to_filename(os.path.join(deriv_dir, basename))
