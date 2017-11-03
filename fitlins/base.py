@@ -100,20 +100,21 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
     fmri_glm.fit(preproc.filename, design_matrices=mat)
 
     # Run contrast
-    contrast = block['contrasts']
-    cond_list = contrast['condition_list']
+    for contrast in block['contrasts']:
+        cond_list = contrast['condition_list']
 
-    var_list = mat.columns.tolist()
-    indices = [var_list.index(cond) for cond in cond_list]
+        var_list = mat.columns.tolist()
+        indices = [var_list.index(cond) for cond in cond_list]
 
-    weights = np.zeros(len(mat.columns))
-    weights[indices] = contrast['weights']
+        weights = np.zeros(len(mat.columns))
+        weights[indices] = contrast['weights']
 
-    stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
+        stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
 
-    fname = op.join(out_dir, op.basename(preproc.filename)).replace(
-            '_preproc.nii.gz', '_contrast-{}_stat.nii.gz'.format(snake_to_camel(contrast['name'])))
-    stat.to_filename(fname)
+        fname = op.join(out_dir, op.basename(preproc.filename)).replace(
+            '_preproc.nii.gz',
+            '_contrast-{}_stat.nii.gz'.format(snake_to_camel(contrast['name'])))
+        stat.to_filename(fname)
 
 
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
@@ -132,15 +133,16 @@ def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None
     brainmasks = nli.concat_imgs(img.filename
                                  for img in prep_layout.get(type='brainmask', **selectors))
     brainmask = nli.math_img('img.any(axis=3)', img=brainmasks)
+    fmri_glm = level2.SecondLevelModel(mask=brainmask)
 
     fl_layout = grabbids.BIDSLayout(deriv_dir)
-    stat_files = fl_layout.get(type='stat',
-                               contrast=snake_to_camel(model['blocks'][0]['contrasts']['name']),
-                               **selectors)
+    for contrast in model['blocks'][0]['contrasts']:
+        stat_files = fl_layout.get(type='stat',
+                                   contrast=snake_to_camel(contrast['name']),
+                                   **selectors)
+        fname = os.path.join(deriv_dir, os.path.basename(stat_files[0].filename))
 
-    paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
-    fmri_glm = level2.SecondLevelModel(mask=brainmask)
-    fmri_glm.fit([img.filename for img in stat_files], design_matrix=paradigm)
-    stat = fmri_glm.compute_contrast(second_level_stat_type='t')
-    fname = os.path.join(deriv_dir, os.path.basename(stat_files[0].filename))
-    stat.to_filename(fname)
+        paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
+        fmri_glm.fit([img.filename for img in stat_files], design_matrix=paradigm)
+        stat = fmri_glm.compute_contrast(second_level_stat_type='t')
+        stat.to_filename(fname)
