@@ -40,28 +40,10 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
     preproc = prep_layout.get(type='preproc', **imgsel)[0]
     brainmask = prep_layout.get(type='brainmask', **imgsel)[0]
 
-    conditions = []
-    durations = []
-    onsets = []
-
-    for hrf_var in block.model['HRF_variables']:
-        # Select the column name that forms longest prefix of hrf_var
-        col = sorted((cname for cname in analysis.manager.columns
-                      if hrf_var == cname or hrf_var.startswith(cname + '_')),
-                     key=len, reverse=True)[0]
-        if col == hrf_var:
-            conditions.extend(col for _ in analysis.manager[col].durations)
-            durations.extend(analysis.manager[col].durations)
-            onsets.extend(analysis.manager[col].onsets)
-        else:
-            val = hrf_var[len(col) + 1:]
-            entries = analysis.manager[col].values == val
-            conditions.extend(hrf_var for _ in analysis.manager[col].values[entries])
-            durations.extend(analysis.manager[col].durations[entries])
-            onsets.extend(analysis.manager[col].onsets[entries])
-
-    paradigm = pd.DataFrame({'trial_type': conditions, 'onset': onsets,
-                             'duration': durations})
+    paradigm = pd.DataFrame({'trial_type': np.vectorize(lambda x: 'trial_type_' + x)(
+                                analysis.manager['trial_type'].values),
+                             'onset': analysis.manager['trial_type'].onsets,
+                             'duration': analysis.manager['trial_type'].durations})
 
     confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
     names = [col for col in confounds.columns
