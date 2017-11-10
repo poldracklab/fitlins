@@ -8,7 +8,8 @@ import nilearn.image as nli
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
-from bids import grabbids, events as be
+from bids import grabbids
+from bids.analysis import base as ba
 
 
 def snake_to_camel(string):
@@ -18,50 +19,46 @@ def snake_to_camel(string):
 
 def run(model_fname, bids_dir, preproc_dir, deriv_dir,
         subject=None, session=None, task=None, space=None):
-    with open(model_fname) as fobj:
-        model = json.load(fobj)
 
-    run_blocks = [block for block in model['blocks'] if block['level'] == 'run']
-    if len(run_blocks) != 1:
-        raise RuntimeError('run() requires a single run block; {} run blocks found'
-                           .format('No' if not run_blocks else len(run_blocks)))
-    block = run_blocks[0]
+    varsel = {key: val
+              for key, val in (('subject', subject), ('session', session), ('task', task)) if val}
 
-    selectors = model['input'].copy()
-    for key, val in (('subject', subject), ('session', session), ('task', task)):
-        if val and selectors.setdefault(key, val) != val:
-            raise ValueError("Conflicting {} selection: {} {}".format(key, val, selectors[key]))
+    analysis = ba.Analysis([bids_dir, preproc_dir], model_fname, **varsel)
+    block = analysis.blocks[0]
+    # analysis.setup()
+    analysis.manager.load()
+    block.setup(analysis.manager, None)
 
-    bec = be.BIDSEventCollection(bids_dir)
-    bec.read(**selectors)
+    varsel.update(analysis.model['input'])
 
-    prep_layout = grabbids.BIDSLayout(preproc_dir)
-    confounds_file = prep_layout.get(type='confounds', **selectors)[0]
+    prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
+    confounds_file = prep_layout.get(type='confounds', **varsel)[0]
 
+    imgsel = varsel.copy()
     if space:
-        selectors.setdefault('space', space)
-    preproc = prep_layout.get(type='preproc', **selectors)[0]
-    brainmask = prep_layout.get(type='brainmask', **selectors)[0]
+        imgsel.setdefault('space', space)
+    preproc = prep_layout.get(type='preproc', **imgsel)[0]
+    brainmask = prep_layout.get(type='brainmask', **imgsel)[0]
 
     conditions = []
     durations = []
     onsets = []
 
-    for hrf_var in block['model']['HRF_variables']:
+    for hrf_var in block.model['HRF_variables']:
         # Select the column name that forms longest prefix of hrf_var
-        col = sorted((cname for cname in bec.columns
+        col = sorted((cname for cname in analysis.manager.columns
                       if hrf_var == cname or hrf_var.startswith(cname + '_')),
                      key=len, reverse=True)[0]
         if col == hrf_var:
-            conditions.extend(col for _ in bec[col].durations)
-            durations.extend(bec[col].durations)
-            onsets.extend(bec[col].onsets)
+            conditions.extend(col for _ in analysis.manager[col].durations)
+            durations.extend(analysis.manager[col].durations)
+            onsets.extend(analysis.manager[col].onsets)
         else:
             val = hrf_var[len(col) + 1:]
-            entries = bec[col].values == val
-            conditions.extend(hrf_var for _ in bec[col].values[entries])
-            durations.extend(bec[col].durations[entries])
-            onsets.extend(bec[col].onsets[entries])
+            entries = analysis.manager[col].values == val
+            conditions.extend(hrf_var for _ in analysis.manager[col].values[entries])
+            durations.extend(analysis.manager[col].durations[entries])
+            onsets.extend(analysis.manager[col].onsets[entries])
 
     paradigm = pd.DataFrame({'trial_type': conditions, 'onset': onsets,
                              'duration': durations})
@@ -69,7 +66,7 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
     confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
     names = [col for col in confounds.columns
              if col.startswith('NonSteadyStateOutlier') or
-             col in block['model']['variables']]
+             col in block.model['variables']]
     # a/tCompCor may be calculated assuming a low-pass filter
     # If used, check for a DCT basis and include
     if any(col.startswith('aCompCor') or col.startswith('tCompCor') for col in names):
@@ -100,7 +97,7 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
     fmri_glm.fit(preproc.filename, design_matrices=mat)
 
     # Run contrast
-    for contrast in block['contrasts']:
+    for contrast in block.contrasts:
         cond_list = contrast['condition_list']
 
         var_list = mat.columns.tolist()
