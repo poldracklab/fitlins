@@ -1,6 +1,5 @@
 import os
 from os import path as op
-import json
 import numpy as np
 import pandas as pd
 import nibabel as nb
@@ -97,28 +96,33 @@ def run(model_fname, bids_dir, preproc_dir, deriv_dir,
 
 
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
-    with open(model_fname) as fobj:
-        model = json.load(fobj)
 
-    selectors = model['input'].copy()
-    for key, val in (('session', session), ('task', task)):
-        if val and selectors.setdefault(key, val) != val:
-            raise ValueError("Conflicting {} selection: {} {}".format(key, val, selectors[key]))
+    varsel = {key: val
+              for key, val in (('session', session), ('task', task)) if val}
+
+    analysis = ba.Analysis([bids_dir, preproc_dir], model_fname, **varsel)
+    block = analysis.blocks[0]
+    # analysis.setup()
+    analysis.manager.load()
+    block.setup(analysis.manager, None)
+
+    varsel.update(analysis.model['input'])
 
     if space:
-        selectors.setdefault('space', space)
+        varsel.setdefault('space', space)
 
-    prep_layout = grabbids.BIDSLayout(preproc_dir)
+    prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
     brainmasks = nli.concat_imgs(img.filename
-                                 for img in prep_layout.get(type='brainmask', **selectors))
+                                 for img in prep_layout.get(type='brainmask', **varsel))
     brainmask = nli.math_img('img.any(axis=3)', img=brainmasks)
     fmri_glm = level2.SecondLevelModel(mask=brainmask)
 
-    fl_layout = grabbids.BIDSLayout(deriv_dir)
-    for contrast in model['blocks'][0]['contrasts']:
-        stat_files = fl_layout.get(type='stat',
-                                   contrast=snake_to_camel(contrast['name']),
-                                   **selectors)
+    fl_layout = grabbids.BIDSLayout(deriv_dir, extensions=['derivatives'])
+    for contrast in block.contrasts:
+        # No contrast selector at this point
+        stat_files = [f for f in fl_layout.get(type='stat', **varsel)
+                      if 'contrast-{}'.format(snake_to_camel(contrast['name'])) in f.filename]
+
         basename = os.path.basename(stat_files[0].filename).split('_', 1)[1]
 
         paradigm = pd.DataFrame({'intercept': np.ones(len(stat_files))})
