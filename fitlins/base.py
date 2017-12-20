@@ -16,83 +16,60 @@ def snake_to_camel(string):
     return words[0] + ''.join(word.title() for word in words[1:])
 
 
-def run(model_fname, bids_dir, preproc_dir, deriv_dir,
-        subject=None, session=None, task=None, space=None):
-
-    varsel = {key: val
-              for key, val in (('subject', subject), ('session', session), ('task', task)) if val}
-
-    analysis = ba.Analysis([bids_dir, preproc_dir], model_fname, **varsel)
-    block = analysis.blocks[0]
-    # analysis.setup()
-    analysis.manager.load()
-    block.setup(analysis.manager, None)
-
-    varsel.update(analysis.model['input'])
-
+def first_level(model_fname, bids_dir, preproc_dir, deriv_dir):
     prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
-    confounds_file = prep_layout.get(type='confounds', **varsel)[0]
+    analysis = ba.Analysis(model_fname, layouts=[bids_dir, prep_layout])
+    analysis.setup()
+    block = analysis.blocks[0]
 
-    imgsel = varsel.copy()
-    if space:
-        imgsel.setdefault('space', space)
-    preproc = prep_layout.get(type='preproc', **imgsel)[0]
-    brainmask = prep_layout.get(type='brainmask', **imgsel)[0]
+    for paradigm, fname, ents in block.get_Xy():
+        # confounds_file = analysis.layout.get(type='confounds', **ents)[0]
+        # confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
+        # names = [col for col in confounds.columns
+        #          if col.startswith('NonSteadyStateOutlier') or
+        #          col in block.model['variables']]
+        img = nb.load(fname)
+        TR = img.header.get_zooms()[3]
+        vols = img.shape[3]
 
-    paradigm = pd.DataFrame({'trial_type': np.vectorize(lambda x: 'trial_type_' + x)(
-                                analysis.manager['trial_type'].values),
-                             'onset': analysis.manager['trial_type'].onsets,
-                             'duration': analysis.manager['trial_type'].durations})
+        mat = dm.make_design_matrix(np.arange(vols) * TR,
+                                    paradigm.rename(columns={'condition': 'trial_type'}),
+                                    drift_model=None,
+                                    # add_regs=confounds[names],
+                                    # add_reg_names=names,
+                                    )
 
-    confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
-    names = [col for col in confounds.columns
-             if col.startswith('NonSteadyStateOutlier') or
-             col in block.model['variables']]
-    # a/tCompCor may be calculated assuming a low-pass filter
-    # If used, check for a DCT basis and include
-    if any(col.startswith('aCompCor') or col.startswith('tCompCor') for col in names):
-        names.extend(col for col in confounds.columns
-                     if col.startswith('Cosine') and col not in names)
+        out_dir = deriv_dir
+        if 'subject' in ents:
+            out_dir = op.join(out_dir, 'sub-' + ents['subject'])
+        if 'session' in ents:
+            out_dir = op.join(out_dir, 'ses-' + ents['session'])
 
-    img = nb.load(preproc.filename)
-    TR = img.header.get_zooms()[3]
-    vols = img.shape[3]
+        os.makedirs(out_dir, exist_ok=True)
 
-    mat = dm.make_design_matrix(np.arange(vols) * TR, paradigm, drift_model=None,
-                                add_regs=confounds[names], add_reg_names=names)
-    out_dir = deriv_dir
-    if subject:
-        out_dir = os.path.join(out_dir, 'sub-' + subject)
-    if session:
-        out_dir = os.path.join(out_dir, 'ses-' + session)
+        base = op.basename(fname)
+        design_fname = op.join(out_dir, base.replace('_preproc.nii.gz', '_design.tsv'))
 
-    os.makedirs(out_dir, exist_ok=True)
+        mat.to_csv(design_fname, sep='\t')
 
-    fname = os.path.join(
-        out_dir, os.path.basename(preproc.filename).replace('_preproc.nii.gz',
-                                                            '_design.tsv'))
-    mat.to_csv(fname, sep='\t')
+        brainmask = analysis.layout.get(type='brainmask', **ents)[0]
+        fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
 
-    # Run GLM
-    fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
-    fmri_glm.fit(preproc.filename, design_matrices=mat)
+        fmri_glm.fit(fname, design_matrices=mat)
 
-    # Run contrast
-    for contrast in block.contrasts:
-        cond_list = contrast['condition_list']
+        for contrast in block.contrasts:
+            indices = [mat.columns.get_loc(cond)
+                       for cond in contrast['condition_list']]
 
-        var_list = mat.columns.tolist()
-        indices = [var_list.index(cond) for cond in cond_list]
+            weights = np.zeros(len(mat.columns))
+            weights[indices] = contrast['weights']
 
-        weights = np.zeros(len(mat.columns))
-        weights[indices] = contrast['weights']
-
-        stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
-
-        fname = op.join(out_dir, op.basename(preproc.filename)).replace(
-            '_preproc.nii.gz',
-            '_contrast-{}_stat.nii.gz'.format(snake_to_camel(contrast['name'])))
-        stat.to_filename(fname)
+            stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
+            stat_fname = op.join(out_dir,
+                                 base.replace('_preproc.nii.gz',
+                                              '_contrast-{}_stat.nii.gz'.format(
+                                                  snake_to_camel(contrast['name']))))
+            stat.to_filename(stat_fname)
 
 
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
@@ -129,3 +106,22 @@ def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None
         fmri_glm.fit([img.filename for img in stat_files], design_matrix=paradigm)
         stat = fmri_glm.compute_contrast(second_level_stat_type='t')
         stat.to_filename(os.path.join(deriv_dir, basename))
+
+
+def prep_model(model_fname, bids_dir, preproc_dir, deriv_dir,
+               subject=None, session=None, task=None, space=None):
+    from bids.analysis import Analysis
+
+    varsel = {key: val
+              for key, val in (('subject', subject), ('session', session), ('task', task)) if val}
+    imgsel = varsel.copy()
+    if space:
+        imgsel['space'] = space
+
+    model = Analysis([bids_dir, preproc_dir], model_fname,
+                     img_selectors=imgsel, var_selectors=varsel)
+
+
+def hrf_convolve(design_matrix, hrf_vars, hrf_model='glover'):
+    new_matrix = design_matrix.copy()
+    hrf_cols = design_matrix[hrf_vars].copy()
