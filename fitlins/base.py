@@ -64,11 +64,22 @@ def first_level(analysis, block, deriv_dir):
         mat.to_csv(design_fname, sep='\t')
 
         brainmask = analysis.layout.get(type='brainmask', **ents)[0]
-        fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
-
-        fmri_glm.fit(fname, design_matrices=mat)
+        fmri_glm = None
 
         for contrast in block.contrasts:
+            stat_fname = op.join(out_dir,
+                                 base.replace('_preproc.nii.gz',
+                                              '_contrast-{}_stat.nii.gz'.format(
+                                                  snake_to_camel(contrast['name']))))
+            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+
+            if op.exists(stat_fname):
+                continue
+
+            if fmri_glm is None:
+                fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
+                fmri_glm.fit(fname, design_matrices=mat)
+
             indices = [mat.columns.get_loc(cond)
                        for cond in contrast['condition_list']]
 
@@ -76,12 +87,7 @@ def first_level(analysis, block, deriv_dir):
             weights[indices] = contrast['weights']
 
             stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
-            stat_fname = op.join(out_dir,
-                                 base.replace('_preproc.nii.gz',
-                                              '_contrast-{}_stat.nii.gz'.format(
-                                                  snake_to_camel(contrast['name']))))
             stat.to_filename(stat_fname)
-            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
 
     return out_imgs
 
