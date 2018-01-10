@@ -16,13 +16,24 @@ def snake_to_camel(string):
     return words[0] + ''.join(word.title() for word in words[1:])
 
 
-def first_level(model_fname, bids_dir, preproc_dir, deriv_dir):
+def init(model_fname, bids_dir, preproc_dir):
     prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
-    analysis = ba.Analysis(model_fname, layouts=[bids_dir, prep_layout])
+    analysis = ba.Analysis(model=model_fname, layout=[bids_dir, prep_layout])
     analysis.setup()
-    block = analysis.blocks[0]
+    return analysis
 
-    for paradigm, fname, ents in block.get_Xy():
+
+def first_level(analysis, block, deriv_dir):
+    out_imgs = {}
+    for paradigm, ents in block.get_Xy():
+        preproc_files = analysis.layout.get(type='preproc', space='MNI152NLin2009cAsym',
+                                            **ents)
+        if len(preproc_files) != 1:
+            print(preproc_files)
+            raise ValueError("Too many potential PREPROC files")
+
+        fname = preproc_files[0].filename
+
         # confounds_file = analysis.layout.get(type='confounds', **ents)[0]
         # confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
         # names = [col for col in confounds.columns
@@ -70,6 +81,9 @@ def first_level(model_fname, bids_dir, preproc_dir, deriv_dir):
                                               '_contrast-{}_stat.nii.gz'.format(
                                                   snake_to_camel(contrast['name']))))
             stat.to_filename(stat_fname)
+            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+
+    return out_imgs
 
 
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
