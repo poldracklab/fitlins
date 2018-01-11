@@ -95,6 +95,59 @@ def first_level(analysis, block, deriv_dir):
     return out_imgs
 
 
+def second_level(analysis, block, in_imgs, deriv_dir):
+    out_imgs = {}
+
+    for xform in block.transformations:
+        if xform['name'] == 'split':
+            for in_col in xform['input']:
+                img_set = in_imgs[in_col]
+                by = xform['by']
+                fmt = '{}-{{}}'.format('ses' if by == 'session' else 'sub').format
+                splitter = {'session': analysis.layout.get_sessions,
+                            'subject': analysis.layout.get_subjects}[by]()
+                for var in splitter:
+                    out_imgs['{}.{}'.format(var, in_col)] = [
+                        img for img in in_imgs[in_col]
+                        if fmt(var) in img]
+        else:
+            raise ValueError("Unhandled transformation: " + xform['name'])
+
+    # Access transformed lists in same block
+    if out_imgs:
+        in_imgs = out_imgs
+
+    fmri_glm = level2.SecondLevelModel()
+    for contrast in block.contrasts:
+        # stat_fname = op.join(out_dir,
+        #                      base.replace('_preproc.nii.gz',
+        #                                   '_contrast-{}_stat.nii.gz'.format(
+        #                                       snake_to_camel(contrast['name']))))
+        # out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+
+        # if op.exists(stat_fname):
+        #     continue
+
+        data = []
+        weights = []
+        for condition, weight in zip(contrast['condition_list'],
+                                     contrast['weights']):
+            images = in_imgs[condition]
+            data.extend(images)
+            weights.append(np.ones(len(images)) * weight)
+
+        paradigm = pd.DataFrame({'intercept': np.ones(len(data)),
+                                 contrast['name']: np.hstack(weights)})
+
+        fmri_glm.fit(data, design_matrix=paradigm)
+        stat = fmri_glm.compute_contrast(
+            contrast['name'],
+            second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
+        # stat.to_filename(stat_fname)
+
+    return out_imgs
+
+
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
 
     varsel = {key: val
