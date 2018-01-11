@@ -7,6 +7,7 @@ import nilearn.image as nli
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
+from grabbit import merge_layouts
 from bids import grabbids
 from bids.analysis import base as ba
 
@@ -17,8 +18,10 @@ def snake_to_camel(string):
 
 
 def init(model_fname, bids_dir, preproc_dir):
+    orig_layout = grabbids.BIDSLayout(bids_dir)
     prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
-    analysis = ba.Analysis(model=model_fname, layout=[bids_dir, prep_layout])
+    analysis = ba.Analysis(model=model_fname,
+                           layout=merge_layouts([orig_layout, prep_layout]))
     analysis.setup()
     return analysis
 
