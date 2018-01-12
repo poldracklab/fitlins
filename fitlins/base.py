@@ -117,33 +117,29 @@ def second_level(analysis, block, in_imgs, deriv_dir):
     if out_imgs:
         in_imgs = out_imgs
 
-    fmri_glm = level2.SecondLevelModel()
-    for contrast in block.contrasts:
-        # stat_fname = op.join(out_dir,
-        #                      base.replace('_preproc.nii.gz',
-        #                                   '_contrast-{}_stat.nii.gz'.format(
-        #                                       snake_to_camel(contrast['name']))))
-        # out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+    for i, (_, ents) in enumerate(block.get_Xy()):
+        fmri_glm = level2.SecondLevelModel()
+        for contrast in block.contrasts:
+            # stat_fname = op.join(out_dir,
+            #                      base.replace('_preproc.nii.gz',
+            #                                   '_contrast-{}_stat.nii.gz'.format(
+            #                                       snake_to_camel(contrast['name']))))
+            # out_imgs.setdefault(contrast['name'], []).append(stat_fname)
 
-        # if op.exists(stat_fname):
-        #     continue
+            # if op.exists(stat_fname):
+            #     continue
 
-        data = []
-        weights = []
-        for condition, weight in zip(contrast['condition_list'],
-                                     contrast['weights']):
-            images = in_imgs[condition]
-            data.extend(images)
-            weights.append(np.ones(len(images)) * weight)
+            # Does not validate that the order of get_Xy matches orderr of in_imgs
+            data = [in_imgs[condition][i]
+                    for condition in contrast['condition_list']]
+            paradigm = pd.DataFrame({'intercept': np.ones(len(data)),
+                                     contrast['name']: contrast['weights']})
 
-        paradigm = pd.DataFrame({'intercept': np.ones(len(data)),
-                                 contrast['name']: np.hstack(weights)})
-
-        fmri_glm.fit(data, design_matrix=paradigm)
-        stat = fmri_glm.compute_contrast(
-            contrast['name'],
-            second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
-        # stat.to_filename(stat_fname)
+            fmri_glm.fit(data, design_matrix=paradigm)
+            stat = fmri_glm.compute_contrast(
+                contrast['name'],
+                second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
+            # stat.to_filename(stat_fname)
 
     return out_imgs
 
