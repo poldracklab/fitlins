@@ -60,14 +60,17 @@ def get_parser():
     g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='+',
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
-    # Re-enable when option is actually implemented
-    # g_bids.add_argument('-s', '--session-id', action='store', default='single_session',
-    #                     help='select a specific session to be processed')
-    # Re-enable when option is actually implemented
-    # g_bids.add_argument('-r', '--run-id', action='store', default='single_run',
-    #                     help='select a specific run to be processed')
+    g_bids.add_argument('-s', '--session-id', action='store', default='single_session',
+                        help='select a specific session to be processed')
     g_bids.add_argument('-t', '--task-id', action='store',
                         help='select a specific task to be processed')
+    g_bids.add_argument('-m', '--model', action='store', default='model.json',
+                        help='location of BIDS model description (default bids_dir/model.json)')
+    g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
+                        help='location of preprocessed data (default output_dir/fmriprep)')
+    g_bids.add_argument('--space', action='store',
+                        choices=['MNI152NLin2009cAsym', 'T1w'], default='MNI152NLin2009cAsym',
+                        help='registered space of input datasets')
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--debug', action='store_true', default=False,
@@ -110,7 +113,11 @@ def main():
 
 def create_workflow(opts):
     """Build workflow"""
+    from niworkflows.nipype import config as ncfg
+    from niworkflows.nipype.pipeline import engine as pe
     from fitlins.info import __version__
+    from fitlins.utils.bids import collect_participants
+    from fitlins.base import init, first_level, second_level
 
     # Set up some instrumental utilities
     errno = 0
@@ -170,11 +177,12 @@ def create_workflow(opts):
         logger.log(25, 'Running --reports-only on participants %s', ', '.join(subject_list))
         if opts.run_uuid is not None:
             run_uuid = opts.run_uuid
-        report_errors = [
-            run_reports(op.join(work_dir, 'reportlets'), output_dir, subject_label,
-                        run_uuid=run_uuid)
-            for subject_label in subject_list]
-        sys.exit(int(sum(report_errors) > 0))
+        # report_errors = [
+        #     run_reports(op.join(work_dir, 'reportlets'), output_dir, subject_label,
+        #                 run_uuid=run_uuid)
+        #     for subject_label in subject_list]
+        # sys.exit(int(sum(report_errors) > 0))
+        sys.exit(0)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -182,6 +190,33 @@ def create_workflow(opts):
         subject_list=subject_list,
         uuid=run_uuid)
     )
+
+    model = opts.model
+    if model is None:
+        model = 'model.json'
+    if not op.isabs(model):
+        model = op.join(bids_dir, model)
+
+    preproc_dir = opts.preproc_dir
+    if preproc_dir is None:
+        preproc_dir = 'fmriprep'
+    if not op.isabs(preproc_dir):
+        preproc_dir = op.join(output_dir, preproc_dir)
+
+    deriv_dir = op.join(output_dir, 'fitlins')
+
+    level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
+
+    analysis = init(model, bids_dir, preproc_dir)
+    imgs = first_level(analysis, analysis.blocks[0], deriv_dir)
+    if analysis.blocks[0].level == opts.analysis_level:
+        sys.exit(0)
+    for block in analysis.blocks[1:]:
+        imgs = second_level(analysis, block, imgs, deriv_dir)
+        if block.level == level:
+            break
+
+    sys.exit(0)
 
     fitlins_wf = pe.Workflow(name='fitlins_wf')
 
@@ -197,16 +232,16 @@ def create_workflow(opts):
             raise(e)
 
     # Generate reports phase
-    report_errors = [run_reports(
-        op.join(work_dir, 'reportlets'), output_dir, subject_label, run_uuid=run_uuid)
-        for subject_label in subject_list]
+    # report_errors = [run_reports(
+    #     op.join(work_dir, 'reportlets'), output_dir, subject_label, run_uuid=run_uuid)
+    #     for subject_label in subject_list]
 
-    if sum(report_errors):
-        logger.warning('Errors occurred while generating reports for participants: %s.',
-                       ', '.join(['%s (%d)' % (subid, err)
-                                  for subid, err in zip(subject_list, report_errors)]))
+    # if sum(report_errors):
+    #     logger.warning('Errors occurred while generating reports for participants: %s.',
+    #                    ', '.join(['%s (%d)' % (subid, err)
+    #                               for subid, err in zip(subject_list, report_errors)]))
 
-    errno += sum(report_errors)
+    # errno += sum(report_errors)
     sys.exit(int(errno > 0))
 
 
