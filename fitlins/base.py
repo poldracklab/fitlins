@@ -28,7 +28,7 @@ def init(model_fname, bids_dir, preproc_dir):
 
 def first_level(analysis, block, deriv_dir):
     out_imgs = {}
-    for paradigm, ents in block.get_Xy():
+    for paradigm, ents in block.get_design_matrix():
         preproc_files = analysis.layout.get(type='preproc', space='MNI152NLin2009cAsym',
                                             **ents)
         if len(preproc_files) != 1:
@@ -117,19 +117,34 @@ def second_level(analysis, block, in_imgs, deriv_dir):
     if out_imgs:
         in_imgs = out_imgs
 
-    for i, (_, ents) in enumerate(block.get_Xy()):
+    for i, (_, ents) in enumerate(block.get_design_matrix()):
         fmri_glm = level2.SecondLevelModel()
+
+        out_dir = deriv_dir
+        if 'subject' in ents:
+            out_dir = op.join(out_dir, 'sub-' + ents['subject'])
+        if 'session' in ents:
+            out_dir = op.join(out_dir, 'ses-' + ents['session'])
+
+
         for contrast in block.contrasts:
-            # stat_fname = op.join(out_dir,
-            #                      base.replace('_preproc.nii.gz',
-            #                                   '_contrast-{}_stat.nii.gz'.format(
-            #                                       snake_to_camel(contrast['name']))))
-            # out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+            data = [in_imgs[condition][i]
+                    for condition in contrast['condition_list']]
 
-            # if op.exists(stat_fname):
-            #     continue
+            base = op.basename(data[0])
+            #if 'session' not in ents:
 
-            # Does not validate that the order of get_Xy matches orderr of in_imgs
+            stat_fname = op.join(out_dir,
+                                 base.replace('_contrast-{}_stat.nii.gz'.format(
+                                                  snake_to_camel(contrast['condition_list'][0])),
+                                              '_contrast-{}_stat.nii.gz'.format(
+                                                  snake_to_camel(contrast['name']))))
+            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+
+            if op.exists(stat_fname):
+                continue
+
+            # Does not validate that the order of get_design_matrix matches orderr of in_imgs
             data = [in_imgs[condition][i]
                     for condition in contrast['condition_list']]
             paradigm = pd.DataFrame({'intercept': np.ones(len(data)),
@@ -139,7 +154,7 @@ def second_level(analysis, block, in_imgs, deriv_dir):
             stat = fmri_glm.compute_contrast(
                 contrast['name'],
                 second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
-            # stat.to_filename(stat_fname)
+            stat.to_filename(stat_fname)
 
     return out_imgs
 
