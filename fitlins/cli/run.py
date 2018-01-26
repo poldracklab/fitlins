@@ -211,8 +211,9 @@ def create_workflow(opts):
     imgs = first_level(analysis, analysis.blocks[0], deriv_dir)
     if analysis.blocks[0].level == opts.analysis_level:
         sys.exit(0)
+    mapping = None
     for block in analysis.blocks[1:]:
-        imgs = second_level(analysis, block, imgs, deriv_dir)
+        mapping = second_level(analysis, block, deriv_dir, mapping)
         if block.level == level:
             break
 

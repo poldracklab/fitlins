@@ -1,5 +1,6 @@
 import os
 from os import path as op
+from functools import reduce
 import numpy as np
 import pandas as pd
 import nibabel as nb
@@ -7,9 +8,15 @@ import nilearn.image as nli
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
+import pkg_resources as pkgr
+
 from grabbit import merge_layouts
 from bids import grabbids
 from bids.analysis import base as ba
+
+
+def dict_intersection(dict1, dict2):
+    return {k: v for k, v in dict1.items() if dict2.get(k) == v}
 
 
 def snake_to_camel(string):
@@ -95,68 +102,67 @@ def first_level(analysis, block, deriv_dir):
     return out_imgs
 
 
-def second_level(analysis, block, in_imgs, deriv_dir):
-    out_imgs = {}
+def second_level(analysis, block, deriv_dir, mapping=None):
+    fl_layout = grabbids.BIDSLayout(
+        deriv_dir,
+        extensions=['derivatives',
+                    pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+    fl_layout.path_patterns.append(
+        '[sub-{subject}/][ses-{session}/][sub-{subject}][_ses-{session}]_task-{task}_bold'
+        '[_space-{space}][_contrast-{contrast}]_{type}.nii.gz')
 
+    if mapping is None:
+        mapping = {}
     for xform in block.transformations:
         if xform['name'] == 'split':
             for in_col in xform['input']:
-                img_set = in_imgs[in_col]
                 by = xform['by']
-                fmt = '{}-{{}}'.format('ses' if by == 'session' else 'sub').format
                 splitter = {'session': analysis.layout.get_sessions,
                             'subject': analysis.layout.get_subjects}[by]()
+                # Update mapping
                 for var in splitter:
-                    out_imgs['{}.{}'.format(var, in_col)] = [
-                        img for img in in_imgs[in_col]
-                        if fmt(var) in img]
+                    mapping['{}.{}'.format(var, in_col)] = (in_col, {by: var})
         else:
             raise ValueError("Unhandled transformation: " + xform['name'])
-
-    # Access transformed lists in same block
-    if out_imgs:
-        in_imgs = out_imgs
 
     for i, (_, ents) in enumerate(block.get_design_matrix()):
         fmri_glm = level2.SecondLevelModel()
 
-        out_dir = deriv_dir
-        if 'subject' in ents:
-            out_dir = op.join(out_dir, 'sub-' + ents['subject'])
-        if 'session' in ents:
-            out_dir = op.join(out_dir, 'ses-' + ents['session'])
-
-
         for contrast in block.contrasts:
-            data = [in_imgs[condition][i]
-                    for condition in contrast['condition_list']]
+            data = []
+            for condition in contrast['condition_list']:
+                real_cond, mapped_ents = mapping.get(condition, (condition, {}))
+                matches = fl_layout.get(
+                    type='stat',
+                    contrast=snake_to_camel(real_cond),
+                    **ents, **analysis.selectors, **mapped_ents)
+                data.extend(match.filename for match in matches)
 
-            base = op.basename(data[0])
-            #if 'session' not in ents:
+            out_ents = reduce(dict_intersection,
+                              map(fl_layout.parse_entities, data))
+            out_ents['contrast'] = snake_to_camel(contrast['name'])
 
-            stat_fname = op.join(out_dir,
-                                 base.replace('_contrast-{}_stat.nii.gz'.format(
-                                                  snake_to_camel(contrast['condition_list'][0])),
-                                              '_contrast-{}_stat.nii.gz'.format(
-                                                  snake_to_camel(contrast['name']))))
-            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
+            stat_fname = op.join(deriv_dir,
+                                 fl_layout.build_path(out_ents, strict=True))
 
             if op.exists(stat_fname):
                 continue
 
-            # Does not validate that the order of get_design_matrix matches orderr of in_imgs
-            data = [in_imgs[condition][i]
-                    for condition in contrast['condition_list']]
-            paradigm = pd.DataFrame({'intercept': np.ones(len(data)),
-                                     contrast['name']: contrast['weights']})
+            cols = {'intercept': np.ones(len(data))}
+            cname = 'intercept'
+            if not np.allclose(contrast['weights'], 1):
+                cname = contrast['name']
+                cols[cname] = contrast['weights']
+
+            paradigm = pd.DataFrame(cols)
 
             fmri_glm.fit(data, design_matrix=paradigm)
             stat = fmri_glm.compute_contrast(
-                contrast['name'],
+                cname,
                 second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
             stat.to_filename(stat_fname)
 
-    return out_imgs
+    return mapping
 
 
 def ttest(model_fname, bids_dir, preproc_dir, deriv_dir, session=None, task=None, space=None):
