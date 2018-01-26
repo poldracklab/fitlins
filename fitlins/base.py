@@ -37,7 +37,7 @@ def first_level(analysis, block, deriv_dir):
     out_imgs = {}
     for paradigm, ents in block.get_design_matrix():
         preproc_files = analysis.layout.get(type='preproc', space='MNI152NLin2009cAsym',
-                                            **ents)
+                                            **ents, **analysis.selectors)
         if len(preproc_files) != 1:
             print(preproc_files)
             raise ValueError("Too many potential PREPROC files")
@@ -73,7 +73,8 @@ def first_level(analysis, block, deriv_dir):
 
         mat.to_csv(design_fname, sep='\t')
 
-        brainmask = analysis.layout.get(type='brainmask', **ents)[0]
+        brainmask = analysis.layout.get(type='brainmask', space='MNI152NLin2009cAsym',
+                                        **ents, **analysis.selectors)[0]
         fmri_glm = None
 
         for contrast in block.contrasts:
