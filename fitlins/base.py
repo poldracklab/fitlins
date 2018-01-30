@@ -14,6 +14,12 @@ from grabbit import merge_layouts
 from bids import grabbids
 from bids.analysis import base as ba
 
+PATH_PATTERNS = (
+    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type}.nii.gz',
+    'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
+    'task-{task}_bold_design.tsv',
+    )
 
 def dict_intersection(dict1, dict2):
     return {k: v for k, v in dict1.items() if dict2.get(k) == v}
@@ -30,6 +36,7 @@ def init(model_fname, bids_dir, preproc_dir):
     analysis = ba.Analysis(model=model_fname,
                            layout=merge_layouts([orig_layout, prep_layout]))
     analysis.setup()
+    analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
 
 
@@ -60,28 +67,30 @@ def first_level(analysis, block, deriv_dir):
                                     # add_reg_names=names,
                                     )
 
-        out_dir = deriv_dir
-        if 'subject' in ents:
-            out_dir = op.join(out_dir, 'sub-' + ents['subject'])
-        if 'session' in ents:
-            out_dir = op.join(out_dir, 'ses-' + ents['session'])
+        preproc_ents = analysis.layout.parse_entities(fname)
 
-        os.makedirs(out_dir, exist_ok=True)
+        dm_ents = {k: v for k, v in preproc_ents.items()
+                    if k in ('subject', 'session', 'task')}
+
+        design_fname = op.join(deriv_dir,
+                               analysis.layout.build_path(dm_ents, strict=True))
+        os.makedirs(op.dirname(design_fname), exist_ok=True)
+        mat.to_csv(design_fname, sep='\t')
 
         base = op.basename(fname)
-        design_fname = op.join(out_dir, base.replace('_preproc.nii.gz', '_design.tsv'))
-
-        mat.to_csv(design_fname, sep='\t')
 
         brainmask = analysis.layout.get(type='brainmask', space='MNI152NLin2009cAsym',
                                         **ents, **analysis.selectors)[0]
         fmri_glm = None
 
         for contrast in block.contrasts:
-            stat_fname = op.join(out_dir,
-                                 base.replace('_preproc.nii.gz',
-                                              '_contrast-{}_stat.nii.gz'.format(
-                                                  snake_to_camel(contrast['name']))))
+            stat_ents = preproc_ents.copy()
+            stat_ents.pop('modality', None)
+            stat_ents.update({'contrast': snake_to_camel(contrast['name']),
+                              'type': 'stat'})
+            stat_fname = op.join(deriv_dir,
+                                 analysis.layout.build_path(stat_ents,
+                                                            strict=True))
             out_imgs.setdefault(contrast['name'], []).append(stat_fname)
 
             if op.exists(stat_fname):
@@ -108,9 +117,7 @@ def second_level(analysis, block, deriv_dir, mapping=None):
         deriv_dir,
         extensions=['derivatives',
                     pkgr.resource_filename('fitlins', 'data/fitlins.json')])
-    fl_layout.path_patterns.append(
-        '[sub-{subject}/][ses-{session}/][sub-{subject}][_ses-{session}]_task-{task}_bold'
-        '[_space-{space}][_contrast-{contrast}]_{type}.nii.gz')
+    fl_layout.path_patterns[:0] = PATH_PATTERNS
 
     if mapping is None:
         mapping = {}
