@@ -161,6 +161,10 @@ def second_level(analysis, block, deriv_dir, mapping=None):
             stat = fmri_glm.compute_contrast(
                 cname,
                 second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
+            data = stat.get_data()
+            masked_vals = data[data != 0]
+            if np.isnan(masked_vals).all():
+                raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
 
     return mapping
