@@ -41,7 +41,6 @@ def init(model_fname, bids_dir, preproc_dir):
 
 
 def first_level(analysis, block, deriv_dir):
-    out_imgs = {}
     for paradigm, ents in block.get_design_matrix():
         preproc_files = analysis.layout.get(type='preproc', space='MNI152NLin2009cAsym',
                                             **ents, **analysis.selectors)
@@ -91,7 +90,6 @@ def first_level(analysis, block, deriv_dir):
             stat_fname = op.join(deriv_dir,
                                  analysis.layout.build_path(stat_ents,
                                                             strict=True))
-            out_imgs.setdefault(contrast['name'], []).append(stat_fname)
 
             if op.exists(stat_fname):
                 continue
@@ -108,8 +106,6 @@ def first_level(analysis, block, deriv_dir):
 
             stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
             stat.to_filename(stat_fname)
-
-    return out_imgs
 
 
 def second_level(analysis, block, deriv_dir, mapping=None):
