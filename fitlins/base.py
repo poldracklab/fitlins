@@ -1,3 +1,10 @@
+import seaborn as sns
+import numpy as np
+from matplotlib import pyplot as plt
+
+sns.set_style('white')
+plt.rcParams['svg.fonttype'] = 'none'
+
 import os
 from os import path as op
 from functools import reduce
@@ -14,11 +21,15 @@ from grabbit import merge_layouts
 from bids import grabbids
 from bids.analysis import base as ba
 
+from fitlins.viz import plot_and_save, plot_corr_matrix
+
 PATH_PATTERNS = (
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
     'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type}.nii.gz',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
-    'task-{task}_bold_design.tsv',
+    'task-{task}_bold_{type<design>}.tsv',
+    'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
+    'task-{task}_bold_{type<corr>}.svg',
     )
 
 def dict_intersection(dict1, dict2):
@@ -61,7 +72,6 @@ def first_level(analysis, block, deriv_dir):
 
         mat = dm.make_design_matrix(np.arange(vols) * TR,
                                     paradigm.rename(columns={'condition': 'trial_type'}),
-                                    drift_model=None,
                                     # add_regs=confounds[names],
                                     # add_reg_names=names,
                                     )
@@ -69,12 +79,20 @@ def first_level(analysis, block, deriv_dir):
         preproc_ents = analysis.layout.parse_entities(fname)
 
         dm_ents = {k: v for k, v in preproc_ents.items()
-                    if k in ('subject', 'session', 'task')}
+                   if k in ('subject', 'session', 'task')}
 
+        dm_ents['type'] = 'design'
         design_fname = op.join(deriv_dir,
                                analysis.layout.build_path(dm_ents, strict=True))
         os.makedirs(op.dirname(design_fname), exist_ok=True)
         mat.to_csv(design_fname, sep='\t')
+
+        corr_ents = dm_ents.copy()
+        corr_ents['type'] = 'corr'
+        corr_fname = op.join(deriv_dir,
+                             analysis.layout.build_path(corr_ents, strict=True))
+        plot_and_save(corr_fname, plot_corr_matrix,
+                      mat.drop(columns=['constant']).corr(), 3)
 
         base = op.basename(fname)
 
