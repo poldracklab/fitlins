@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import nibabel as nb
 import nilearn.image as nli
+import nistats as nis
+import nistats.reporting
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
@@ -86,6 +88,8 @@ def first_level(analysis, block, deriv_dir):
                                analysis.layout.build_path(dm_ents, strict=True))
         os.makedirs(op.dirname(design_fname), exist_ok=True)
         mat.to_csv(design_fname, sep='\t')
+        plot_and_save(design_fname.replace('.tsv', '.svg'),
+                      nis.reporting.plot_design_matrix, mat)
 
         corr_ents = dm_ents.copy()
         corr_ents['type'] = 'corr'
