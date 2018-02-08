@@ -21,7 +21,7 @@ import pkg_resources as pkgr
 
 from grabbit import merge_layouts
 from bids import grabbids
-from bids.analysis import base as ba
+from bids import analysis as ba
 
 from fitlins.viz import plot_and_save, plot_corr_matrix
 
@@ -48,34 +48,48 @@ def init(model_fname, bids_dir, preproc_dir):
     prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
     analysis = ba.Analysis(model=model_fname,
                            layout=merge_layouts([orig_layout, prep_layout]))
-    analysis.setup()
+    analysis.setup(**analysis.model['input'])
     analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
 
 
 def first_level(analysis, block, deriv_dir):
-    for paradigm, ents in block.get_design_matrix():
-        preproc_files = analysis.layout.get(type='preproc', space='MNI152NLin2009cAsym',
-                                            **ents, **analysis.selectors)
+    for paradigm, _, ents in block.get_design_matrix(block.model['HRF_variables'],
+                                                     mode='sparse'):
+        preproc_files = analysis.layout.get(type='preproc',
+                                            space='MNI152NLin2009cAsym',
+                                            **ents)
+        # Temporary hack; pybids should never return implicit entities
+        if len(preproc_files) == 0:
+            del ents['run']
+            preproc_files = analysis.layout.get(type='preproc',
+                                                space='MNI152NLin2009cAsym',
+                                                **ents)
+            if len(preproc_files) == 0:
+                raise ValueError("No PREPROC files found")
+
         if len(preproc_files) != 1:
             print(preproc_files)
             raise ValueError("Too many potential PREPROC files")
 
         fname = preproc_files[0].filename
 
-        # confounds_file = analysis.layout.get(type='confounds', **ents)[0]
-        # confounds = pd.read_csv(confounds_file.filename, sep="\t", na_values="n/a").fillna(0)
-        # names = [col for col in confounds.columns
-        #          if col.startswith('NonSteadyStateOutlier') or
-        #          col in block.model['variables']]
         img = nb.load(fname)
         TR = img.header.get_zooms()[3]
         vols = img.shape[3]
 
+        # Get dense portion of design matrix once TR is known
+        _, confounds, _ = block.get_design_matrix(mode='dense',
+                                                  sampling_rate=1/TR, **ents)[0]
+        names = [col for col in confounds.columns
+                 if col.startswith('NonSteadyStateOutlier') or
+                 col in block.model['variables']]
+
         mat = dm.make_design_matrix(np.arange(vols) * TR,
                                     paradigm.rename(columns={'condition': 'trial_type'}),
-                                    # add_regs=confounds[names],
-                                    # add_reg_names=names,
+                                    add_regs=confounds[names].fillna(0),
+                                    add_reg_names=names,
+                                    drift_model=None if 'Cosine00' in names else 'cosine',
                                     )
 
         preproc_ents = analysis.layout.parse_entities(fname)
@@ -96,12 +110,13 @@ def first_level(analysis, block, deriv_dir):
         corr_fname = op.join(deriv_dir,
                              analysis.layout.build_path(corr_ents, strict=True))
         plot_and_save(corr_fname, plot_corr_matrix,
-                      mat.drop(columns=['constant']).corr(), 3)
+                      mat.drop(columns=['constant']).corr(),
+                      len(block.model['HRF_variables']))
 
         base = op.basename(fname)
 
         brainmask = analysis.layout.get(type='brainmask', space='MNI152NLin2009cAsym',
-                                        **ents, **analysis.selectors)[0]
+                                        **ents)[0]
         fmri_glm = None
 
         for contrast in block.contrasts:
@@ -112,6 +127,11 @@ def first_level(analysis, block, deriv_dir):
             stat_fname = op.join(deriv_dir,
                                  analysis.layout.build_path(stat_ents,
                                                             strict=True))
+            indices = [mat.columns.get_loc(cond)
+                       for cond in contrast['condition_list']]
+
+            weights = np.zeros(len(mat.columns))
+            weights[indices] = contrast['weights']
 
             if op.exists(stat_fname):
                 continue
@@ -119,12 +139,6 @@ def first_level(analysis, block, deriv_dir):
             if fmri_glm is None:
                 fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
                 fmri_glm.fit(fname, design_matrices=mat)
-
-            indices = [mat.columns.get_loc(cond)
-                       for cond in contrast['condition_list']]
-
-            weights = np.zeros(len(mat.columns))
-            weights[indices] = contrast['weights']
 
             stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
             stat.to_filename(stat_fname)
