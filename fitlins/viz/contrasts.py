@@ -39,7 +39,10 @@ def plot_contrast_matrix(contrast_matrix, ornt='vertical', ax=None):
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
     sns.heatmap(contrast_matrix, vmin=-vmax, vmax=vmax, square=True,
-                linewidths=0.5, cmap=cmap, cbar_kws={'shrink': 0.5}, ax=ax)
+                linewidths=0.5, cmap=cmap,
+                cbar_kws={'shrink': 0.5, 'orientation': ornt,
+                          'ticks': np.linspace(-vmax, vmax, 5)},
+                ax=ax)
 
     # Variables along top and left
     ax.xaxis.tick_top()
