@@ -23,7 +23,7 @@ from grabbit import merge_layouts
 from bids import grabbids
 from bids import analysis as ba
 
-from fitlins.viz import plot_and_save, plot_corr_matrix
+from fitlins.viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 PATH_PATTERNS = (
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
@@ -31,7 +31,7 @@ PATH_PATTERNS = (
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
     'task-{task}_bold_{type<design>}.tsv',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
-    'task-{task}_bold_{type<corr>}.svg',
+    'task-{task}_bold_{type<corr|contrasts>}.svg',
     )
 
 def dict_intersection(dict1, dict2):
@@ -112,6 +112,16 @@ def first_level(analysis, block, deriv_dir):
         plot_and_save(corr_fname, plot_corr_matrix,
                       mat.drop(columns=['constant']).corr(),
                       len(block.model['HRF_variables']))
+
+        if block.contrasts:
+            contrasts_ents = corr_ents.copy()
+            contrasts_ents['type'] = 'contrasts'
+            contrasts_fname = op.join(
+                deriv_dir,
+                analysis.layout.build_path(contrasts_ents, strict=True))
+            plot_and_save(contrasts_fname, plot_contrast_matrix,
+                          block.get_contrasts(**ents)[0][0][[contrast['name'] for contrast in block.contrasts]],
+                          mat)
 
         base = op.basename(fname)
 
