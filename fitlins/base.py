@@ -43,6 +43,30 @@ def snake_to_camel(string):
     return words[0] + ''.join(word.title() for word in words[1:])
 
 
+def expand_contrast_matrix(contrast_matrix, design_matrix):
+    """ Ensure contrast matrix has entries for every regressor
+
+    Parameters
+    ----------
+    contrast_matrix : DataFrame
+        Weight matrix with contrasts as columns and regressors as rows
+    design_matrix : DataFrame
+        GLM design matrix with regressors as columns and TR time as rows
+
+    Returns
+    -------
+    contrast_matrix : DataFrame
+        Updated matrix with row for every column in ``design_matrix``, matching
+        column order
+    """
+    full_mat = pd.DataFrame(index=design_matrix.columns,
+                            columns=contrast_matrix.columns, data=0)
+    full_mat.loc[contrast_matrix.index,
+                 contrast_matrix.columns] = contrast_matrix
+
+    return full_mat
+
+
 def init(model_fname, bids_dir, preproc_dir):
     orig_layout = grabbids.BIDSLayout(bids_dir)
     prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
@@ -113,15 +137,19 @@ def first_level(analysis, block, deriv_dir):
                       mat.drop(columns=['constant']).corr(),
                       len(block.model['HRF_variables']))
 
-        if block.contrasts:
+        cnames = [contrast['name'] for contrast in block.contrasts]
+        if cnames:
             contrasts_ents = corr_ents.copy()
             contrasts_ents['type'] = 'contrasts'
             contrasts_fname = op.join(
                 deriv_dir,
                 analysis.layout.build_path(contrasts_ents, strict=True))
+
+            contrast_matrix = expand_contrast_matrix(
+                block.get_contrasts(cnames, **ents)[0][0], mat)
             plot_and_save(contrasts_fname, plot_contrast_matrix,
-                          block.get_contrasts(**ents)[0][0][[contrast['name'] for contrast in block.contrasts]],
-                          mat)
+                          contrast_matrix.drop(['constant'], 'index'),
+                          ornt='horizontal')
 
         base = op.basename(fname)
 

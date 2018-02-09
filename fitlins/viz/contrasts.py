@@ -7,8 +7,7 @@ sns.set_style('white')
 plt.rcParams['svg.fonttype'] = 'none'
 
 
-def plot_contrast_matrix(contrast_matrix, design_matrix, ornt='vertical',
-                         ax=None):
+def plot_contrast_matrix(contrast_matrix, ornt='vertical', ax=None):
     """ Plot correlation matrix
 
     Parameters
@@ -31,16 +30,15 @@ def plot_contrast_matrix(contrast_matrix, design_matrix, ornt='vertical',
         plt.figure()
         ax = plt.gca()
 
-    reordered_mat = contrast_matrix.filter(design_matrix.columns, axis='index')
     if ornt == 'horizontal':
-        reordered_mat = reordered_mat.T
+        contrast_matrix = contrast_matrix.T
 
-    vmax = np.abs(reordered_mat.values).max()
+    vmax = np.abs(contrast_matrix.values).max()
 
     # Use a red/blue (+1/-1) diverging colormap
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
-    sns.heatmap(reordered_mat, vmin=-vmax, vmax=vmax, square=True,
+    sns.heatmap(contrast_matrix, vmin=-vmax, vmax=vmax, square=True,
                 linewidths=0.5, cmap=cmap, cbar_kws={'shrink': 0.5}, ax=ax)
 
     # Variables along top and left
