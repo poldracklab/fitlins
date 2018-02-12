@@ -11,7 +11,6 @@ with open(ver_file) as f:
 
 opts = dict(name=NAME,
             maintainer=MAINTAINER,
-            maintainer_email=MAINTAINER_EMAIL,
             description=DESCRIPTION,
             long_description=LONG_DESCRIPTION,
             url=URL,
@@ -23,9 +22,7 @@ opts = dict(name=NAME,
             platforms=PLATFORMS,
             version=VERSION,
             packages=PACKAGES,
-            package_data={'bids': ['grabbids/config/*.json']},
-            install_requires=REQUIRES,
-            extras_require=EXTRAS_REQUIRE)
+            install_requires=REQUIRES)
 
 
 if __name__ == '__main__':
