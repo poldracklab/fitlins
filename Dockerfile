@@ -30,7 +30,7 @@ ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
-# Installing fitlins
+# Installing FMRIPREP
 COPY . /root/src/fitlins
 RUN cd /root/src/fitlins && \
     pip install .[all] && \
@@ -39,6 +39,8 @@ RUN cd /root/src/fitlins && \
 RUN ldconfig
 
 WORKDIR /root/src/fitlins
+
+ENTRYPOINT ["/opt/conda/bin/fitlins"]
 
 ARG BUILD_DATE
 ARG VCS_REF
