@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build_image:
+    docker:
+      - image: docker:17.10.0-ce-git
+    working_directory: /home/circleci/fitlins
+    steps:
+      - checkout:
+          path: /home/circleci/fitlins
+      - run:
+          name: Build main image (py36)
+          no_output_timeout: 60m
+          command: |
+            docker build \
+              --tag fitlins \
+              --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+              --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
+              --build-arg VERSION="${CIRCLE_TAG}" /home/circleci/fitlins
+
+
+workflows:
+  version: 2
+  fitlins_tests:
+    jobs:
+      - build_image
