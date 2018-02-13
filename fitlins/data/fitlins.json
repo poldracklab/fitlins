@@ -1,0 +1,8 @@
+{
+    "entities": [
+        {
+            "name": "contrast",
+            "pattern": "[_/\\\\]contrast-([a-zA-Z0-9]+)"
+        }
+    ]
+}
