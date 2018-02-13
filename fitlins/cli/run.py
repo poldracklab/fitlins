@@ -208,11 +208,11 @@ def create_workflow(opts):
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
     analysis = init(model, bids_dir, preproc_dir)
-    mapping = first_level(analysis, analysis.blocks[0], deriv_dir)
+    first_level(analysis, analysis.blocks[0], deriv_dir)
     if analysis.blocks[0].level == opts.analysis_level:
         sys.exit(0)
     for block in analysis.blocks[1:]:
-        mapping = second_level(analysis, block, deriv_dir, mapping)
+        second_level(analysis, block, deriv_dir)
         if block.level == level:
             break
 

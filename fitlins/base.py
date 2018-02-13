@@ -182,43 +182,35 @@ def first_level(analysis, block, deriv_dir):
             stat.to_filename(stat_fname)
 
 
-def second_level(analysis, block, deriv_dir, mapping=None):
+def second_level(analysis, block, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
         extensions=['derivatives',
                     pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
 
-    if mapping is None:
-        mapping = {}
-    for xform in block.transformations:
-        if xform['name'] == 'split':
-            for in_col in xform['input']:
-                by = xform['by']
-                splitter = {'session': analysis.layout.get_sessions,
-                            'subject': analysis.layout.get_subjects}[by]()
-                # Update mapping
-                for var in splitter:
-                    mapping['{}.{}'.format(var, in_col)] = (in_col, {by: var})
-        else:
-            raise ValueError("Unhandled transformation: " + xform['name'])
+    # pybids likes to give us a lot of extraneous columns
+    cnames = [contrast['name'] for contrast in block.contrasts]
+    fmri_glm = level2.SecondLevelModel()
+    for contrasts, idx, ents in block.get_contrasts(names=cnames):
+        if contrasts.empty:
+            continue
 
-    for i, (_, ents) in enumerate(block.get_design_matrix()):
-        fmri_glm = level2.SecondLevelModel()
+        data = []
+        for in_name, sub_ents in zip(contrasts.index, idx.to_dict(orient='record')):
+            # The underlying contrast name might have been added to by a transform
+            for option in [in_name] + in_name.split('.'):
+                files = fl_layout.get(contrast=snake_to_camel(option), **sub_ents)
+                if files:
+                    data.append(files[0].filename)
+                    break
+            else:
+                raise ValueError("Unknown input: {}".format(in_name))
 
-        for contrast in block.contrasts:
-            data = []
-            for condition in contrast['condition_list']:
-                real_cond, mapped_ents = mapping.get(condition, (condition, {}))
-                matches = fl_layout.get(
-                    type='stat',
-                    contrast=snake_to_camel(real_cond),
-                    **ents, **analysis.selectors, **mapped_ents)
-                data.extend(match.filename for match in matches)
-
-            out_ents = reduce(dict_intersection,
-                              map(fl_layout.parse_entities, data))
-            out_ents['contrast'] = snake_to_camel(contrast['name'])
+        out_ents = reduce(dict_intersection,
+                          map(fl_layout.parse_entities, data))
+        for contrast in contrasts:
+            out_ents['contrast'] = snake_to_camel(contrast)
 
             stat_fname = op.join(deriv_dir,
                                  fl_layout.build_path(out_ents, strict=True))
@@ -228,20 +220,21 @@ def second_level(analysis, block, deriv_dir, mapping=None):
 
             cols = {'intercept': np.ones(len(data))}
             cname = 'intercept'
-            if not np.allclose(contrast['weights'], 1):
-                cname = contrast['name']
-                cols[cname] = contrast['weights']
+            if not np.allclose(contrasts[contrast], 1):
+                cname = contrast
+                cols[contrast] = contrasts[contrast]
 
             paradigm = pd.DataFrame(cols)
 
             fmri_glm.fit(data, design_matrix=paradigm)
+            stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast][0]
             stat = fmri_glm.compute_contrast(
                 cname,
-                second_level_stat_type={'T': 't', 'F': 'F'}[contrast['type']])
+                second_level_stat_type={'T': 't', 'F': 'F'}[stat_type],
+                )
             data = stat.get_data()
             masked_vals = data[data != 0]
             if np.isnan(masked_vals).all():
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
 
-    return mapping
