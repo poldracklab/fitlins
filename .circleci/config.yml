@@ -1,12 +1,13 @@
 version: 2
 jobs:
-  build_image:
+  build:
     docker:
-      - image: docker:17.10.0-ce-git
+      - image: docker:18.01.0-ce-git
     working_directory: /home/circleci/fitlins
     steps:
       - checkout:
           path: /home/circleci/fitlins
+      - setup_remote_docker
       - run:
           name: Build main image (py36)
           no_output_timeout: 60m
@@ -22,4 +23,4 @@ workflows:
   version: 2
   fitlins_tests:
     jobs:
-      - build_image
+      - build
