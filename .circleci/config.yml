@@ -9,14 +9,17 @@ jobs:
           path: /home/circleci/fitlins
       - setup_remote_docker
       - run:
-          name: Build main image (py36)
-          no_output_timeout: 60m
+          name: Build image
+          no_output_timeout: 30m
           command: |
             docker build \
               --tag fitlins \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
               --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
               --build-arg VERSION="${CIRCLE_TAG}" /home/circleci/fitlins
+      - run:
+          name: Verify executable can be run
+          command: docker run --rm -it fitlins --help
 
 
 workflows:
