@@ -9,9 +9,11 @@ import os
 from os import path as op
 from functools import reduce
 import numpy as np
+from scipy import stats as sps
 import pandas as pd
 import nibabel as nb
-import nilearn.image as nli
+from nilearn import image as nli
+from nilearn import plotting as nlp
 import nistats as nis
 import nistats.reporting
 from nistats import design_matrix as dm
@@ -27,7 +29,9 @@ from fitlins.viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 PATH_PATTERNS = (
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type}.nii.gz',
+    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<stat>}.nii.gz',
+    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<ortho>}.svg',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
     'task-{task}_bold_{type<design>}.tsv',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
@@ -165,6 +169,11 @@ def first_level(analysis, block, deriv_dir):
             stat_fname = op.join(deriv_dir,
                                  analysis.layout.build_path(stat_ents,
                                                             strict=True))
+            ortho_ents = stat_ents.copy()
+            ortho_ents['type'] = 'ortho'
+            ortho_fname = op.join(deriv_dir,
+                                  analysis.layout.build_path(ortho_ents,
+                                                             strict=True))
             indices = [mat.columns.get_loc(cond)
                        for cond in contrast['condition_list']]
 
@@ -180,6 +189,10 @@ def first_level(analysis, block, deriv_dir):
 
             stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
             stat.to_filename(stat_fname)
+
+            plot_and_save(ortho_fname, nlp.plot_glass_brain,
+                          stat, colorbar=True, threshold=sps.norm.isf(0.001),
+                          plot_abs=False, display_mode='ortho', axes=None)
 
 
 def second_level(analysis, block, deriv_dir):
@@ -200,7 +213,8 @@ def second_level(analysis, block, deriv_dir):
         for in_name, sub_ents in zip(contrasts.index, idx.to_dict(orient='record')):
             # The underlying contrast name might have been added to by a transform
             for option in [in_name] + in_name.split('.'):
-                files = fl_layout.get(contrast=snake_to_camel(option), **sub_ents)
+                files = fl_layout.get(contrast=snake_to_camel(option),
+                                      type='stat', **sub_ents)
                 if files:
                     data.append(files[0].filename)
                     break
@@ -238,3 +252,11 @@ def second_level(analysis, block, deriv_dir):
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
 
+            ortho_ents = out_ents.copy()
+            ortho_ents['type'] = 'ortho'
+            ortho_fname = op.join(deriv_dir,
+                                  analysis.layout.build_path(ortho_ents,
+                                                             strict=True))
+            plot_and_save(ortho_fname, nlp.plot_glass_brain,
+                          stat, colorbar=True, threshold=sps.norm.isf(0.001),
+                          plot_abs=False, display_mode='ortho', axes=None)
