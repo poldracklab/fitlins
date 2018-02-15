@@ -4,7 +4,13 @@ from .contrasts import plot_contrast_matrix
 
 
 def plot_and_save(fname, plotter, *args, **kwargs):
-    fig = plt.figure()
-    plotter(*args, ax=plt.subplot(1, 1, 1), **kwargs)
+    if (kwargs.get('axes'), kwargs.get('ax')) == (None, None):
+        fig = plt.figure()
+        axes = plt.gca()
+        if 'axes' in kwargs:
+            kwargs['axes'] = axes
+        else:
+            kwargs['ax'] = axes
+    plotter(*args, **kwargs)
     fig.savefig(fname, bbox_inches='tight')
     plt.close(fig)
