@@ -113,12 +113,13 @@ def first_level(analysis, block, deriv_dir):
                  if col.startswith('NonSteadyStateOutlier') or
                  col in block.model['variables']]
 
-        mat = dm.make_design_matrix(np.arange(vols) * TR,
-                                    paradigm.rename(columns={'condition': 'trial_type'}),
-                                    add_regs=confounds[names].fillna(0),
-                                    add_reg_names=names,
-                                    drift_model=None if 'Cosine00' in names else 'cosine',
-                                    )
+        mat = dm.make_design_matrix(
+            frame_times=np.arange(vols) * TR,
+            paradigm=paradigm.rename(columns={'condition': 'trial_type', 'amplitude': 'modulation'}),
+            add_regs=confounds[names].fillna(0),
+            add_reg_names=names,
+            drift_model=None if 'Cosine00' in names else 'cosine',
+            )
 
         preproc_ents = analysis.layout.parse_entities(fname)
 
