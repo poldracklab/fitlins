@@ -8,11 +8,9 @@ plt.rcParams['svg.fonttype'] = 'none'
 import os
 from os import path as op
 from functools import reduce
-import numpy as np
 from scipy import stats as sps
 import pandas as pd
 import nibabel as nb
-from nilearn import image as nli
 from nilearn import plotting as nlp
 import nistats as nis
 import nistats.reporting
