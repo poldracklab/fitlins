@@ -142,7 +142,8 @@ def first_level(analysis, block, deriv_dir):
                       mat.drop(columns=['constant']).corr(),
                       len(block.model['HRF_variables']))
 
-        cnames = [contrast['name'] for contrast in block.contrasts]
+        cnames = [contrast['name'] for contrast in block.contrasts] + block.model['HRF_variables']
+        contrast_matrix = []
         if cnames:
             contrasts_ents = corr_ents.copy()
             contrasts_ents['type'] = 'contrasts'
@@ -162,24 +163,14 @@ def first_level(analysis, block, deriv_dir):
                                         **ents)[0]
         fmri_glm = None
 
-        for contrast in block.contrasts:
+        for contrast in contrast_matrix:
             stat_ents = preproc_ents.copy()
             stat_ents.pop('modality', None)
-            stat_ents.update({'contrast': snake_to_camel(contrast['name']),
+            stat_ents.update({'contrast': snake_to_camel(contrast),
                               'type': 'stat'})
             stat_fname = op.join(deriv_dir,
                                  analysis.layout.build_path(stat_ents,
                                                             strict=True))
-            ortho_ents = stat_ents.copy()
-            ortho_ents['type'] = 'ortho'
-            ortho_fname = op.join(deriv_dir,
-                                  analysis.layout.build_path(ortho_ents,
-                                                             strict=True))
-            indices = [mat.columns.get_loc(cond)
-                       for cond in contrast['condition_list']]
-
-            weights = np.zeros(len(mat.columns))
-            weights[indices] = contrast['weights']
 
             if op.exists(stat_fname):
                 continue
@@ -188,12 +179,20 @@ def first_level(analysis, block, deriv_dir):
                 fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
                 fmri_glm.fit(fname, design_matrices=mat)
 
-            stat = fmri_glm.compute_contrast(weights, {'T': 't', 'F': 'F'}[contrast['type']])
+            stat_types = [c['type'] for c in block.contrasts if c['name'] == contrast]
+            stat_type = stat_types[0] if stat_types else 'T'
+            stat = fmri_glm.compute_contrast(contrast_matrix[contrast].values,
+                                             {'T': 't', 'F': 'F'}[stat_type])
             stat.to_filename(stat_fname)
 
+            ortho_ents = stat_ents.copy()
+            ortho_ents['type'] = 'ortho'
+            ortho_fname = op.join(deriv_dir,
+                                  analysis.layout.build_path(ortho_ents,
+                                                             strict=True))
             plot_and_save(ortho_fname, nlp.plot_glass_brain,
-                          stat, colorbar=True, threshold=sps.norm.isf(0.001),
-                          plot_abs=False, display_mode='lyrz', axes=None)
+                          stat, colorbar=True,  plot_abs=False,
+                          display_mode='lyrz', axes=None)
 
 
 def second_level(analysis, block, deriv_dir):
