@@ -42,7 +42,7 @@ def main():
         tests_require=ldict['TESTS_REQUIRES'],
         extras_require=ldict['EXTRA_REQUIRES'],
         dependency_links=ldict['LINKS_REQUIRES'],
-        package_data={'fitlins': ['data/fitlins.json']},
+        package_data={'fitlins': ['data/fitlins.json', 'data/*.tpl']},
         entry_points={'console_scripts': ['fitlins=fitlins.cli.run:main']},
         packages=find_packages(exclude=("tests",)),
         zip_safe=False,
