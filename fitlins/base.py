@@ -31,7 +31,7 @@ PATH_PATTERNS = (
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
     'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<stat>}.nii.gz',
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<ortho>}.svg',
+    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<ortho>}.png',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
     'task-{task}_bold_{type<design>}.tsv',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
@@ -193,7 +193,7 @@ def first_level(analysis, block, deriv_dir):
 
             plot_and_save(ortho_fname, nlp.plot_glass_brain,
                           stat, colorbar=True, threshold=sps.norm.isf(0.001),
-                          plot_abs=False, display_mode='ortho', axes=None)
+                          plot_abs=False, display_mode='lyrz', axes=None)
 
 
 def second_level(analysis, block, deriv_dir):
