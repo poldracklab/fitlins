@@ -101,10 +101,10 @@ def get_parser():
     return parser
 
 
-def main():
+def main(args=None):
     """Entry point"""
     warnings.showwarning = _warn_redirect
-    opts = get_parser().parse_args()
+    opts = get_parser().parse_args(args)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
 
