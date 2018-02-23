@@ -33,6 +33,7 @@
         <h2>Correlation matrix</h3>
         <img src="{{ correlation_matrix_svg }}" />
     </div>
+    {% if contrasts %}
     <div id="contrasts">
         <h1 class="sub-report-title">Contrasts</h1>
         {% for contrast in contrasts %}
@@ -40,6 +41,8 @@
         <img class="ortho" src="{{ contrast.image_file }}" />
         {% endfor %}
     </div>
+    {% endif %}
+    {% if estimates %}
     <div id="estimates">
         <h1 class="sub-report-title">Estimates</h1>
         {% for parameter in parameters %}
@@ -47,6 +50,7 @@
         <img class="ortho" src="{{ parameter.image_file }}" />
         {% endfor %}
     </div>
+    {% endif %}
     <div id="about">
         <h1 class="sub-report-title">About</h1>
         <ul>
