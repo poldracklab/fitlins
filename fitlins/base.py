@@ -73,6 +73,7 @@ def init(model_fname, bids_dir, preproc_dir):
 
 
 def first_level(analysis, block, deriv_dir):
+    analyses = []
     for paradigm, _, ents in block.get_design_matrix(block.model['HRF_variables'],
                                                      mode='sparse'):
         preproc_files = analysis.layout.get(type='preproc',
@@ -100,7 +101,8 @@ def first_level(analysis, block, deriv_dir):
 
         mat = dm.make_design_matrix(
             frame_times=np.arange(vols) * TR,
-            paradigm=paradigm.rename(columns={'condition': 'trial_type', 'amplitude': 'modulation'}),
+            paradigm=paradigm.rename(columns={'condition': 'trial_type',
+                                              'amplitude': 'modulation'}),
             add_regs=confounds[names].fillna(0),
             add_reg_names=names,
             drift_model=None if 'Cosine00' in names else 'cosine',
@@ -127,6 +129,15 @@ def first_level(analysis, block, deriv_dir):
                       mat.drop(columns=['constant']).corr(),
                       len(block.model['HRF_variables']))
 
+        job_desc = {
+            'ents': ents,
+            'subject_id': ents['subject'],
+            'dataset': analysis.layout.root,
+            'model_name': analysis.model['name'],
+            'design_matrix_svg': design_fname.replace('.tsv', '.svg'),
+            'correlation_matrix_svg': corr_fname,
+            }
+
         cnames = [contrast['name'] for contrast in block.contrasts] + block.model['HRF_variables']
         contrast_matrix = []
         if cnames:
@@ -142,7 +153,7 @@ def first_level(analysis, block, deriv_dir):
                           contrast_matrix.drop(['constant'], 'index'),
                           ornt='horizontal')
 
-        base = op.basename(fname)
+            job_desc['contrasts_svg'] = contrasts_fname
 
         brainmask = analysis.layout.get(type='brainmask', space='MNI152NLin2009cAsym',
                                         **ents)[0]
@@ -157,6 +168,18 @@ def first_level(analysis, block, deriv_dir):
                                  analysis.layout.build_path(stat_ents,
                                                             strict=True))
 
+            ortho_ents = stat_ents.copy()
+            ortho_ents['type'] = 'ortho'
+            ortho_fname = op.join(deriv_dir,
+                                  analysis.layout.build_path(ortho_ents,
+                                                             strict=True))
+
+            desc = {'name': contrast, 'image_file': ortho_fname}
+            if contrast not in block.model['HRF_variables']:
+                job_desc.setdefault('contrasts', []).append(desc)
+            else:
+                job_desc.setdefault('estimates', []).append(desc)
+
             if op.exists(stat_fname):
                 continue
 
@@ -170,14 +193,13 @@ def first_level(analysis, block, deriv_dir):
                                              {'T': 't', 'F': 'F'}[stat_type])
             stat.to_filename(stat_fname)
 
-            ortho_ents = stat_ents.copy()
-            ortho_ents['type'] = 'ortho'
-            ortho_fname = op.join(deriv_dir,
-                                  analysis.layout.build_path(ortho_ents,
-                                                             strict=True))
             plot_and_save(ortho_fname, nlp.plot_glass_brain,
                           stat, colorbar=True,  plot_abs=False,
                           display_mode='lyrz', axes=None)
+
+        analyses.append(job_desc)
+
+    return analyses
 
 
 def second_level(analysis, block, deriv_dir):

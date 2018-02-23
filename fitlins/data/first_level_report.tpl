@@ -45,9 +45,9 @@
     {% if estimates %}
     <div id="estimates">
         <h1 class="sub-report-title">Estimates</h1>
-        {% for parameter in parameters %}
-        <h2>{{ parameter.name }}</h2>
-        <img class="ortho" src="{{ parameter.image_file }}" />
+        {% for estimate in estimates %}
+        <h2>{{ estimate.name }}</h2>
+        <img class="ortho" src="{{ estimate.image_file }}" />
         {% endfor %}
     </div>
     {% endif %}
