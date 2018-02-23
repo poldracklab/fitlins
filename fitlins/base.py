@@ -23,6 +23,7 @@ from grabbit import merge_layouts
 from bids import grabbids
 from bids import analysis as ba
 
+from fitlins.utils import dict_intersection, snake_to_camel
 from fitlins.viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 PATH_PATTERNS = (
@@ -35,14 +36,6 @@ PATH_PATTERNS = (
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
     'task-{task}_bold_{type<corr|contrasts>}.svg',
     )
-
-def dict_intersection(dict1, dict2):
-    return {k: v for k, v in dict1.items() if dict2.get(k) == v}
-
-
-def snake_to_camel(string):
-    words = string.split('_')
-    return words[0] + ''.join(word.title() for word in words[1:])
 
 
 def expand_contrast_matrix(contrast_matrix, design_matrix):
