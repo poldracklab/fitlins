@@ -85,14 +85,8 @@ def first_level(analysis, block, deriv_dir):
         preproc_files = analysis.layout.get(type='preproc',
                                             space='MNI152NLin2009cAsym',
                                             **ents)
-        # Temporary hack; pybids should never return implicit entities
         if len(preproc_files) == 0:
-            del ents['run']
-            preproc_files = analysis.layout.get(type='preproc',
-                                                space='MNI152NLin2009cAsym',
-                                                **ents)
-            if len(preproc_files) == 0:
-                raise ValueError("No PREPROC files found")
+            raise ValueError("No PREPROC files found")
 
         if len(preproc_files) != 1:
             print(preproc_files)
