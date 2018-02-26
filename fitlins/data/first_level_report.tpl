@@ -10,9 +10,6 @@
 .elem-title {}
 .elem-desc {}
 .elem-filename {}
-.ortho {
-    width: 90%;   
-}
 </style>
 </head>
 <body>
