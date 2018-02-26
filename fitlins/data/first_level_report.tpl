@@ -16,9 +16,9 @@
     <div id="summary">
         <h1 class="sub-report-title">Summary</h1>
         <ul class="elem-desc">
-            <li>Subject ID: {{ subject_id }}</ul>
-            <li>Dataset: {{ dataset }}</ul>
-            <li>Model: {{ model_name }}</ul>
+            <li>Subject ID: {{ subject_id }}</li>
+            <li>Dataset: {{ dataset }}</li>
+            <li>Model: {{ model_name }}</li>
         </ul>
     </div>
     <div id="model">
