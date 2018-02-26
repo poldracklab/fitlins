@@ -193,9 +193,9 @@ def first_level(analysis, block, deriv_dir):
                                              {'T': 't', 'F': 'F'}[stat_type])
             stat.to_filename(stat_fname)
 
-            plot_and_save(ortho_fname, nlp.plot_glass_brain,
-                          stat, colorbar=True,  plot_abs=False,
-                          display_mode='lyrz', axes=None)
+            nlp.plot_glass_brain(stat, colorbar=True, plot_abs=False,
+                                 display_mode='lyrz', axes=None,
+                                 output_file=ortho_fname)
 
         analyses.append(job_desc)
 
