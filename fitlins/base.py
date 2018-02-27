@@ -2,9 +2,6 @@ import seaborn as sns
 import numpy as np
 from matplotlib import pyplot as plt
 
-sns.set_style('white')
-plt.rcParams['svg.fonttype'] = 'none'
-
 import os
 from os import path as op
 from functools import reduce
@@ -25,6 +22,10 @@ from bids import analysis as ba
 
 from fitlins.utils import dict_intersection, snake_to_camel
 from fitlins.viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
+
+sns.set_style('white')
+plt.rcParams['svg.fonttype'] = 'none'
+plt.rcParams['image.interpolation'] = 'nearest'
 
 PATH_PATTERNS = (
     '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
@@ -118,6 +119,7 @@ def first_level(analysis, block, deriv_dir):
                                analysis.layout.build_path(dm_ents, strict=True))
         os.makedirs(op.dirname(design_fname), exist_ok=True)
         mat.to_csv(design_fname, sep='\t')
+        plt.set_cmap('viridis')
         plot_and_save(design_fname.replace('.tsv', '.svg'),
                       nis.reporting.plot_design_matrix, mat)
 
