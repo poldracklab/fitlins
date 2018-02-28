@@ -34,7 +34,7 @@ PATH_PATTERNS = (
     'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<ortho>}.png',
     'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
     'task-{task}_bold_{type<design>}.tsv',
-    'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
+    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
     'task-{task}_bold_{type<corr|contrasts>}.svg',
     )
 
@@ -232,6 +232,19 @@ def second_level(analysis, block, deriv_dir):
 
         out_ents = reduce(dict_intersection,
                           map(fl_layout.parse_entities, data))
+
+        contrasts_ents = out_ents.copy()
+        contrasts_ents['type'] = 'contrasts'
+        contrasts_ents.pop('contrast', None)
+        contrasts_ents.pop('space', None)
+        print(contrasts_ents)
+        contrasts_fname = op.join(
+            deriv_dir,
+            fl_layout.build_path(contrasts_ents, strict=True))
+
+        plot_and_save(contrasts_fname, plot_contrast_matrix, contrasts,
+                      ornt='horizontal')
+
         for contrast in contrasts:
             out_ents['contrast'] = snake_to_camel(contrast)
 
