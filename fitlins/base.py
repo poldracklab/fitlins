@@ -211,6 +211,8 @@ def second_level(analysis, block, deriv_dir):
                     pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
 
+    analyses = []
+
     # pybids likes to give us a lot of extraneous columns
     cnames = [contrast['name'] for contrast in block.contrasts]
     fmri_glm = level2.SecondLevelModel()
@@ -237,7 +239,6 @@ def second_level(analysis, block, deriv_dir):
         contrasts_ents['type'] = 'contrasts'
         contrasts_ents.pop('contrast', None)
         contrasts_ents.pop('space', None)
-        print(contrasts_ents)
         contrasts_fname = op.join(
             deriv_dir,
             fl_layout.build_path(contrasts_ents, strict=True))
@@ -245,11 +246,28 @@ def second_level(analysis, block, deriv_dir):
         plot_and_save(contrasts_fname, plot_contrast_matrix, contrasts,
                       ornt='horizontal')
 
+        job_desc = {
+            'ents': out_ents,
+            'subject_id': ents.get('subject'),
+            'dataset': analysis.layout.root,
+            'model_name': analysis.model['name'],
+            'contrasts_svg': contrasts_fname,
+            }
+
         for contrast in contrasts:
             out_ents['contrast'] = snake_to_camel(contrast)
 
             stat_fname = op.join(deriv_dir,
                                  fl_layout.build_path(out_ents, strict=True))
+
+            ortho_ents = out_ents.copy()
+            ortho_ents['type'] = 'ortho'
+            ortho_fname = op.join(deriv_dir,
+                                  analysis.layout.build_path(ortho_ents,
+                                                             strict=True))
+
+            desc = {'name': contrast, 'image_file': ortho_fname}
+            job_desc.setdefault('contrasts', []).append(desc)
 
             if op.exists(stat_fname):
                 continue
@@ -274,11 +292,10 @@ def second_level(analysis, block, deriv_dir):
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
 
-            ortho_ents = out_ents.copy()
-            ortho_ents['type'] = 'ortho'
-            ortho_fname = op.join(deriv_dir,
-                                  analysis.layout.build_path(ortho_ents,
-                                                             strict=True))
             plot_and_save(ortho_fname, nlp.plot_glass_brain,
                           stat, colorbar=True, threshold=sps.norm.isf(0.001),
                           plot_abs=False, display_mode='ortho', axes=None)
+
+        analyses.append(job_desc)
+
+    return analyses

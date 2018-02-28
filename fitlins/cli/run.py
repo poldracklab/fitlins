@@ -119,7 +119,7 @@ def create_workflow(opts):
     from fitlins.info import __version__
     from fitlins.utils.bids import collect_participants
     from fitlins.base import init, first_level, second_level
-    from fitlins.viz.reports import first_level_reports
+    from fitlins.viz.reports import first_level_reports, second_level_reports
 
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
@@ -216,11 +216,14 @@ def create_workflow(opts):
 
     analysis = init(model, bids_dir, preproc_dir)
     report_dicts = first_level(analysis, analysis.blocks[0], deriv_dir)
-    first_level_reports(report_dicts, run_context, deriv_dir)
+    first_level_reports(analysis.blocks[0].level, report_dicts, run_context,
+                        deriv_dir)
     if analysis.blocks[0].level == opts.analysis_level:
         sys.exit(0)
     for block in analysis.blocks[1:]:
-        second_level(analysis, block, deriv_dir)
+        report_dicts = second_level(analysis, block, deriv_dir)
+        second_level_reports(block.level, report_dicts, run_context,
+                             deriv_dir)
         if block.level == level:
             break
 
