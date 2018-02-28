@@ -11,6 +11,21 @@ PATH_PATTERNS = [
 ]
 
 
+def deroot(val, root):
+    if isinstance(val, str):
+        if val.startswith(root):
+            idx = len(root)
+            if val[idx] == '/':
+                idx += 1
+            val = val[idx:]
+    elif isinstance(val, list):
+        val = [deroot(elem, root) for elem in val]
+    elif isinstance(val, dict):
+        val = {key: deroot(value, root) for key, value in val.items()}
+
+    return val
+
+
 def first_level_reports(level, report_dicts, run_context, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
@@ -25,10 +40,11 @@ def first_level_reports(level, report_dicts, run_context, deriv_dir):
     tpl = env.get_template('data/first_level_report.tpl')
 
     for context in report_dicts:
-        html = tpl.render({'level': level, **context, **run_context})
         ents = context['ents'].copy()
         ents['model'] = snake_to_camel(context['model_name'])
         target_file = op.join(deriv_dir, fl_layout.build_path(ents))
+        html = tpl.render(deroot({'level': level, **context, **run_context},
+                                 op.dirname(target_file)))
         with open(target_file, 'w') as fobj:
             fobj.write(html)
 
@@ -47,9 +63,10 @@ def second_level_reports(level, report_dicts, run_context, deriv_dir):
     tpl = env.get_template('data/second_level_report.tpl')
 
     for context in report_dicts:
-        html = tpl.render({'level': level, **context, **run_context})
         ents = context['ents'].copy()
         ents['model'] = snake_to_camel(context['model_name'])
         target_file = op.join(deriv_dir, fl_layout.build_path(ents))
+        html = tpl.render(deroot({'level': level, **context, **run_context},
+                                 op.dirname(target_file)))
         with open(target_file, 'w') as fobj:
             fobj.write(html)
