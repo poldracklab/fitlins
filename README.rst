@@ -62,6 +62,15 @@ plots) of each parameter estimate and contrast.
 * `Example first-level report <example/ds000030/derivatives/fitlins/sub-10171/sub-10171_model-ds000030Bart.html>`_
 * `Example second-level report <example/ds000030/derivatives/fitlins/model-ds000030Bart.html>`_
 
+Model visualizations
+~~~~~~~~~~~~~~~~~~~~
+
+In first-level models, design matrices, contrast matrices are plotted, as well
+as correlation matrices showing the correlation of explanatory variables in the
+design.
+
+.. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_design.svg
+
 Warning
 -------
 
