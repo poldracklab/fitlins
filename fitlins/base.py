@@ -73,13 +73,11 @@ def init(model_fname, bids_dir, preproc_dir):
     return analysis
 
 
-def first_level(analysis, block, deriv_dir):
+def first_level(analysis, block, space, deriv_dir):
     analyses = []
     for paradigm, _, ents in block.get_design_matrix(block.model['HRF_variables'],
                                                      mode='sparse'):
-        preproc_files = analysis.layout.get(type='preproc',
-                                            space='MNI152NLin2009cAsym',
-                                            **ents)
+        preproc_files = analysis.layout.get(type='preproc', space=space, **ents)
         if len(preproc_files) == 0:
             raise ValueError("No PREPROC files found")
 
@@ -157,7 +155,7 @@ def first_level(analysis, block, deriv_dir):
 
             job_desc['contrasts_svg'] = contrasts_fname
 
-        brainmask = analysis.layout.get(type='brainmask', space='MNI152NLin2009cAsym',
+        brainmask = analysis.layout.get(type='brainmask', space=space,
                                         **ents)[0]
         fmri_glm = None
 
@@ -204,7 +202,7 @@ def first_level(analysis, block, deriv_dir):
     return analyses
 
 
-def second_level(analysis, block, deriv_dir):
+def second_level(analysis, block, space, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
         extensions=['derivatives',
@@ -225,7 +223,7 @@ def second_level(analysis, block, deriv_dir):
             # The underlying contrast name might have been added to by a transform
             for option in [in_name] + in_name.split('.'):
                 files = fl_layout.get(contrast=snake_to_camel(option),
-                                      type='stat', **sub_ents)
+                                      type='stat', space=space, **sub_ents)
                 if files:
                     data.append(files[0].filename)
                     break

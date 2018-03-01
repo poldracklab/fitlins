@@ -122,27 +122,28 @@ def create_workflow(opts):
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
     try:
-        retcode = run_model(model, level, bids_dir, preproc_dir, deriv_dir)
+        retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
+                            deriv_dir)
     except Exception:
         retcode = 1
 
     sys.exit(retcode)
 
 
-def run_model(model, target_level, bids_dir, preproc_dir, deriv_dir):
+def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
     run_context = {'version': info.__version__,
                    'command': ' '.join(sys.argv),
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
 
     analysis = init(model, bids_dir, preproc_dir)
-    report_dicts = first_level(analysis, analysis.blocks[0], deriv_dir)
+    report_dicts = first_level(analysis, analysis.blocks[0], space, deriv_dir)
     write_report(analysis.blocks[0].level, report_dicts, run_context,
                  deriv_dir)
     if analysis.blocks[0].level == target_level:
         return 0
     for block in analysis.blocks[1:]:
-        report_dicts = second_level(analysis, block, deriv_dir)
+        report_dicts = second_level(analysis, block, space, deriv_dir)
         write_report(block.level, report_dicts, run_context, deriv_dir)
         if block.level == target_level:
             break
