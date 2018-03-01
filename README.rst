@@ -52,6 +52,16 @@ space.
 It is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
 
+Reporting
+---------
+
+FitLins generates a report at each level of analysis, detailing the design
+matrix and contrast, and showing maximum-intensity projections ("glass brain"
+plots) of each parameter estimate and contrast.
+
+* `Example first-level report <example/ds000030/derivatives/fitlins/sub-10171/sub-10171_model-ds000030Bart.html>`_
+* `Example second-level report <example/ds000030/derivatives/fitlins/model-ds000030Bart.html>`_
+
 Warning
 -------
 
