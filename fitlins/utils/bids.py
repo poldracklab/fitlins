@@ -72,10 +72,8 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
 
 
     """
-    bids_dir = op.abspath(bids_dir)
-    all_participants = sorted(
-        [subdir[4:] for subdir in os.listdir(bids_dir)
-         if op.isdir(op.join(bids_dir, subdir)) and subdir.startswith('sub-')])
+    layout = BIDSLayout(bids_dir)
+    all_participants = layout.get_subjects()
 
     # Error: bids_dir does not contain subjects
     if not all_participants:
@@ -87,7 +85,7 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
             'may need to adjust your "File sharing" preferences.', bids_dir)
 
     # No --participant-label was set, return all
-    if participant_label is None or not participant_label:
+    if not participant_label:
         return all_participants
 
     if isinstance(participant_label, str):
