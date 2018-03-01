@@ -70,6 +70,8 @@ as correlation matrices showing the correlation of explanatory variables in the
 design.
 
 .. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_design.svg
+.. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_contrasts.svg
+.. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_corr.svg
 
 Warning
 -------
