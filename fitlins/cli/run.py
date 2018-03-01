@@ -77,7 +77,7 @@ def get_parser():
     g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
                         help='location of preprocessed data (default output_dir/fmriprep)')
     g_bids.add_argument('--space', action='store',
-                        choices=['MNI152NLin2009cAsym', 'T1w'], default='MNI152NLin2009cAsym',
+                        choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
                         help='registered space of input datasets')
 
     g_perfm = parser.add_argument_group('Options to handle performance')
