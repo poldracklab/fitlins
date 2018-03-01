@@ -23,8 +23,16 @@
     </div>
     <div id="model">
         <h1 class="sub-report-title">Model</h1>
+        {% if design_matrix_svg %}
+        <h2>Design matrix</h3>
+        <img src="{{ design_matrix_svg }}" />
+        {% endif %}
         <h2>Contrasts</h3>
         <img src="{{ contrasts_svg }}" />
+        {% if correlation_matrix_svg %}
+        <h2>Correlation matrix</h3>
+        <img src="{{ correlation_matrix_svg }}" />
+        {% endif %}
     </div>
     {% if contrasts %}
     <div id="contrasts">
