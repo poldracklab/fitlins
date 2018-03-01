@@ -152,6 +152,5 @@ def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
 
 
 if __name__ == '__main__':
-    # raise RuntimeError("fitlins/cli/run.py should not be run directly;\n"
-    #                    "Please `pip install` fitlins and use the `fitlins` command")
-    main()
+    raise RuntimeError("fitlins/cli/run.py should not be run directly;\n"
+                       "Please `pip install` fitlins and use the `fitlins` command")
