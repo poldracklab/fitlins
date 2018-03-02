@@ -7,10 +7,7 @@ RUN conda install -y mkl=2018.0.1 mkl-service git=2.9.3;  sync &&\
                      scikit-learn=0.19.1 \
                      matplotlib=2.1.2 \
                      seaborn=0.8.1 \
-                     pandas=0.22.0 \
-                     libxml2=2.9.7 \
-                     libxslt=1.1.29\
-                     traits=4.6.0; sync &&  \
+                     pandas=0.22.0; sync &&  \
     chmod +x /opt/conda/bin/*; sync && \
     conda clean --all -y; sync && \
     conda clean -tipsy && sync

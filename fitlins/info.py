@@ -24,13 +24,13 @@ DOWNLOAD_URL = (
 
 
 SETUP_REQUIRES = [
-    'setuptools>=18.0',
+    'setuptools>=27.0',
 ]
 
 REQUIRES = [
     'nistats',
     'pybids>=0.3',
-    'niworkflows>=0.1.8',
+    'jinja2',
 ]
 
 LINKS_REQUIRES = [
@@ -40,7 +40,6 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.5.3', 'pydotplus', 'pydot>=1.2.3', 'sphinx_rtd_theme', 'sphinx-argparse'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
 }
