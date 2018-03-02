@@ -290,9 +290,9 @@ def second_level(analysis, block, space, deriv_dir):
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
 
-            plot_and_save(ortho_fname, nlp.plot_glass_brain,
-                          stat, colorbar=True, threshold=sps.norm.isf(0.001),
-                          plot_abs=False, display_mode='ortho', axes=None)
+            nlp.plot_glass_brain(stat, colorbar=True,
+                                 threshold=sps.norm.isf(0.001), plot_abs=False,
+                                 display_mode='lyrz', output_file=ortho_fname)
 
         analyses.append(job_desc)
 
