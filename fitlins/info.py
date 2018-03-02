@@ -15,11 +15,11 @@ __email__ = 'crn.poldracklab@gmail.com'
 __status__ = 'Prototype'
 __url__ = 'https://github.com/poldracklab/fitlins'
 __packagename__ = 'fitlins'
-__description__ = ''
+__description__ = 'Fit Linear Models to fMRI Data'
 __longdesc__ = ''
 
 DOWNLOAD_URL = (
-    'https://github.com/effigies/{name}/archive/{ver}.tar.gz'.format(
+    'https://github.com/poldracklab/{name}/archive/{ver}.tar.gz'.format(
         name=__packagename__, ver=__version__))
 
 
