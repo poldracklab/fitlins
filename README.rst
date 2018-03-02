@@ -73,6 +73,17 @@ design.
 .. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_contrasts.svg
 .. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_corr.svg
 
+Statistical visualizations
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Statistical maps are visualized as maximum-intensity projections of z-scores.
+For first-level analyses, these are unthresholded to facilitate overall
+comparison of spatial patterns.
+Higher level analyses are thresholded at ``p < 0.001``, uncorrected.
+
+.. image:: example/ds000030/derivatives/fitlins/sub-10171/sub-10171_task-bart_bold_space-MNI152NLin2009cAsym_contrast-acceptVsExplode_ortho.png
+.. image:: example/ds000030/derivatives/fitlins/task-bart_bold_space-MNI152NLin2009cAsym_contrast-groupAcceptVsExplode_ortho.png
+
 Warning
 -------
 
