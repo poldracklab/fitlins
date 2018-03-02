@@ -47,6 +47,21 @@ See the output of ``fitlins --help`` for all valid options::
     Options to handle performance:
       --debug               run debug version of workflow
 
+At present, FitLins does not support smoothing or operate in subject-native
+space.
+It is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
+work with any dataset following the `BIDS Derivatives`_ draft specification.
+
+Warning
+-------
+
+FitLins is in Alpha-stage, and is not suitable for use as a library, as the
+internal organization may change substantially without deprecation periods.
+Similarly the outputs (or derivatives) are subject to change, as experience
+and user feedback prompt.
+The command-line interface outlined above should be fairly stable, however.
 
 .. _"BIDS Model": https://docs.google.com/document/d/1bq5eNDHTb6Nkx3WUiOBgKvLNnaa5OMcGtD0AZ9yms2M/
+.. _"BIDS Derivatives": https://docs.google.com/document/d/1Wwc4A6Mow4ZPPszDIWfCUCRNstn7d_zzaWPcfcHmgI4/
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
+.. _FMRIPREP: https://fmriprep.readthedocs.io
