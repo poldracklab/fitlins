@@ -5,7 +5,7 @@
 Base module variables
 """
 
-__version__ = '0.0.1-dev'
+__version__ = '0.0.1'
 __author__ = 'The CRN developers'
 __copyright__ = 'Copyright 2017, Center for Reproducible Neuroscience, Stanford University'
 __credits__ = ['Christopher J. Markiewicz', 'Chris Gorgolewski', 'Russell A. Poldrack']
@@ -15,22 +15,22 @@ __email__ = 'crn.poldracklab@gmail.com'
 __status__ = 'Prototype'
 __url__ = 'https://github.com/poldracklab/fitlins'
 __packagename__ = 'fitlins'
-__description__ = ''
+__description__ = 'Fit Linear Models to fMRI Data'
 __longdesc__ = ''
 
 DOWNLOAD_URL = (
-    'https://github.com/effigies/{name}/archive/{ver}.tar.gz'.format(
+    'https://github.com/poldracklab/{name}/archive/{ver}.tar.gz'.format(
         name=__packagename__, ver=__version__))
 
 
 SETUP_REQUIRES = [
-    'setuptools>=18.0',
+    'setuptools>=27.0',
 ]
 
 REQUIRES = [
     'nistats',
     'pybids>=0.3',
-    'niworkflows>=0.1.8',
+    'jinja2',
 ]
 
 LINKS_REQUIRES = [
@@ -40,7 +40,6 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.5.3', 'pydotplus', 'pydot>=1.2.3', 'sphinx_rtd_theme', 'sphinx-argparse'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
 }

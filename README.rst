@@ -61,7 +61,7 @@ Similarly the outputs (or derivatives) are subject to change, as experience
 and user feedback prompt.
 The command-line interface outlined above should be fairly stable, however.
 
-.. _"BIDS Model": https://docs.google.com/document/d/1bq5eNDHTb6Nkx3WUiOBgKvLNnaa5OMcGtD0AZ9yms2M/
-.. _"BIDS Derivatives": https://docs.google.com/document/d/1Wwc4A6Mow4ZPPszDIWfCUCRNstn7d_zzaWPcfcHmgI4/
+.. _`BIDS Model`: https://docs.google.com/document/d/1bq5eNDHTb6Nkx3WUiOBgKvLNnaa5OMcGtD0AZ9yms2M/
+.. _`BIDS Derivatives`: https://docs.google.com/document/d/1Wwc4A6Mow4ZPPszDIWfCUCRNstn7d_zzaWPcfcHmgI4/
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _FMRIPREP: https://fmriprep.readthedocs.io
