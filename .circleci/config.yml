@@ -108,7 +108,10 @@ workflows:
   version: 2
   fitlins_tests:
     jobs:
-      - build
+      - build:
+          filters:
+            tags:
+              only: /.*/
       - deploy_test:
           requires:
             - build
