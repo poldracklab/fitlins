@@ -7,8 +7,10 @@ Base module variables
 
 __version__ = '0.0.1'
 __author__ = 'The CRN developers'
-__copyright__ = 'Copyright 2017, Center for Reproducible Neuroscience, Stanford University'
-__credits__ = ['Christopher J. Markiewicz', 'Chris Gorgolewski', 'Russell A. Poldrack']
+__copyright__ = ('Copyright 2018, Center for Reproducible Neuroscience, '
+                 'Stanford University')
+__credits__ = ['Christopher J. Markiewicz', 'Chris Gorgolewski',
+               'Russell A. Poldrack']
 __license__ = '3-clause BSD'
 __maintainer__ = 'Christopher J. Markiewicz'
 __email__ = 'crn.poldracklab@gmail.com'
@@ -28,12 +30,23 @@ SETUP_REQUIRES = [
 ]
 
 REQUIRES = [
-    'nistats',
+    'nibabel>=2.0',
+    'seaborn>=0.7.1',
+    'numpy>=1.11',
+    'nilearn>=0.4.0',
+    'pandas>=0.19',
+    'nistats>=0.0.1a',
     'pybids>=0.3',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
+    'git+https://github.com/grabbles/grabbit.git@'
+    'f317224f90f572ec35899a43f19cb82b870ff772#egg=grabbit-0.1.1-dev',
+    'git+https://github.com/INCF/pybids.git@'
+    'ea6cf9db042f25dfcae907bd535e9dcabcf2bd55#egg=pybids-0.4.3-dev',
+    'git+https://github.com/effigies/nistats.git@'
+    'd5b63e0ce1ea817bacd9117b9d729b3ca62c9352#egg=nistats-0.0.1b-dev',
 ]
 
 TESTS_REQUIRES = [
