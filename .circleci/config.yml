@@ -3,27 +3,125 @@ jobs:
   build:
     docker:
       - image: docker:18.01.0-ce-git
-    working_directory: /home/circleci/fitlins
+    working_directory: /tmp/src/fitlins
     steps:
-      - checkout:
-          path: /home/circleci/fitlins
+      - run:
+          name: Install parallel gzip
+          command: |
+            apk add --no-cache pigz
+      - checkout
       - setup_remote_docker
       - run:
           name: Build image
           no_output_timeout: 30m
           command: |
             docker build \
-              --tag fitlins \
+              --tag poldracklab/fitlins:latest \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
               --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
-              --build-arg VERSION="${CIRCLE_TAG}" /home/circleci/fitlins
+              --build-arg VERSION="${CIRCLE_TAG}" .
       - run:
           name: Verify executable can be run
-          command: docker run --rm -it fitlins --help
+          command: docker run --rm -it poldracklab/fitlins:latest --help
+      - run:
+          name: Docker save
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            docker save poldracklab/fitlins:latest \
+            | pigz -8 -p 3 > /tmp/cache/docker.tar.gz
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - cache/docker.tar.gz
+            - src/fitlins
 
+  deploy_test:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/fitlins
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Deploy to Docker Hub
+          no_output_timeout: 40m
+          command: |
+            if [[ -n "$DOCKER_PASS" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+            fi
+      - run:
+          name: Deploy to PyPi
+          command: |
+            pip install "setuptools>=27.0" twine
+            echo "${CIRCLE_TAG}" > fitlins/VERSION
+            python setup.py sdist
+
+  deploy:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/fitlins
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Deploy to Docker Hub
+          no_output_timeout: 40m
+          command: |
+            if [[ -n "$DOCKER_PASS" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+              docker push poldracklab/fitlins:latest
+              docker tag poldracklab/fitlins poldracklab/fitlins:$CIRCLE_TAG
+              docker push poldracklab/fitlins:$CIRCLE_TAG
+            fi
+      - run:
+          name: Deploy to PyPi
+          command: |
+            pip install "setuptools>=27.0" twine
+            echo "${CIRCLE_TAG}" > fitlins/VERSION
+            python setup.py sdist
+            twine upload dist/*
 
 workflows:
   version: 2
   fitlins_tests:
     jobs:
       - build
+      - deploy_test:
+          requires:
+            - build
+          filters:
+            branches:
+              only: /rel\/[\d\.]+/
+            tags:
+              ignore: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
