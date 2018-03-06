@@ -29,8 +29,8 @@ def deroot(val, root):
 def write_report(level, report_dicts, run_context, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
-        extensions=['derivatives',
-                    pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+        config=['bids', 'derivatives',
+                pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns = PATH_PATTERNS
 
     env = jinja2.Environment(
