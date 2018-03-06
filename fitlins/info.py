@@ -42,9 +42,9 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/grabbles/grabbit.git@'
-    'f317224f90f572ec35899a43f19cb82b870ff772#egg=grabbit-0.1.1-dev',
+    'master#egg=grabbit-0.1.1-dev',
     'git+https://github.com/INCF/pybids.git@'
-    'ea6cf9db042f25dfcae907bd535e9dcabcf2bd55#egg=pybids-0.4.3-dev',
+    'grabbit-fixes#egg=pybids-0.4.3-dev',
     'git+https://github.com/effigies/nistats.git@'
     'd5b63e0ce1ea817bacd9117b9d729b3ca62c9352#egg=nistats-0.0.1b-dev',
 ]
