@@ -12,6 +12,10 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
+          name: Fetch latest release image
+          no_output_timeout: 10m
+          command: docker pull poldracklab/fitlins:latest
+      - run:
           name: Build image
           no_output_timeout: 30m
           command: |
