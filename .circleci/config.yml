@@ -14,7 +14,9 @@ jobs:
       - run:
           name: Fetch latest release image
           no_output_timeout: 10m
-          command: docker pull poldracklab/fitlins:latest
+          command: |
+            docker pull continuumio/miniconda3:4.3.27p0
+            docker pull poldracklab/fitlins:latest
       - run:
           name: Build image
           no_output_timeout: 30m
