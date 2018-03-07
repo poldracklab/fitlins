@@ -16,7 +16,6 @@ from nistats import first_level_model as level1, second_level_model as level2
 
 import pkg_resources as pkgr
 
-from grabbit import merge_layouts
 from bids import grabbids
 from bids import analysis as ba
 
@@ -64,10 +63,8 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 
 
 def init(model_fname, bids_dir, preproc_dir):
-    orig_layout = grabbids.BIDSLayout(bids_dir)
-    prep_layout = grabbids.BIDSLayout(preproc_dir, extensions=['derivatives'])
     analysis = ba.Analysis(model=model_fname,
-                           layout=merge_layouts([orig_layout, prep_layout]))
+                           layout=grabbids.BIDSLayout([bids_dir, preproc_dir]))
     analysis.setup(**analysis.model['input'])
     analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
@@ -107,7 +104,7 @@ def first_level(analysis, block, space, deriv_dir):
             drift_model=None if 'Cosine00' in names else 'cosine',
             )
 
-        preproc_ents = analysis.layout.parse_entities(fname)
+        preproc_ents = analysis.layout.parse_file_entities(fname)
 
         dm_ents = {k: v for k, v in preproc_ents.items()
                    if k in ('subject', 'session', 'task')}
@@ -205,8 +202,8 @@ def first_level(analysis, block, space, deriv_dir):
 def second_level(analysis, block, space, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
-        extensions=['derivatives',
-                    pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+        config=['bids', 'derivatives',
+                pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
 
     analyses = []
@@ -231,7 +228,7 @@ def second_level(analysis, block, space, deriv_dir):
                 raise ValueError("Unknown input: {}".format(in_name))
 
         out_ents = reduce(dict_intersection,
-                          map(fl_layout.parse_entities, data))
+                          map(fl_layout.parse_file_entities, data))
 
         contrasts_ents = out_ents.copy()
         contrasts_ents['type'] = 'contrasts'
