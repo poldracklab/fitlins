@@ -41,8 +41,8 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/effigies/nistats.git@'
-    'd5b63e0ce1ea817bacd9117b9d729b3ca62c9352#egg=nistats-0.0.1b-dev',
+    'git+https://github.com/nistats/nistats.git@'
+    'ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats-0.0.1b-dev',
 ]
 
 TESTS_REQUIRES = [
