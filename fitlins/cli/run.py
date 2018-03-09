@@ -15,7 +15,7 @@ import warnings
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-from .. import info
+from .. import __version__
 from ..utils import bids
 from ..base import init, first_level, second_level
 from ..viz.reports import write_report
@@ -48,7 +48,7 @@ def default_path(arg, base_dir, default_name):
 
 def get_parser():
     """Build parser object"""
-    verstr = 'fitlins v{}'.format(info.__version__)
+    verstr = 'fitlins v{}'.format(__version__)
 
     parser = ArgumentParser(description='FitLins: Workflows for Fitting Linear models to fMRI',
                             formatter_class=RawTextHelpFormatter)
@@ -110,7 +110,7 @@ def create_workflow(opts):
 
     # Build main workflow
     logger.log(25, INIT_MSG(
-        version=info.__version__,
+        version=__version__,
         subject_list=subject_list)
     )
 
@@ -131,7 +131,7 @@ def create_workflow(opts):
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
-    run_context = {'version': info.__version__,
+    run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }

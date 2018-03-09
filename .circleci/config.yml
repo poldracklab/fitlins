@@ -15,7 +15,6 @@ jobs:
           name: Fetch latest release image
           no_output_timeout: 10m
           command: |
-            docker pull continuumio/miniconda3:4.3.27p0
             docker pull poldracklab/fitlins:latest
       - run:
           name: Build image
@@ -35,7 +34,7 @@ jobs:
           command: |
             mkdir -p /tmp/cache
             docker save poldracklab/fitlins:latest \
-            | pigz -8 -p 3 > /tmp/cache/docker.tar.gz
+            | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -56,8 +55,7 @@ jobs:
             docker info
             set +o pipefail
             if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              zcat /tmp/cache/docker.tar.gz | docker load
               docker images
             fi
       - run:
@@ -88,8 +86,7 @@ jobs:
             docker info
             set +o pipefail
             if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              zcat /tmp/cache/docker.tar.gz | docker load
               docker images
             fi
       - run:
