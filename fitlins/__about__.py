@@ -36,7 +36,7 @@ REQUIRES = [
     'nilearn>=0.4.0',
     'pandas>=0.19',
     'nistats>=0.0.1a',
-    'pybids>=0.5',
+    'pybids>=0.5.1',
     'jinja2',
 ]
 
