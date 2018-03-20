@@ -5,7 +5,7 @@
 Base module variables
 """
 
-__version__ = '0.0.3'
+__version__ = '0.0.4-dev'
 __author__ = 'The CRN developers'
 __copyright__ = ('Copyright 2018, Center for Reproducible Neuroscience, '
                  'Stanford University')
