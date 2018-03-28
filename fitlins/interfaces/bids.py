@@ -1,4 +1,4 @@
-import nibabel as nb
+import os
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
     InputMultiPath, File, Directory,
@@ -33,7 +33,8 @@ class LoadLevel1BIDSModel(SimpleInterface):
             else:
                 raise ValueError("No models found")
 
-        selectors = self.inputs.selectors if isdefined(self.inputs.selectors) else {}
+        selectors = (self.inputs.selectors
+                     if isdefined(self.inputs.selectors) else {})
 
         analysis = ba.Analysis(model=model_fname, layout=layout)
         selectors.update(analysis.model['input'])
@@ -41,8 +42,8 @@ class LoadLevel1BIDSModel(SimpleInterface):
         block = analysis.blocks[0]
 
         session_info = []
-        for paradigm, _, ents in block.get_design_matrix(block.model['HRF_variables'],
-                                                         mode='sparse'):
+        for paradigm, _, ents in block.get_design_matrix(
+                block.model['HRF_variables'], mode='sparse'):
             info = {'entities': ents}
 
             bold_files = layout.get(type='bold',
@@ -55,14 +56,30 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
             # Required field in seconds
             TR = layout.get_metadata(fname)['RepetitionTime']
-            # vols = nb.load(fname).shape[3]
 
             _, confounds, _ = block.get_design_matrix(mode='dense',
                                                       sampling_rate=1/TR,
                                                       **ents)[0]
 
-            info['events'] = paradigm
-            info['confounds'] = confounds
+            # Note that FMRIPREP includes CosineXX columns to accompany
+            # t/aCompCor
+            # We may want to add criteria to include HPF columns that are not
+            # explicitly listed in the model
+            names = [col for col in confounds.columns
+                     if col.startswith('NonSteadyStateOutlier') or
+                     col in block.model['variables']]
+
+            ent_string = '_'.join('{}-{}'.format(key, val)
+                                  for key, val in ents.items())
+            events_file = os.path.join(runtime.cwd,
+                                       '{}_events.h5'.format(ent_string))
+            confounds_file = os.path.join(runtime.cwd,
+                                          '{}_confounds.h5'.format(ent_string))
+            paradigm.to_hdf(events_file)
+            confounds[names].fillna(0).to_hdf(confounds_file)
+            info['events'] = events_file
+            info['confounds'] = confounds_file
+            info['repetition_time'] = TR
 
             session_info.append(info)
 
