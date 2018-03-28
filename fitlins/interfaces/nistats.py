@@ -62,7 +62,7 @@ class FirstLevelModel(SimpleInterface):
 
         plot_and_save('correlation.svg', plot_corr_matrix,
                       mat.drop(columns='constant').corr(),
-                      len(events.columns))
+                      len(events['condition'].unique()))
         self._results['correlation_matrix_plot'] = os.path.join(
             runtime.cwd, 'correlation.svg')
 
