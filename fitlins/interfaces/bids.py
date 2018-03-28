@@ -78,8 +78,8 @@ class LoadLevel1BIDSModel(SimpleInterface):
                                        '{}_events.h5'.format(ent_string))
             confounds_file = os.path.join(runtime.cwd,
                                           '{}_confounds.h5'.format(ent_string))
-            paradigm.to_hdf(events_file)
-            confounds[names].fillna(0).to_hdf(confounds_file)
+            paradigm.to_hdf(events_file, key='events')
+            confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
             info['events'] = events_file
             info['confounds'] = confounds_file
             info['repetition_time'] = TR

@@ -43,14 +43,15 @@ class FirstLevelModel(SimpleInterface):
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
 
-        events = pd.read_hdf(info['events'])
-        confounds = pd.read_hdf(info['confounds'])
+        events = pd.read_hdf(info['events'], key='events')
+        confounds = pd.read_hdf(info['confounds'], key='confounds')
 
         mat = dm.make_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
-            paradigm=events,
+            paradigm=events.rename(columns={'condition': 'trial_type',
+                                            'amplitude': 'modulation'}),
             add_regs=confounds,
-            add_reg_names=confounds.columns,
+            add_reg_names=confounds.columns.tolist(),
             drift_model=None if 'Cosine00' in confounds.columns else 'cosine',
             )
 
