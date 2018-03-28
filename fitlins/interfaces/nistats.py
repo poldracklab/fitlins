@@ -34,6 +34,9 @@ class FirstLevelModelOutputSpec(TraitedSpec):
 
 
 class FirstLevelModel(SimpleInterface):
+    input_spec = FirstLevelModelInputSpec
+    output_spec = FirstLevelModelOutputSpec
+
     def _run_interface(self, runtime):
         info = self.inputs.session_info
 

@@ -21,6 +21,9 @@ class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
 
 
 class LoadLevel1BIDSModel(SimpleInterface):
+    input_spec = LoadLevel1BIDSModelInputSpec
+    output_spec = LoadLevel1BIDSModelOutputSpec
+
     def _run_interface(self, runtime):
         layout = gb.BIDSLayout(self.inputs.bids_dirs)
         model_fname = self.inputs.model
