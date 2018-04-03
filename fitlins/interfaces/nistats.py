@@ -90,6 +90,14 @@ class FirstLevelModel(SimpleInterface):
     output_spec = FirstLevelModelOutputSpec
 
     def _run_interface(self, runtime):
+        import matplotlib
+        matplotlib.use('Agg')
+        import seaborn as sns
+        from matplotlib import pyplot as plt
+        sns.set_style('white')
+        plt.rcParams['svg.fonttype'] = 'none'
+        plt.rcParams['image.interpolation'] = 'nearest'
+
         info = self.inputs.session_info
 
         img = nb.load(self.inputs.bold_file)
