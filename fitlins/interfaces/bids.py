@@ -17,7 +17,7 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.Any())
+    contrast_info = traits.List(File())
 
 
 class LoadLevel1BIDSModel(SimpleInterface):
@@ -45,6 +45,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         block = analysis.blocks[0]
 
         session_info = []
+        contrast_info = []
         for paradigm, _, ents in block.get_design_matrix(
                 block.model['HRF_variables'], mode='sparse'):
             info = {'entities': ents}
@@ -84,7 +85,21 @@ class LoadLevel1BIDSModel(SimpleInterface):
             info['confounds'] = confounds_file
             info['repetition_time'] = TR
 
+            # Transpose so each contrast gets a row of data instead of column
+            contrasts = block.get_contrasts([contrast['name']
+                                             for contrast in block.contrasts],
+                                            **ents)[0][0].T
+            # Add test indicator column
+            contrasts['type'] = [contrast['type']
+                                 for contrast in block.contrasts]
+
+            contrasts_file = os.path.join(runtime.cwd,
+                                          '{}_contrasts.h5'.format(ent_string))
+            contrasts.to_hdf(contrasts_file, key='contrasts')
+
             session_info.append(info)
+            contrast_info.append(contrasts_file)
 
         self._results['session_info'] = session_info
+        self._results['contrast_info'] = contrast_info
         return runtime
