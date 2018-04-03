@@ -27,14 +27,20 @@ plt.rcParams['svg.fonttype'] = 'none'
 plt.rcParams['image.interpolation'] = 'nearest'
 
 PATH_PATTERNS = (
-    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<stat>}.nii.gz',
-    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'task-{task}_bold[_space-{space}]_contrast-{contrast}_{type<ortho>}.png',
-    'sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
-    'task-{task}_bold_{type<design>}.tsv',
-    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'task-{task}_bold_{type<corr|contrasts>}.svg',
+    ('[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+     'task-{task}[_acq-{acquisition}][_rec-{reconstruction}][_run-{run}]'
+     '[_echo-{echo}]_bold[_space-{space}]_contrast-{contrast}_'
+     '{type<stat>}.nii.gz'),
+    ('[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+     'task-{task}[_acq-{acquisition}][_rec-{reconstruction}][_run-{run}]'
+     '[_echo-{echo}]_bold[_space-{space}]_contrast-{contrast}_'
+     '{type<ortho>}.png'),
+    ('sub-{subject}/[ses-{session}/]sub-{subject}_[ses-{session}_]'
+     'task-{task}[_acq-{acquisition}][_rec-{reconstruction}][_run-{run}]'
+     '[_echo-{echo}]_bold_{type<design>}.tsv'),
+    ('[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+     'task-{task}[_acq-{acquisition}][_rec-{reconstruction}][_run-{run}]'
+     '[_echo-{echo}]_bold_{type<corr|contrasts>}.svg'),
     )
 
 
