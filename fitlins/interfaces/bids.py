@@ -1,7 +1,7 @@
 import os
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
-    InputMultiPath, File, Directory,
+    InputMultiPath, OutputMultiPath, File, Directory,
     traits, isdefined
     )
 from bids import grabbids as gb, analysis as ba
@@ -100,6 +100,61 @@ class LoadLevel1BIDSModel(SimpleInterface):
             session_info.append(info)
             contrast_info.append(contrasts_file)
 
+        runtime.analysis = analysis
+
         self._results['session_info'] = session_info
         self._results['contrast_info'] = contrast_info
+        return runtime
+
+
+class BIDSSelectInputSpec(BaseInterfaceInputSpec):
+    bids_dirs = InputMultiPath(Directory(exists=True),
+                               mandatory=True,
+                               desc='BIDS dataset root directories')
+    session_info = traits.List(traits.Dict(), mandatory=True)
+    selectors = traits.Dict(desc='Additional selectors to be applied',
+                            usedefault=True)
+
+
+class BIDSSelectOutputSpec(TraitedSpec):
+    bold_files = OutputMultiPath(File)
+    mask_files = OutputMultiPath(traits.Either(File, None))
+
+
+class BIDSSelect(SimpleInterface):
+    input_spec = BIDSSelectInputSpec
+    output_spec = BIDSSelectOutputSpec
+
+    def _run_interface(self, runtime):
+        layout = gb.BIDSLayout(self.inputs.bids_dirs)
+        bold_files = []
+        mask_files = []
+        for info in self.inputs.session_info:
+            ents = info['entities']
+            selectors = {**self.inputs.selectors, **ents}
+            bold_file = layout.get(extensions=['.nii', '.nii.gz'], **selectors)
+
+            if len(bold_file) == 0:
+                raise FileNotFoundError(
+                    "Could not find BOLD file in {} with entities {}"
+                    "".format(self.inputs.bids_dirs, selectors))
+            elif len(bold_file) > 1:
+                raise ValueError(
+                    "Non-unique BOLD file in {} with entities {}.\n"
+                    "Matches:\n\t{}"
+                    "".format(self.inputs.bids_dirs, selectors,
+                              "\n\t".join('{} ({})'.format(f.filename, layout.files[f.filename].entities)
+                                          for f in bold_file)))
+
+            # Select exactly matching mask file (may be over-cautious)
+            bold_ents = layout.parse_entities(bold_file[0].filename)
+            bold_ents['type'] = 'brainmask'
+            mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
+
+            bold_files.append(bold_file[0].filename)
+            mask_files.append(mask_file[0].filename if mask_file else None)
+
+        self._results['bold_files'] = bold_files
+        self._results['mask_files'] = mask_files
+
         return runtime
