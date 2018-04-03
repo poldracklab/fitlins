@@ -1,5 +1,5 @@
-FitLins - Fitting Linear Models to fMRI data
-============================================
+FitLins - Fitting Linear Models to BIDS Datasets
+================================================
 
 FitLins is a tool for estimating linear models, defined by the `BIDS Model`_
 specification proposal, to BIDS-formatted datasets.
