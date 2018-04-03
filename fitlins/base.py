@@ -165,6 +165,7 @@ def first_level(analysis, block, space, deriv_dir):
         for contrast in contrast_matrix:
             stat_ents = preproc_ents.copy()
             stat_ents.pop('modality', None)
+            stat_ents.pop('run', None)
             stat_ents.update({'contrast': snake_to_camel(contrast),
                               'type': 'stat'})
             stat_fname = op.join(deriv_dir,
