@@ -244,6 +244,8 @@ def second_level(analysis, block, space, deriv_dir):
             deriv_dir,
             fl_layout.build_path(contrasts_ents, strict=True))
 
+        # Make parent results directory
+        os.makedirs(os.path.dirname(contrasts_fname), exist_ok=True)
         plot_and_save(contrasts_fname, plot_contrast_matrix, contrasts,
                       ornt='horizontal')
 
