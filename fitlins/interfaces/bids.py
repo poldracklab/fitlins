@@ -13,6 +13,12 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
                                desc='BIDS dataset root directories')
     model = File(exists=True, desc='Model filename')
     selectors = traits.Dict(desc='Limit collected sessions')
+    include_pattern = InputMultiPath(
+        traits.Str, xor=['exclude_pattern'],
+        desc='Patterns to select sub-directories of BIDS root')
+    exclude_pattern = InputMultiPath(
+        traits.Str, xor=['include_pattern'],
+        desc='Patterns to ignore sub-directories of BIDS root')
 
 
 class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
@@ -25,7 +31,14 @@ class LoadLevel1BIDSModel(SimpleInterface):
     output_spec = LoadLevel1BIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        layout = gb.BIDSLayout(self.inputs.bids_dirs)
+        include = self.inputs.include_pattern
+        exclude = self.inputs.include_pattern
+        if not isdefined(include):
+            include = None
+        if not isdefined(exclude):
+            exclude = None
+        layout = gb.BIDSLayout(self.inputs.bids_dirs, include=include,
+                               exclude=exclude)
         model_fname = self.inputs.model
         if not isdefined(model_fname):
             models = layout.get(type='model')
