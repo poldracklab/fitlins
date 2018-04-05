@@ -71,7 +71,7 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 def init(model_fname, bids_dir, preproc_dir):
     analysis = ba.Analysis(model=model_fname,
                            layout=grabbids.BIDSLayout([bids_dir, preproc_dir]))
-    analysis.setup(**analysis.model['input'])
+    analysis.setup()
     analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
 
@@ -215,8 +215,9 @@ def second_level(analysis, block, space, deriv_dir):
     analyses = []
 
     # pybids likes to give us a lot of extraneous columns
-    cnames = [contrast['name'] for contrast in block.contrasts]
+    cnames = [contrast['name'] for contrast in block.contrasts] + block.model['variables']
     fmri_glm = level2.SecondLevelModel()
+
     for contrasts, idx, ents in block.get_contrasts(names=cnames):
         if contrasts.empty:
             continue
@@ -284,7 +285,8 @@ def second_level(analysis, block, space, deriv_dir):
             paradigm = pd.DataFrame(cols)
 
             fmri_glm.fit(data, design_matrix=paradigm)
-            stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast][0]
+            stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast] or ['T']
+            stat_type = stat_type[0]
             stat = fmri_glm.compute_contrast(
                 cname,
                 second_level_stat_type={'T': 't', 'F': 'F'}[stat_type],
