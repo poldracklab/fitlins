@@ -86,23 +86,16 @@ def get_parser():
 
     return parser
 
+
 def main(args=None):
     """Entry point"""
     warnings.showwarning = _warn_redirect
-
-    try:
-        retcode = create_workflow(args)
-    except Exception as e:
-        retcode= 1
-
-    sys.exit(retcode)
-
-def run(args):
     opts = get_parser().parse_args(args)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
 
     create_workflow(opts)
+
 
 def create_workflow(opts):
     """Build workflow"""
@@ -128,9 +121,13 @@ def create_workflow(opts):
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
-    return run_model(model, opts.space, level, bids_dir, preproc_dir,
-                        deriv_dir)
+    try:
+        retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
+                            deriv_dir)
+    except Exception:
+        retcode = 1
 
+    sys.exit(retcode)
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
