@@ -214,10 +214,9 @@ def second_level(analysis, block, space, deriv_dir):
 
     analyses = []
 
-    # pybids likes to give us a lot of extraneous columns
-    cnames = [contrast['name'] for contrast in block.contrasts]
     fmri_glm = level2.SecondLevelModel()
-    for contrasts, idx, ents in block.get_contrasts(names=cnames):
+
+    for contrasts, idx, ents in block.get_contrasts():
         if contrasts.empty:
             continue
 
