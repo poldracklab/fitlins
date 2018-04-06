@@ -289,8 +289,8 @@ def second_level(analysis, block, space, deriv_dir):
                 cname,
                 second_level_stat_type={'T': 't', 'F': 'F'}[stat_type],
                 )
-            data = stat.get_data()
-            masked_vals = data[data != 0]
+            stat_data = stat.get_data()
+            masked_vals = stat_data[stat_data != 0]
             if np.isnan(masked_vals).all():
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)
