@@ -1,10 +1,53 @@
 import os
+from nipype.utils.filemanip import makedirs
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
     InputMultiPath, OutputMultiPath, File, Directory,
     traits, isdefined
     )
 from bids import grabbids as gb, analysis as ba
+
+
+def bids_split_filename(fname):
+    """Split a filename into parts: path, base filename, and extension
+
+    Respects multi-part file types used in BIDS standard and draft extensions
+
+    Largely copied from nipype.utils.filemanip.split_filename
+
+    Parameters
+    ----------
+    fname : str
+        file or path name
+
+    Returns
+    -------
+    pth : str
+        path of fname
+    fname : str
+        basename of filename, without extension
+    ext : str
+        file extension of fname
+    """
+    special_extensions = [
+        ".R.surf.gii", ".L.surf.gii",
+        ".R.func.gii", ".L.func.gii",
+        ".nii.gz", ".tsv.gz",
+        ]
+
+    pth = op.dirname(fname)
+    fname = op.basename(fname)
+
+    for special_ext in special_extensions:
+        if fname.lower().endswith(special_ext.lower()):
+            ext_len = len(special_ext)
+            ext = fname[-ext_len:]
+            fname = fname[:-ext_len]
+            break
+    else:
+        fname, ext = op.splitext(fname)
+
+    return pth, fname, ext
 
 
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
@@ -171,3 +214,72 @@ class BIDSSelect(SimpleInterface):
         self._results['mask_files'] = mask_files
 
         return runtime
+
+
+def _copy_or_convert(in_file, out_file):
+    in_ext = bids_split_filename(in_file)[2]
+    out_ext = bids_split_filename(out_file)[2]
+
+    # Copy if filename matches
+    if in_ext == out_ext:
+        copyfile(in_file, out_fname, copy=True, use_hardlink=True)
+        return
+
+    # gzip/gunzip if it's easy
+    if in_ext == out_ext + '.gz' or in_ext + '.gz' == out_ext:
+        read_open = GzipFile if in_ext.endswith('.gz') else open
+        write_open = GzipFile if out_ext.endswith('.gz') else open
+        with (read_open(in_file, mode='rb') as in_fobj,
+              write_open(out_file, mode='wb') as out_fobj):
+            shutil.copyfileobj(in_fobj, out_fobj)
+        return
+
+    # Let nibabel take a shot
+    try:
+        nb.save(nb.load(in_file), out_fname)
+    except Exception:
+        pass
+    else:
+        return
+
+    raise RuntimeError("Cannot convert {} to {}".format(in_ext, out_ext))
+
+
+class BIDSDataSinkInputSpec(BaseInterfaceSpec):
+    base_directory = Directory(
+        mandatory=True,
+        desc='Path to BIDS (or derivatives) root directory')
+    in_file = File(exists=True, mandatory=True)
+    entities = traits.Dict(usedefault=True,
+                           desc='Entitites to include in filename')
+    fixed_entitites = traits.Dict(usedefault=True,
+                                  desc='Entities to include in filename')
+    path_patterns = InputMultiPath(
+        traits.Str, desc='BIDS path patterns describing format of file names')
+
+
+class BIDSDataSinkOutputSpec(TraitedSpec):
+    out_file = File(desc='output file')
+
+
+class BIDSDataSink(IOBase):
+    input_spec = BIDSDataSinkInputSpec
+    output_spec = BIDSDataSinkOutputSpec
+
+    def _list_ouptputs(self):
+        base_dir = self.inputs.base_directory
+
+        layout = gb.BIDSLayout(base_dir)
+        if self.inputs.path_patterns:
+            layout.path_patterns[:0] = self.inputs.path_patterns
+
+        ents = self.inputs.fixed_entities
+        ents.update(self.inputs.entities)
+
+        out_fname = os.path.join(base_dir,
+                                 layout.build_path(ents, strict=True))
+
+        makedirs(os.dirname(base_dir))
+
+        _copy_or_convert(in_file, out_fname)
+        return {'out_file': out_fname}
