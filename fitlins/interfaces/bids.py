@@ -5,6 +5,7 @@ from nipype.interfaces.base import (
     InputMultiPath, OutputMultiPath, File, Directory,
     traits, isdefined
     )
+from nipype.interfaces.io import IOBase
 from bids import grabbids as gb, analysis as ba
 
 
@@ -229,9 +230,9 @@ def _copy_or_convert(in_file, out_file):
     if in_ext == out_ext + '.gz' or in_ext + '.gz' == out_ext:
         read_open = GzipFile if in_ext.endswith('.gz') else open
         write_open = GzipFile if out_ext.endswith('.gz') else open
-        with (read_open(in_file, mode='rb') as in_fobj,
-              write_open(out_file, mode='wb') as out_fobj):
-            shutil.copyfileobj(in_fobj, out_fobj)
+        with read_open(in_file, mode='rb') as in_fobj:
+            with write_open(out_file, mode='wb') as out_fobj:
+                shutil.copyfileobj(in_fobj, out_fobj)
         return
 
     # Let nibabel take a shot
@@ -245,15 +246,15 @@ def _copy_or_convert(in_file, out_file):
     raise RuntimeError("Cannot convert {} to {}".format(in_ext, out_ext))
 
 
-class BIDSDataSinkInputSpec(BaseInterfaceSpec):
+class BIDSDataSinkInputSpec(BaseInterfaceInputSpec):
     base_directory = Directory(
         mandatory=True,
         desc='Path to BIDS (or derivatives) root directory')
     in_file = File(exists=True, mandatory=True)
     entities = traits.Dict(usedefault=True,
                            desc='Entitites to include in filename')
-    fixed_entitites = traits.Dict(usedefault=True,
-                                  desc='Entities to include in filename')
+    fixed_entities = traits.Dict(usedefault=True,
+                                 desc='Entities to include in filename')
     path_patterns = InputMultiPath(
         traits.Str, desc='BIDS path patterns describing format of file names')
 
@@ -266,7 +267,7 @@ class BIDSDataSink(IOBase):
     input_spec = BIDSDataSinkInputSpec
     output_spec = BIDSDataSinkOutputSpec
 
-    def _list_ouptputs(self):
+    def _list_outputs(self):
         base_dir = self.inputs.base_directory
 
         layout = gb.BIDSLayout(base_dir)
