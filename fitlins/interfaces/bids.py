@@ -1,5 +1,9 @@
 import os
-from nipype.utils.filemanip import makedirs
+from gzip import GzipFile
+import shutil
+import nibabel as nb
+
+from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
     InputMultiPath, OutputMultiPath, File, Directory,
@@ -36,8 +40,8 @@ def bids_split_filename(fname):
         ".nii.gz", ".tsv.gz",
         ]
 
-    pth = op.dirname(fname)
-    fname = op.basename(fname)
+    pth = os.path.dirname(fname)
+    fname = os.path.basename(fname)
 
     for special_ext in special_extensions:
         if fname.lower().endswith(special_ext.lower()):
@@ -200,8 +204,11 @@ class BIDSSelect(SimpleInterface):
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
                     "".format(self.inputs.bids_dirs, selectors,
-                              "\n\t".join('{} ({})'.format(f.filename, layout.files[f.filename].entities)
-                                          for f in bold_file)))
+                              "\n\t".join(
+                                  '{} ({})'.format(
+                                      f.filename,
+                                      layout.files[f.filename].entities)
+                                  for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_entities(bold_file[0].filename)
@@ -223,7 +230,7 @@ def _copy_or_convert(in_file, out_file):
 
     # Copy if filename matches
     if in_ext == out_ext:
-        copyfile(in_file, out_fname, copy=True, use_hardlink=True)
+        copyfile(in_file, out_file, copy=True, use_hardlink=True)
         return
 
     # gzip/gunzip if it's easy
@@ -237,7 +244,7 @@ def _copy_or_convert(in_file, out_file):
 
     # Let nibabel take a shot
     try:
-        nb.save(nb.load(in_file), out_fname)
+        nb.save(nb.load(in_file), out_file)
     except Exception:
         pass
     else:
@@ -280,7 +287,7 @@ class BIDSDataSink(IOBase):
         out_fname = os.path.join(base_dir,
                                  layout.build_path(ents, strict=True))
 
-        makedirs(os.dirname(base_dir))
+        makedirs(os.path.dirname(out_fname), exist_ok=True)
 
-        _copy_or_convert(in_file, out_fname)
+        _copy_or_convert(self.inputs.in_file, out_fname)
         return {'out_file': out_fname}
