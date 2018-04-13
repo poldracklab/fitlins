@@ -50,7 +50,7 @@ def bids_split_filename(fname):
             fname = fname[:-ext_len]
             break
     else:
-        fname, ext = op.splitext(fname)
+        fname, ext = os.path.splitext(fname)
 
     return pth, fname, ext
 
