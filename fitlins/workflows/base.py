@@ -20,6 +20,15 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
 
+    contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
+        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        'contrast-{contrast}_{type<stat>}.nii.gz',
+    ds_contrast_maps = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_pattern),
+        iterfield=['fixed_entities', 'entities', 'in_file'],
+        name='ds_contrast_maps')
+
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
         '[ses-{session}_]task-{task}_bold_{type<design|corr|contrasts>}.svg'
     ds_design = pe.MapNode(
@@ -47,6 +56,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir,
                        ('contrast_info', 'contrast_info')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
+        (getter, ds_contrast_maps, [('entities', 'fixed_entities')]),
+        (flm, ds_contrast_maps, [('contrast_maps', 'in_file'),
+                                 ('contrast_metadata', 'entities')]),
         (loader, ds_design, [('entities', 'entities')]),
         (loader, ds_corr, [('entities', 'entities')]),
         (loader, ds_contrasts, [('entities', 'entities')]),

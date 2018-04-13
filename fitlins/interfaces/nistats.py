@@ -77,8 +77,10 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    estimate_maps = OutputMultiPath(File())
-    contrast_maps = OutputMultiPath(File())
+    estimate_maps = OutputMultiPath(File)
+    contrast_maps = OutputMultiPath(File)
+    estimate_metadata = OutputMultiPath(traits.Dict)
+    contrast_metadata = OutputMultiPath(traits.Dict)
     design_matrix = File()
     design_matrix_plot = File()
     correlation_matrix_plot = File()
@@ -149,6 +151,8 @@ class FirstLevelModel(SimpleInterface):
 
         estimate_maps = []
         contrast_maps = []
+        estimate_metadata = []
+        contrast_metadata = []
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             stat = flm.compute_contrast(contrast_matrix[contrast].values,
@@ -157,9 +161,15 @@ class FirstLevelModel(SimpleInterface):
             stat.to_filename(fname)
             if contrast in exp_vars:
                 estimate_maps.append(fname)
+                estimate_metadata.append({'contrast': contrast,
+                                          'type': 'stat'})
             else:
                 contrast_maps.append(fname)
+                contrast_metadata.append({'contrast': contrast,
+                                          'type': 'stat'})
         self._results['estimate_maps'] = estimate_maps
         self._results['contrast_maps'] = contrast_maps
+        self._results['estimate_metadata'] = estimate_metadata
+        self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
