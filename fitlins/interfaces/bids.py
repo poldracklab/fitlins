@@ -216,7 +216,7 @@ class BIDSSelect(SimpleInterface):
                                   for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
-            bold_ents = layout.parse_entities(bold_file[0].filename)
+            bold_ents = layout.parse_file_entities(bold_file[0].filename)
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
 
@@ -266,17 +266,17 @@ class BIDSDataSinkInputSpec(BaseInterfaceInputSpec):
     base_directory = Directory(
         mandatory=True,
         desc='Path to BIDS (or derivatives) root directory')
-    in_file = File(exists=True, mandatory=True)
-    entities = traits.Dict(usedefault=True,
-                           desc='Entitites to include in filename')
+    in_file = InputMultiPath(File(exists=True), mandatory=True)
+    entities = InputMultiPath(traits.Dict, usedefault=True,
+                              desc='Per-file entities to include in filename')
     fixed_entities = traits.Dict(usedefault=True,
-                                 desc='Entities to include in filename')
+                                 desc='Entities to include in all filenames')
     path_patterns = InputMultiPath(
         traits.Str, desc='BIDS path patterns describing format of file names')
 
 
 class BIDSDataSinkOutputSpec(TraitedSpec):
-    out_file = File(desc='output file')
+    out_file = OutputMultiPath(File, desc='output file')
 
 
 class BIDSDataSink(IOBase):
@@ -290,13 +290,17 @@ class BIDSDataSink(IOBase):
         if self.inputs.path_patterns:
             layout.path_patterns[:0] = self.inputs.path_patterns
 
-        ents = self.inputs.fixed_entities
-        ents.update(self.inputs.entities)
+        out_files = []
+        for entities, in_file in zip(self.inputs.entities,
+                                     self.inputs.in_file):
+            ents = {**self.inputs.fixed_entities}
+            ents.update(entities)
 
-        out_fname = os.path.join(base_dir,
-                                 layout.build_path(ents, strict=True))
+            out_fname = os.path.join(
+                base_dir, layout.build_path(ents))
+            makedirs(os.path.dirname(out_fname), exist_ok=True)
 
-        makedirs(os.path.dirname(out_fname), exist_ok=True)
+            _copy_or_convert(in_file, out_fname)
+            out_files.append(out_fname)
 
-        _copy_or_convert(self.inputs.in_file, out_fname)
-        return {'out_file': out_fname}
+        return {'out_file': out_files}
