@@ -41,18 +41,15 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir,
         iterfield=['entities', 'in_file'],
         name='ds_contrasts')
 
-    def _get_ents(session_infos):
-        return [info['entities'] for info in session_infos]
-
     wf.connect([
-        (loader, getter,  [('session_info', 'session_info')]),
+        (loader, getter,  [('entities', 'entities')]),
         (loader, flm, [('session_info', 'session_info'),
                        ('contrast_info', 'contrast_info')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
-        (loader, ds_design, [(('session_info', _get_ents), 'entities')]),
-        (loader, ds_corr, [(('session_info', _get_ents), 'entities')]),
-        (loader, ds_contrasts, [(('session_info', _get_ents), 'entities')]),
+        (loader, ds_design, [('entities', 'entities')]),
+        (loader, ds_corr, [('entities', 'entities')]),
+        (loader, ds_contrasts, [('entities', 'entities')]),
         (flm, ds_design, [('design_matrix_plot', 'in_file')]),
         (flm, ds_corr, [('correlation_matrix_plot', 'in_file')]),
         (flm, ds_contrasts, [('contrast_matrix_plot', 'in_file')]),

@@ -72,6 +72,7 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
 class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
     contrast_info = traits.List(File())
+    entities = traits.List(traits.Dict())
 
 
 class LoadLevel1BIDSModel(SimpleInterface):
@@ -105,11 +106,12 @@ class LoadLevel1BIDSModel(SimpleInterface):
         analysis.setup(**selectors)
         block = analysis.blocks[0]
 
+        entities = []
         session_info = []
         contrast_info = []
         for paradigm, _, ents in block.get_design_matrix(
                 block.model['HRF_variables'], mode='sparse'):
-            info = {'entities': ents}
+            info = {}
 
             bold_files = layout.get(type='bold',
                                     extensions=['.nii', '.nii.gz'],
@@ -158,11 +160,13 @@ class LoadLevel1BIDSModel(SimpleInterface):
                                           '{}_contrasts.h5'.format(ent_string))
             contrasts.to_hdf(contrasts_file, key='contrasts')
 
+            entities.append(ents)
             session_info.append(info)
             contrast_info.append(contrasts_file)
 
         runtime.analysis = analysis
 
+        self._results['entities'] = entities
         self._results['session_info'] = session_info
         self._results['contrast_info'] = contrast_info
         return runtime
@@ -172,7 +176,7 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
     bids_dirs = InputMultiPath(Directory(exists=True),
                                mandatory=True,
                                desc='BIDS dataset root directories')
-    session_info = traits.List(traits.Dict(), mandatory=True)
+    entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
 
@@ -190,8 +194,7 @@ class BIDSSelect(SimpleInterface):
         layout = gb.BIDSLayout(self.inputs.bids_dirs)
         bold_files = []
         mask_files = []
-        for info in self.inputs.session_info:
-            ents = info['entities']
+        for ents in self.inputs.entities:
             selectors = {**self.inputs.selectors, **ents}
             bold_file = layout.get(extensions=['.nii', '.nii.gz'], **selectors)
 
