@@ -23,6 +23,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir,
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
         'contrast-{contrast}_{type<stat>}.nii.gz',
+    ds_estimate_maps = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_pattern),
+        iterfield=['fixed_entities', 'entities', 'in_file'],
+        name='ds_estimate_maps')
     ds_contrast_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
@@ -56,7 +61,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir,
                        ('contrast_info', 'contrast_info')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
+        (getter, ds_estimate_maps, [('entities', 'fixed_entities')]),
         (getter, ds_contrast_maps, [('entities', 'fixed_entities')]),
+        (flm, ds_estimate_maps, [('estimate_maps', 'in_file'),
+                                 ('estimate_metadata', 'entities')]),
         (flm, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                  ('contrast_metadata', 'entities')]),
         (loader, ds_design, [('entities', 'entities')]),
