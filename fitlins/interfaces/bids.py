@@ -184,6 +184,7 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
 class BIDSSelectOutputSpec(TraitedSpec):
     bold_files = OutputMultiPath(File)
     mask_files = OutputMultiPath(traits.Either(File, None))
+    entities = OutputMultiPath(traits.Dict)
 
 
 class BIDSSelect(SimpleInterface):
@@ -194,6 +195,7 @@ class BIDSSelect(SimpleInterface):
         layout = gb.BIDSLayout(self.inputs.bids_dirs)
         bold_files = []
         mask_files = []
+        entities = []
         for ents in self.inputs.entities:
             selectors = {**self.inputs.selectors, **ents}
             bold_file = layout.get(extensions=['.nii', '.nii.gz'], **selectors)
@@ -218,11 +220,15 @@ class BIDSSelect(SimpleInterface):
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
 
+            bold_ents.pop('type')
+
             bold_files.append(bold_file[0].filename)
             mask_files.append(mask_file[0].filename if mask_file else None)
+            entities.append(bold_ents)
 
         self._results['bold_files'] = bold_files
         self._results['mask_files'] = mask_files
+        self._results['entities'] = entities
 
         return runtime
 
