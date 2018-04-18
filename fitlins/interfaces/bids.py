@@ -12,6 +12,8 @@ from nipype.interfaces.base import (
 from nipype.interfaces.io import IOBase
 from bids import grabbids as gb, analysis as ba
 
+from ..utils import snake_to_camel
+
 
 def bids_split_filename(fname):
     """Split a filename into parts: path, base filename, and extension
@@ -295,6 +297,8 @@ class BIDSDataSink(IOBase):
                                      self.inputs.in_file):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
+
+            ents = {k: snake_to_camel(v) for k, v in ents.items()}
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(ents))
