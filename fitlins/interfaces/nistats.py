@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import nibabel as nb
+from nilearn import plotting as nlp
 import nistats as nis
 import nistats.reporting
 from nistats import design_matrix as dm
@@ -85,6 +86,8 @@ class FirstLevelModelOutputSpec(TraitedSpec):
     design_matrix_plot = File()
     correlation_matrix_plot = File()
     contrast_matrix_plot = File()
+    estimate_map_plots = OutputMultiPath(File)
+    contrast_map_plots = OutputMultiPath(File)
 
 
 class FirstLevelModel(SimpleInterface):
@@ -153,23 +156,36 @@ class FirstLevelModel(SimpleInterface):
         contrast_maps = []
         estimate_metadata = []
         contrast_metadata = []
+        estimate_map_plots = []
+        contrast_map_plots = []
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
+        plot_fmt = os.path.join(runtime.cwd, '{}.png').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             stat = flm.compute_contrast(contrast_matrix[contrast].values,
                                         {'T': 't', 'F': 'F'}[ctype])
-            fname = stat_fmt(contrast)
-            stat.to_filename(fname)
+            stat_fname = stat_fmt(contrast)
+            stat.to_filename(stat_fname)
+
+            plot_fname = plot_fmt(contrast)
+            nlp.plot_glass_brain(stat, colorbar=True, plot_abs=False,
+                                 display_mode='lyrz', axes=None,
+                                 output_file=plot_fname)
+
             if contrast in exp_vars:
-                estimate_maps.append(fname)
+                estimate_maps.append(stat_fname)
+                estimate_map_plots.append(plot_fname)
                 estimate_metadata.append({'contrast': contrast,
                                           'type': 'stat'})
             else:
-                contrast_maps.append(fname)
+                contrast_maps.append(stat_fname)
+                contrast_map_plots.append(plot_fname)
                 contrast_metadata.append({'contrast': contrast,
                                           'type': 'stat'})
         self._results['estimate_maps'] = estimate_maps
         self._results['contrast_maps'] = contrast_maps
         self._results['estimate_metadata'] = estimate_metadata
         self._results['contrast_metadata'] = contrast_metadata
+        self._results['estimate_map_plots'] = estimate_map_plots
+        self._results['contrast_map_plots'] = contrast_map_plots
 
         return runtime
