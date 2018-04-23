@@ -14,8 +14,6 @@ Fetch some test data
     >>> os.chdir(data_root)
 
 """
-import os
-import os.path as op
 import warnings
 from bids.grabbids import BIDSLayout
 

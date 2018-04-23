@@ -10,7 +10,7 @@ import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
 import nistats as nis
-import nistats.reporting
+import nistats.reporting  # noqa: F401
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
