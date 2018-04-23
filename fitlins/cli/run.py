@@ -15,10 +15,13 @@ import warnings
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
+from bids.analysis import Analysis
+
 from .. import __version__
+from ..workflows import init_fitlins_wf
 from ..utils import bids
 from ..base import init, first_level, second_level
-from ..viz.reports import write_report
+from ..viz.reports import write_report, parse_directory
 
 logging.addLevelName(25, 'INFO')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
@@ -84,6 +87,10 @@ def get_parser():
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
 
+    g_other = parser.add_argument_group('Other options')
+    g_other.add_argument('-w', '--work-dir', action='store',
+                         help='path where intermediate results should be stored')
+
     return parser
 
 
@@ -121,30 +128,33 @@ def create_workflow(opts):
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
+    fitlins_wf = init_fitlins_wf(bids_dir, preproc_dir, deriv_dir, opts.space,
+                                 model, base_dir=opts.work_dir)
+
     try:
+        fitlins_wf.run(plugin='MultiProc')
         retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
                             deriv_dir)
     except Exception:
         retcode = 1
 
-    sys.exit(retcode)
-
-
-def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
+    analysis = Analysis(bids_dir, model)
+    report_dicts = parse_directory(deriv_dir, analysis)
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
+    write_report('unknown', report_dicts, run_context, deriv_dir)
 
+    sys.exit(retcode)
+
+
+def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
     analysis = init(model, bids_dir, preproc_dir)
-    report_dicts = first_level(analysis, analysis.blocks[0], space, deriv_dir)
-    write_report(analysis.blocks[0].level, report_dicts, run_context,
-                 deriv_dir)
     if analysis.blocks[0].level == target_level:
         return 0
     for block in analysis.blocks[1:]:
-        report_dicts = second_level(analysis, block, space, deriv_dir)
-        write_report(block.level, report_dicts, run_context, deriv_dir)
+        second_level(analysis, block, space, deriv_dir)
         if block.level == target_level:
             break
 
