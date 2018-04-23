@@ -37,6 +37,20 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, model=None,
         iterfield=['fixed_entities', 'entities', 'in_file'],
         name='ds_contrast_maps')
 
+    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
+        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        'contrast-{contrast}_ortho.png',
+    ds_estimate_plots = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_plot_pattern),
+        iterfield=['fixed_entities', 'entities', 'in_file'],
+        name='ds_estimate_plots')
+    ds_contrast_plots = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_plot_pattern),
+        iterfield=['fixed_entities', 'entities', 'in_file'],
+        name='ds_contrast_plots')
+
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
         '[ses-{session}_]task-{task}_bold_{type<design|corr|contrasts>}.svg'
     ds_design = pe.MapNode(
@@ -70,6 +84,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, model=None,
                                  ('estimate_metadata', 'entities')]),
         (flm, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                  ('contrast_metadata', 'entities')]),
+        (getter, ds_estimate_plots, [('entities', 'fixed_entities')]),
+        (getter, ds_contrast_plots, [('entities', 'fixed_entities')]),
+        (flm, ds_estimate_plots, [('estimate_map_plots', 'in_file'),
+                                  ('estimate_metadata', 'entities')]),
+        (flm, ds_contrast_plots, [('contrast_map_plots', 'in_file'),
+                                  ('contrast_metadata', 'entities')]),
         (loader, ds_design, [('entities', 'entities')]),
         (loader, ds_corr, [('entities', 'entities')]),
         (loader, ds_contrasts, [('entities', 'entities')]),
