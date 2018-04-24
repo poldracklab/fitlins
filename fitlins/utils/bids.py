@@ -86,21 +86,17 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
     if not participant_label:
         return all_participants
 
-    if isinstance(participant_label, str):
-        participant_label = [participant_label]
-
     # Drop sub- prefixes
     participant_label = [sub[4:] if sub.startswith('sub-') else sub for sub in participant_label]
-    # Remove duplicates
-    participant_label = sorted(set(participant_label))
-    # Remove labels not found
-    found_label = sorted(set(participant_label) & set(all_participants))
+
+    found_label = layout.get_subjects(subject=participant_label)
+
     if not found_label:
         raise BIDSError('Could not find participants [{}]'.format(
             ', '.join(participant_label)), bids_dir)
 
     # Warn if some IDs were not found
-    notfound_label = sorted(set(participant_label) - set(all_participants))
+    notfound_label = sorted(set(participant_label) - set(found_label))
     if notfound_label:
         exc = BIDSError('Some participants were not found: {}'.format(
             ', '.join(notfound_label)), bids_dir)

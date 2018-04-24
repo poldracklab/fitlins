@@ -72,7 +72,7 @@ def get_parser():
     parser.add_argument('-v', '--version', action='version', version=verstr)
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
-    g_bids.add_argument('--participant-label', action='store', nargs='+',
+    g_bids.add_argument('--participant-label', action='store', nargs='+', default=[],
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
@@ -128,8 +128,8 @@ def create_workflow(opts):
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
-    fitlins_wf = init_fitlins_wf(bids_dir, preproc_dir, deriv_dir, opts.space,
-                                 model, base_dir=opts.work_dir)
+    fitlins_wf = init_fitlins_wf(bids_dir, preproc_dir, deriv_dir, opts.space, model,
+                                 subject_list, base_dir=opts.work_dir)
 
     try:
         fitlins_wf.run(plugin='MultiProc')

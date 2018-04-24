@@ -3,12 +3,14 @@ from ..interfaces.bids import LoadLevel1BIDSModel, BIDSSelect, BIDSDataSink
 from ..interfaces.nistats import FirstLevelModel
 
 
-def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, model=None,
+def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
+                    model=None, participants='.*',
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     loader = pe.Node(
-        LoadLevel1BIDSModel(bids_dirs=[bids_dir, preproc_dir]),
+        LoadLevel1BIDSModel(bids_dirs=[bids_dir, preproc_dir],
+                            selectors={'subject': participants}),
         name='loader')
     if model is not None:
         loader.inputs.model = model
