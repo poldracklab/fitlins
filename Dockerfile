@@ -5,7 +5,7 @@
 # pull request on our GitHub repository:
 #     https://github.com/kaczmarj/neurodocker
 #
-# Timestamp: 2018-03-08 22:26:14
+# Timestamp: 2018-04-18 20:02:44
 
 FROM neurodebian@sha256:5fbbad8c68525b588a459092254094436aae9dc1f3920f8d871a03053b10377c
 
@@ -82,6 +82,7 @@ RUN conda install -y -q --name neuro numpy=1.14.1 \
                                      scikit-learn=0.19.1 \
                                      matplotlib=2.1.2 \
                                      seaborn=0.8.1 \
+                                     pytables=3.4.2 \
                                      pandas=0.22.0 \
                                      nipype=1.0.1 \
                                      patsy \
@@ -173,7 +174,7 @@ RUN echo '{ \
     \n      "miniconda", \
     \n      { \
     \n        "env_name": "neuro", \
-    \n        "conda_install": "numpy=1.14.1 scipy=1.0.0 scikit-learn=0.19.1 matplotlib=2.1.2 seaborn=0.8.1 pandas=0.22.0 nipype=1.0.1 patsy" \
+    \n        "conda_install": "numpy=1.14.1 scipy=1.0.0 scikit-learn=0.19.1 matplotlib=2.1.2 seaborn=0.8.1 pytables=3.4.2 pandas=0.22.0 nipype=1.0.1 patsy" \
     \n      } \
     \n    ], \
     \n    [ \
@@ -233,6 +234,6 @@ RUN echo '{ \
     \n      } \
     \n    ] \
     \n  ], \
-    \n  "generation_timestamp": "2018-03-08 22:26:14", \
+    \n  "generation_timestamp": "2018-04-18 20:02:44", \
     \n  "neurodocker_version": "0.3.2" \
     \n}' > /neurodocker/neurodocker_specs.json

@@ -35,12 +35,16 @@ REQUIRES = [
     'numpy>=1.11',
     'nilearn>=0.4.0',
     'pandas>=0.19',
+    'tables>=3.2.1',
     'nistats>=0.0.1a',
+    'grabbit>=0.1.1',
     'pybids>=0.5.1',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
+    'git+https://github.com/grabbles/grabbit.git@'
+    '3fe38c7e7eb510a38e6c2d072bdc913aaa1b7389#egg=grabbit-0.1.2-dev',
     'git+https://github.com/nistats/nistats.git@'
     'ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats-0.0.1b-dev',
 ]
