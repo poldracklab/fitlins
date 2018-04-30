@@ -122,6 +122,8 @@ def create_workflow(opts):
     )
 
     model = default_path(opts.model, bids_dir, 'model.json')
+    if opts.model is None and not os.path.exists(model):
+        model = 'default'
     preproc_dir = default_path(opts.preproc_dir, output_dir, 'fmriprep')
     deriv_dir = op.join(output_dir, 'fitlins')
 
