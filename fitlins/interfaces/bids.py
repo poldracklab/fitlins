@@ -61,7 +61,8 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dirs = InputMultiPath(Directory(exists=True),
                                mandatory=True,
                                desc='BIDS dataset root directories')
-    model = File(exists=True, desc='Model filename')
+    model = traits.Either('default', File(exists=True),
+                          desc='Model filename')
     selectors = traits.Dict(desc='Limit collected sessions')
     include_pattern = InputMultiPath(
         traits.Str, xor=['exclude_pattern'],
@@ -99,6 +100,8 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 raise ValueError("Ambiguous model")
             else:
                 raise ValueError("No models found")
+        elif model_fname == 'default':
+            model_fname = ba.auto_model(layout)
 
         selectors = (self.inputs.selectors
                      if isdefined(self.inputs.selectors) else {})
