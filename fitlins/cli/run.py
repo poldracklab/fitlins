@@ -122,7 +122,7 @@ def create_workflow(opts):
     )
 
     model = default_path(opts.model, bids_dir, 'model.json')
-    if opts.model is None and not os.path.exists(model):
+    if opts.model in (None, 'default') and not os.path.exists(model):
         model = 'default'
     preproc_dir = default_path(opts.preproc_dir, output_dir, 'fmriprep')
     deriv_dir = op.join(output_dir, 'fitlins')
@@ -135,8 +135,11 @@ def create_workflow(opts):
 
     try:
         fitlins_wf.run(plugin='MultiProc')
-        retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
-                            deriv_dir)
+        if model != 'default':
+            retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
+                                deriv_dir)
+        else:
+            retcode = 0
     except Exception:
         retcode = 1
 
