@@ -1,5 +1,6 @@
 from nipype.pipeline import engine as pe
-from ..interfaces.bids import LoadLevel1BIDSModel, BIDSSelect, BIDSDataSink
+from ..interfaces.bids import (
+    ModelSpecLoader, LoadLevel1BIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel
 
 
@@ -9,7 +10,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, model=None,
 
     specs = ModelSpecLoader(bids_dirs=bids_dir)
     if model is not None:
-        specs.input.model = model
+        specs.inputs.model = model
 
     all_models = specs.run().outputs.model_spec
     if not all_models:
