@@ -1,5 +1,6 @@
 import os
 from gzip import GzipFile
+import json
 import shutil
 import nibabel as nb
 
@@ -57,13 +58,66 @@ def bids_split_filename(fname):
     return pth, fname, ext
 
 
-class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
+def _ensure_model(model):
+    model = getattr(model, 'filename', model)
+
+    if isinstance(model, str):
+        if os.path.exists(model):
+            with open(model) as fobj:
+                model = json.load(fobj)
+        else:
+            model = json.loads(model)
+    return model
+
+
+class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
     bids_dirs = InputMultiPath(Directory(exists=True),
                                mandatory=True,
                                desc='BIDS dataset root directories')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
-    selectors = traits.Dict(desc='Limit collected sessions')
+    selectors = traits.Dict(desc='Limit models to those with matching inputs')
+
+
+class ModelSpecLoaderOutputSpec(TraitedSpec):
+    model_spec = OutputMultiPath(traits.Dict())
+
+
+class ModelSpecLoader(SimpleInterface):
+    input_spec = ModelSpecLoaderInputSpec
+    output_spec = ModelSpecLoaderOutputSpec
+
+    def _run_interface(self, runtime):
+        models = self.inputs.model
+        if not isinstance(models, list):
+            layout = gb.BIDSLayout(self.inputs.bids_dirs)
+
+            if not isdefined(models):
+                models = layout.get(type='model')
+                if not models:
+                    raise ValueError("No models found")
+            elif models == 'default':
+                models = ba.auto_model(layout)
+
+        models = [_ensure_model(m) for m in models]
+
+        if self.inputs.selectors:
+            # This is almost certainly incorrect
+            models = [model for model in models
+                      if all(val in model['input'].get(key, [val])
+                             for key, val in self.inputs.selectors.items())]
+
+        self._results['model_spec'] = models
+
+        return runtime
+
+
+class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
+    bids_dirs = InputMultiPath(Directory(exists=True),
+                               mandatory=True,
+                               desc='BIDS dataset root directories')
+    model = traits.Dict(desc='Model specification', mandatory=True)
+    selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
         traits.Str, xor=['exclude_pattern'],
         desc='Patterns to select sub-directories of BIDS root')
@@ -91,80 +145,71 @@ class LoadLevel1BIDSModel(SimpleInterface):
             exclude = None
         layout = gb.BIDSLayout(self.inputs.bids_dirs, include=include,
                                exclude=exclude)
-        models = self.inputs.model
-        if not isdefined(models):
-            models = layout.get(type='model')
-            if not models:
-                raise ValueError("No models found")
-        elif models == 'default':
-            models = ba.auto_model(layout)[0]
 
-        selectors = (self.inputs.selectors
-                     if isdefined(self.inputs.selectors) else {})
+        selectors = self.inputs.selectors
+
+        analysis = ba.Analysis(model=self.inputs.model, layout=layout)
+        selectors.update(analysis.model['input'])
+        analysis.setup(**selectors)
+        block = analysis.blocks[0]
 
         entities = []
         session_info = []
         contrast_info = []
-        for model in models:
-            analysis = ba.Analysis(model=model, layout=layout)
-            selectors.update(analysis.model['input'])
-            analysis.setup(**selectors)
-            block = analysis.blocks[0]
+        for paradigm, _, ents in block.get_design_matrix(
+                block.model['HRF_variables'], mode='sparse'):
+            info = {}
 
-            for paradigm, _, ents in block.get_design_matrix(
-                    block.model['HRF_variables'], mode='sparse'):
-                info = {}
+            bold_files = layout.get(type='bold',
+                                    extensions=['.nii', '.nii.gz'],
+                                    **ents)
+            if len(bold_files) != 1:
+                raise ValueError('Too many BOLD files found')
 
-                bold_files = layout.get(type='bold',
-                                        extensions=['.nii', '.nii.gz'],
-                                        **ents)
-                if len(bold_files) != 1:
-                    raise ValueError('Too many BOLD files found')
+            fname = bold_files[0].filename
 
-                fname = bold_files[0].filename
+            # Required field in seconds
+            TR = layout.get_metadata(fname)['RepetitionTime']
 
-                # Required field in seconds
-                TR = layout.get_metadata(fname)['RepetitionTime']
+            _, confounds, _ = block.get_design_matrix(mode='dense',
+                                                      sampling_rate=1/TR,
+                                                      **ents)[0]
 
-                _, confounds, _ = block.get_design_matrix(mode='dense',
-                                                          sampling_rate=1/TR,
-                                                          **ents)[0]
+            # Note that FMRIPREP includes CosineXX columns to accompany
+            # t/aCompCor
+            # We may want to add criteria to include HPF columns that are not
+            # explicitly listed in the model
+            names = [col for col in confounds.columns
+                     if col.startswith('NonSteadyStateOutlier') or
+                     col in block.model['variables']]
 
-                # Note that FMRIPREP includes CosineXX columns to accompany
-                # t/aCompCor
-                # We may want to add criteria to include HPF columns that are not
-                # explicitly listed in the model
-                names = [col for col in confounds.columns
-                         if col.startswith('NonSteadyStateOutlier') or
-                         col in block.model['variables']]
+            ent_string = '_'.join('{}-{}'.format(key, val)
+                                  for key, val in ents.items())
+            events_file = os.path.join(runtime.cwd,
+                                       '{}_events.h5'.format(ent_string))
+            confounds_file = os.path.join(runtime.cwd,
+                                          '{}_confounds.h5'.format(ent_string))
+            paradigm.to_hdf(events_file, key='events')
+            confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
+            info['events'] = events_file
+            info['confounds'] = confounds_file
+            info['repetition_time'] = TR
 
-                ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in ents.items())
-                events_file = os.path.join(runtime.cwd,
-                                           '{}_events.h5'.format(ent_string))
-                confounds_file = os.path.join(runtime.cwd,
-                                              '{}_confounds.h5'.format(ent_string))
-                paradigm.to_hdf(events_file, key='events')
-                confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
-                info['events'] = events_file
-                info['confounds'] = confounds_file
-                info['repetition_time'] = TR
+            # Transpose so each contrast gets a row of data instead of column
+            contrasts = block.get_contrasts([contrast['name']
+                                             for contrast in block.contrasts],
+                                            **ents)[0][0].T
+            # Add test indicator column
+            contrasts['type'] = [contrast['type']
+                                 for contrast in block.contrasts]
 
-                # Transpose so each contrast gets a row of data instead of column
-                contrasts = block.get_contrasts([contrast['name']
-                                                 for contrast in block.contrasts],
-                                                **ents)[0][0].T
-                # Add test indicator column
-                contrasts['type'] = [contrast['type']
-                                     for contrast in block.contrasts]
+            contrasts_file = os.path.join(runtime.cwd,
+                                          '{}_contrasts.h5'.format(ent_string))
+            contrasts.to_hdf(contrasts_file, key='contrasts')
 
-                contrasts_file = os.path.join(runtime.cwd,
-                                              '{}_contrasts.h5'.format(ent_string))
-                contrasts.to_hdf(contrasts_file, key='contrasts')
-
-                entities.append(ents)
-                session_info.append(info)
-                contrast_info.append(contrasts_file)
+            entities.append(ents)
+            session_info.append(info)
+            contrast_info.append(contrasts_file)
 
         runtime.analysis = analysis
 

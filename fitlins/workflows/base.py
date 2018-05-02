@@ -7,11 +7,21 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, model=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
+    specs = ModelSpecLoader(bids_dirs=bids_dir)
+    if model is not None:
+        specs.input.model = model
+
+    all_models = specs.run().outputs.model_spec
+    if not all_models:
+        raise RuntimeError("Unable to find or construct models")
+
     loader = pe.Node(
         LoadLevel1BIDSModel(bids_dirs=[bids_dir, preproc_dir]),
         name='loader')
-    if model is not None:
-        loader.inputs.model = model
+    if isinstance(all_models, list):
+        loader.iterables = ('model', all_models)
+    else:
+        loader.inputs.model = all_models
 
     getter = pe.Node(
         BIDSSelect(bids_dirs=preproc_dir,
