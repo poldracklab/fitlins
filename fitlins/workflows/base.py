@@ -1,5 +1,6 @@
 from nipype.pipeline import engine as pe
-from ..interfaces.bids import LoadLevel1BIDSModel, BIDSSelect, BIDSDataSink
+from ..interfaces.bids import (
+    ModelSpecLoader, LoadLevel1BIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel
 
 
@@ -8,12 +9,22 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
+    specs = ModelSpecLoader(bids_dirs=bids_dir)
+    if model is not None:
+        specs.inputs.model = model
+
+    all_models = specs.run().outputs.model_spec
+    if not all_models:
+        raise RuntimeError("Unable to find or construct models")
+
     loader = pe.Node(
         LoadLevel1BIDSModel(bids_dirs=[bids_dir, preproc_dir],
                             selectors={'subject': participants}),
         name='loader')
-    if model is not None:
-        loader.inputs.model = model
+    if isinstance(all_models, list):
+        loader.iterables = ('model', all_models)
+    else:
+        loader.inputs.model = all_models
 
     getter = pe.Node(
         BIDSSelect(bids_dirs=preproc_dir,

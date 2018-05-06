@@ -1,5 +1,6 @@
 import os
 from gzip import GzipFile
+import json
 import shutil
 import nibabel as nb
 
@@ -57,12 +58,66 @@ def bids_split_filename(fname):
     return pth, fname, ext
 
 
+def _ensure_model(model):
+    model = getattr(model, 'filename', model)
+
+    if isinstance(model, str):
+        if os.path.exists(model):
+            with open(model) as fobj:
+                model = json.load(fobj)
+        else:
+            model = json.loads(model)
+    return model
+
+
+class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
+    bids_dirs = InputMultiPath(Directory(exists=True),
+                               mandatory=True,
+                               desc='BIDS dataset root directories')
+    model = traits.Either('default', InputMultiPath(File(exists=True)),
+                          desc='Model filename')
+    selectors = traits.Dict(desc='Limit models to those with matching inputs')
+
+
+class ModelSpecLoaderOutputSpec(TraitedSpec):
+    model_spec = OutputMultiPath(traits.Dict())
+
+
+class ModelSpecLoader(SimpleInterface):
+    input_spec = ModelSpecLoaderInputSpec
+    output_spec = ModelSpecLoaderOutputSpec
+
+    def _run_interface(self, runtime):
+        models = self.inputs.model
+        if not isinstance(models, list):
+            layout = gb.BIDSLayout(self.inputs.bids_dirs)
+
+            if not isdefined(models):
+                models = layout.get(type='model')
+                if not models:
+                    raise ValueError("No models found")
+            elif models == 'default':
+                models = ba.auto_model(layout)
+
+        models = [_ensure_model(m) for m in models]
+
+        if self.inputs.selectors:
+            # This is almost certainly incorrect
+            models = [model for model in models
+                      if all(val in model['input'].get(key, [val])
+                             for key, val in self.inputs.selectors.items())]
+
+        self._results['model_spec'] = models
+
+        return runtime
+
+
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dirs = InputMultiPath(Directory(exists=True),
                                mandatory=True,
                                desc='BIDS dataset root directories')
-    model = File(exists=True, desc='Model filename')
-    selectors = traits.Dict(desc='Limit collected sessions')
+    model = traits.Dict(desc='Model specification', mandatory=True)
+    selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
         traits.Str, xor=['exclude_pattern'],
         desc='Patterns to select sub-directories of BIDS root')
@@ -90,20 +145,10 @@ class LoadLevel1BIDSModel(SimpleInterface):
             exclude = None
         layout = gb.BIDSLayout(self.inputs.bids_dirs, include=include,
                                exclude=exclude)
-        model_fname = self.inputs.model
-        if not isdefined(model_fname):
-            models = layout.get(type='model')
-            if len(models) == 1:
-                model_fname = models[0].filename
-            elif models:
-                raise ValueError("Ambiguous model")
-            else:
-                raise ValueError("No models found")
 
-        selectors = (self.inputs.selectors
-                     if isdefined(self.inputs.selectors) else {})
+        selectors = self.inputs.selectors
 
-        analysis = ba.Analysis(model=model_fname, layout=layout)
+        analysis = ba.Analysis(model=self.inputs.model, layout=layout)
         selectors.update(analysis.model['input'])
         analysis.setup(**selectors)
         block = analysis.blocks[0]

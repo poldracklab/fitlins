@@ -15,7 +15,7 @@ import warnings
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-from bids.analysis import Analysis
+from bids import grabbids as gb, analysis as ba
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
@@ -122,6 +122,8 @@ def create_workflow(opts):
     )
 
     model = default_path(opts.model, bids_dir, 'model.json')
+    if opts.model in (None, 'default') and not os.path.exists(model):
+        model = 'default'
     preproc_dir = default_path(opts.preproc_dir, output_dir, 'fmriprep')
     deriv_dir = op.join(output_dir, 'fitlins')
 
@@ -133,18 +135,26 @@ def create_workflow(opts):
 
     try:
         fitlins_wf.run(plugin='MultiProc')
-        retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
-                            deriv_dir)
+        if model != 'default':
+            retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
+                                deriv_dir)
+        else:
+            retcode = 0
     except Exception:
         retcode = 1
 
-    analysis = Analysis(bids_dir, model)
-    report_dicts = parse_directory(deriv_dir, analysis)
+    layout = gb.BIDSLayout(bids_dir)
+    models = ba.auto_model(layout) if model == 'default' else [model]
+
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
-    write_report('unknown', report_dicts, run_context, deriv_dir)
+
+    for model in models:
+        analysis = ba.Analysis(layout, model=model)
+        report_dicts = parse_directory(deriv_dir, analysis)
+        write_report('unknown', report_dicts, run_context, deriv_dir)
 
     sys.exit(retcode)
 
