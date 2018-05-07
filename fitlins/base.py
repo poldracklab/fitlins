@@ -7,12 +7,9 @@ from os import path as op
 from functools import reduce
 from scipy import stats as sps
 import pandas as pd
-import nibabel as nb
 from nilearn import plotting as nlp
-import nistats as nis
 import nistats.reporting  # noqa: F401
-from nistats import design_matrix as dm
-from nistats import first_level_model as level1, second_level_model as level2
+from nistats import second_level_model as level2
 
 import pkg_resources as pkgr
 
@@ -20,7 +17,7 @@ from bids import grabbids
 from bids import analysis as ba
 
 from fitlins.utils import dict_intersection, snake_to_camel
-from fitlins.viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
+from fitlins.viz import plot_and_save, plot_contrast_matrix
 
 sns.set_style('white')
 plt.rcParams['svg.fonttype'] = 'none'
@@ -74,135 +71,6 @@ def init(model_fname, bids_dir, preproc_dir):
     analysis.setup(**analysis.model['input'])
     analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
-
-
-def first_level(analysis, block, space, deriv_dir):
-    analyses = []
-    for paradigm, _, ents in block.get_design_matrix(block.model['HRF_variables'],
-                                                     mode='sparse'):
-        preproc_files = analysis.layout.get(type='preproc', space=space, **ents)
-        if len(preproc_files) == 0:
-            raise ValueError("No PREPROC files found")
-
-        if len(preproc_files) != 1:
-            print(preproc_files)
-            raise ValueError("Too many potential PREPROC files")
-
-        fname = preproc_files[0].filename
-
-        img = nb.load(fname)
-        TR = img.header.get_zooms()[3]
-        vols = img.shape[3]
-
-        # Get dense portion of design matrix once TR is known
-        _, confounds, _ = block.get_design_matrix(mode='dense',
-                                                  sampling_rate=1/TR, **ents)[0]
-        names = [col for col in confounds.columns
-                 if col.startswith('NonSteadyStateOutlier') or
-                 col in block.model['variables']]
-
-        mat = dm.make_design_matrix(
-            frame_times=np.arange(vols) * TR,
-            paradigm=paradigm.rename(columns={'condition': 'trial_type',
-                                              'amplitude': 'modulation'}),
-            add_regs=confounds[names].fillna(0),
-            add_reg_names=names,
-            drift_model=None if 'Cosine00' in names else 'cosine',
-            )
-
-        preproc_ents = analysis.layout.parse_file_entities(fname)
-
-        dm_ents = {k: v for k, v in preproc_ents.items()
-                   if k in ('subject', 'session', 'task')}
-
-        dm_ents['type'] = 'design'
-        design_fname = op.join(deriv_dir,
-                               analysis.layout.build_path(dm_ents, strict=True))
-        os.makedirs(op.dirname(design_fname), exist_ok=True)
-        mat.to_csv(design_fname, sep='\t')
-        plt.set_cmap('viridis')
-        plot_and_save(design_fname.replace('.tsv', '.svg'),
-                      nis.reporting.plot_design_matrix, mat)
-
-        corr_ents = dm_ents.copy()
-        corr_ents['type'] = 'corr'
-        corr_fname = op.join(deriv_dir,
-                             analysis.layout.build_path(corr_ents, strict=True))
-        plot_and_save(corr_fname, plot_corr_matrix,
-                      mat.drop(columns=['constant']).corr(),
-                      len(block.model['HRF_variables']))
-
-        job_desc = {
-            'ents': ents,
-            'subject_id': ents['subject'],
-            'dataset': analysis.layout.root,
-            'model_name': analysis.model['name'],
-            'design_matrix_svg': design_fname.replace('.tsv', '.svg'),
-            'correlation_matrix_svg': corr_fname,
-            }
-
-        cnames = [contrast['name'] for contrast in block.contrasts] + block.model['HRF_variables']
-        contrast_matrix = []
-        if cnames:
-            contrasts_ents = corr_ents.copy()
-            contrasts_ents['type'] = 'contrasts'
-            contrasts_fname = op.join(
-                deriv_dir,
-                analysis.layout.build_path(contrasts_ents, strict=True))
-
-            contrast_matrix = expand_contrast_matrix(
-                block.get_contrasts(cnames, **ents)[0][0], mat)
-            plot_and_save(contrasts_fname, plot_contrast_matrix,
-                          contrast_matrix.drop(['constant'], 'index'),
-                          ornt='horizontal')
-
-            job_desc['contrasts_svg'] = contrasts_fname
-
-        brainmask = analysis.layout.get(type='brainmask', space=space,
-                                        **ents)[0]
-        fmri_glm = None
-
-        for contrast in contrast_matrix:
-            stat_ents = preproc_ents.copy()
-            stat_ents.pop('modality', None)
-            stat_ents.update({'contrast': snake_to_camel(contrast),
-                              'type': 'stat'})
-            stat_fname = op.join(deriv_dir,
-                                 analysis.layout.build_path(stat_ents,
-                                                            strict=True))
-
-            ortho_ents = stat_ents.copy()
-            ortho_ents['type'] = 'ortho'
-            ortho_fname = op.join(deriv_dir,
-                                  analysis.layout.build_path(ortho_ents,
-                                                             strict=True))
-
-            desc = {'name': contrast, 'image_file': ortho_fname}
-            if contrast not in block.model['HRF_variables']:
-                job_desc.setdefault('contrasts', []).append(desc)
-            else:
-                job_desc.setdefault('estimates', []).append(desc)
-
-            if op.exists(stat_fname):
-                continue
-
-            if fmri_glm is None:
-                fmri_glm = level1.FirstLevelModel(mask=brainmask.filename)
-                fmri_glm.fit(fname, design_matrices=mat)
-
-            stat_types = [c['type'] for c in block.contrasts if c['name'] == contrast]
-            stat_type = stat_types[0] if stat_types else 'T'
-            stat = fmri_glm.compute_contrast(contrast_matrix[contrast].values,
-                                             {'T': 't', 'F': 'F'}[stat_type])
-            stat.to_filename(stat_fname)
-
-            nlp.plot_glass_brain(stat, colorbar=True, plot_abs=False,
-                                 display_mode='lyrz', axes=None,
-                                 output_file=ortho_fname)
-
-        analyses.append(job_desc)
-
-    return analyses
 
 
 def second_level(analysis, block, space, deriv_dir):

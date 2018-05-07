@@ -31,6 +31,7 @@ SETUP_REQUIRES = [
 
 REQUIRES = [
     'nibabel>=2.0',
+    'nipype>=1.0.3',
     'seaborn>=0.7.1',
     'numpy>=1.11',
     'nilearn>=0.4.0',
