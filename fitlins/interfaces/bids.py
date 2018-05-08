@@ -130,8 +130,8 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(File())
-    entities = traits.List(traits.Dict())
+    contrast_info = traits.List(traits.List(File()))
+    entities = traits.List(traits.List(traits.Dict()))
 
 
 class LoadBIDSModel(SimpleInterface):
@@ -226,9 +226,9 @@ class LoadBIDSModel(SimpleInterface):
             session_info.append(info)
             contrast_info.append(contrasts_file)
 
-        self._results['entities'] = entities
         self._results['session_info'] = session_info
-        self._results['contrast_info'] = contrast_info
+        self._results.setdefault('entities', []).append(entities)
+        self._results.setdefault('contrast_info', []).append(contrast_info)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):

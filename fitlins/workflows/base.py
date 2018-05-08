@@ -37,6 +37,14 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     else:
         loader.inputs.model = all_models
 
+    select_l1_contrasts = pe.Node(
+        niu.Select(index=0),
+        name='select_l1_contrasts')
+
+    select_l1_entities = pe.Node(
+        niu.Select(index=0),
+        name='select_l1_entities')
+
     getter = pe.Node(
         BIDSSelect(bids_dir=bids_dir,
                    selectors={'type': 'preproc', 'space': space}),
@@ -108,9 +116,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='ds_contrasts')
 
     wf.connect([
-        (loader, getter,  [('entities', 'entities')]),
-        (loader, flm, [('session_info', 'session_info'),
-                       ('contrast_info', 'contrast_info')]),
+        (loader, select_l1_contrasts, [('contrasts', 'in_list')]),
+        (loader, select_l1_entities, [('entities', 'in_list')]),
+        (loader, flm, [('session_info', 'session_info')]),
+        (select_l1_entities, getter,  [('out', 'entities')]),
+        (select_l1_contrasts, flm,  [('out', 'contrast_info')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
         (getter, ds_estimate_maps, [('entities', 'fixed_entities')]),
