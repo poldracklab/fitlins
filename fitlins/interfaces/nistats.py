@@ -17,6 +17,10 @@ from nipype.interfaces.base import (
 from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 
+class NistatsBaseInterface(LibraryBaseInterface):
+    _pkg = 'nistats'
+
+
 def build_contrast_matrix(contrast_spec, design_matrix,
                           identity=None):
     """Construct contrast matrix and return contrast type
@@ -89,7 +93,7 @@ class FirstLevelModelOutputSpec(TraitedSpec):
     contrast_map_plots = OutputMultiPath(File)
 
 
-class FirstLevelModel(SimpleInterface):
+class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
     input_spec = FirstLevelModelInputSpec
     output_spec = FirstLevelModelOutputSpec
 
