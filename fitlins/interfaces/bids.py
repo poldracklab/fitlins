@@ -112,7 +112,7 @@ class ModelSpecLoader(SimpleInterface):
         return runtime
 
 
-class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
+class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directory')
@@ -128,15 +128,15 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
         desc='Patterns to ignore sub-directories of BIDS root')
 
 
-class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
+class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
     contrast_info = traits.List(File())
     entities = traits.List(traits.Dict())
 
 
-class LoadLevel1BIDSModel(SimpleInterface):
-    input_spec = LoadLevel1BIDSModelInputSpec
-    output_spec = LoadLevel1BIDSModelOutputSpec
+class LoadBIDSModel(SimpleInterface):
+    input_spec = LoadBIDSModelInputSpec
+    output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
         include = self.inputs.include_pattern
@@ -158,6 +158,14 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
         analysis.setup(**selectors)
+        self._load_level1(runtime, analysis)
+
+        # Debug - remove, eventually
+        runtime.analysis = analysis
+
+        return runtime
+
+    def _load_level1(self, runtime, analysis):
         block = analysis.blocks[0]
 
         entities = []
@@ -167,16 +175,16 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 block.model['HRF_variables'], mode='sparse'):
             info = {}
 
-            bold_files = layout.get(type='bold',
-                                    extensions=['.nii', '.nii.gz'],
-                                    **ents)
+            bold_files = analysis.layout.get(type='bold',
+                                             extensions=['.nii', '.nii.gz'],
+                                             **ents)
             if len(bold_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
             fname = bold_files[0].filename
 
             # Required field in seconds
-            TR = layout.get_metadata(fname)['RepetitionTime']
+            TR = analysis.layout.get_metadata(fname)['RepetitionTime']
 
             _, confounds, _ = block.get_design_matrix(mode='dense',
                                                       sampling_rate=1/TR,
@@ -218,12 +226,9 @@ class LoadLevel1BIDSModel(SimpleInterface):
             session_info.append(info)
             contrast_info.append(contrasts_file)
 
-        runtime.analysis = analysis
-
         self._results['entities'] = entities
         self._results['session_info'] = session_info
         self._results['contrast_info'] = contrast_info
-        return runtime
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
