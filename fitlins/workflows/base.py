@@ -1,4 +1,5 @@
 from nipype.pipeline import engine as pe
+from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel
@@ -116,8 +117,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='ds_contrasts')
 
     wf.connect([
-        (loader, select_l1_contrasts, [('contrasts', 'in_list')]),
-        (loader, select_l1_entities, [('entities', 'in_list')]),
+        (loader, select_l1_contrasts, [('contrast_info', 'inlist')]),
+        (loader, select_l1_entities, [('entities', 'inlist')]),
         (loader, flm, [('session_info', 'session_info')]),
         (select_l1_entities, getter,  [('out', 'entities')]),
         (select_l1_contrasts, flm,  [('out', 'contrast_info')]),
@@ -135,9 +136,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
                                   ('estimate_metadata', 'entities')]),
         (flm, ds_contrast_plots, [('contrast_map_plots', 'in_file'),
                                   ('contrast_metadata', 'entities')]),
-        (loader, ds_design, [('entities', 'entities')]),
-        (loader, ds_corr, [('entities', 'entities')]),
-        (loader, ds_contrasts, [('entities', 'entities')]),
+        (select_l1_entities, ds_design, [('out', 'entities')]),
+        (select_l1_entities, ds_corr, [('out', 'entities')]),
+        (select_l1_entities, ds_contrasts, [('out', 'entities')]),
         (flm, ds_design, [('design_matrix_plot', 'in_file')]),
         (flm, ds_corr, [('correlation_matrix_plot', 'in_file')]),
         (flm, ds_contrasts, [('contrast_matrix_plot', 'in_file')]),

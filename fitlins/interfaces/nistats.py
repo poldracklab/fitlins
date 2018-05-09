@@ -9,9 +9,8 @@ from nistats import design_matrix as dm
 from nistats import first_level_model as level1, second_level_model as level2
 
 from nipype.interfaces.base import (
-    BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
-    OutputMultiPath, File,
-    traits, isdefined
+    LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
+    InputMultiObject, OutputMultiObject, File, traits, isdefined
     )
 
 from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
@@ -81,16 +80,16 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    estimate_maps = OutputMultiPath(File)
-    contrast_maps = OutputMultiPath(File)
-    estimate_metadata = OutputMultiPath(traits.Dict)
-    contrast_metadata = OutputMultiPath(traits.Dict)
+    estimate_maps = OutputMultiObject(File)
+    contrast_maps = OutputMultiObject(File)
+    estimate_metadata = OutputMultiObject(traits.Dict)
+    contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
     design_matrix_plot = File()
     correlation_matrix_plot = File()
     contrast_matrix_plot = File()
-    estimate_map_plots = OutputMultiPath(File)
-    contrast_map_plots = OutputMultiPath(File)
+    estimate_map_plots = OutputMultiObject(File)
+    contrast_map_plots = OutputMultiObject(File)
 
 
 class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
