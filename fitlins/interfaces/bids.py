@@ -159,6 +159,7 @@ class LoadBIDSModel(SimpleInterface):
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
         analysis.setup(**selectors)
         self._load_level1(runtime, analysis)
+        self._load_higher_level(runtime, analysis)
 
         # Debug - remove, eventually
         runtime.analysis = analysis
@@ -229,6 +230,38 @@ class LoadBIDSModel(SimpleInterface):
         self._results['session_info'] = session_info
         self._results.setdefault('entities', []).append(entities)
         self._results.setdefault('contrast_info', []).append(contrast_info)
+
+    def _load_higher_level(self, runtime, analysis):
+        for block in analysis.blocks[1:]:
+            cnames = [contrast['name'] for contrast in block.contrasts]
+
+            entities = []
+            contrast_info = []
+            for contrasts, idx, ents in block.get_contrasts(names=cnames):
+                if contrasts.empty:
+                    continue
+
+                ent_string = '_'.join('{}-{}'.format(key, val)
+                                      for key, val in ents.items())
+
+                # Transpose so each contrast gets a row of data instead of column
+                contrasts = contrasts.T
+                # Inputs will typically repeat, so remove names
+                contrasts.columns = range(len(contrasts.columns))
+                # Add test indicator column
+                contrasts['type'] = [contrast['type']
+                                     for contrast in block.contrasts]
+
+                contrasts_file = os.path.join(runtime.cwd, block.level,
+                                              '{}_contrasts.h5'.format(ent_string))
+                makedirs(os.path.dirname(contrasts_file), exist_ok=True)
+                contrasts.to_hdf(contrasts_file, key='contrasts')
+
+                entities.append(ents)
+                contrast_info.append(contrasts_file)
+
+            self._results['entities'].append(entities)
+            self._results['contrast_info'].append(contrast_info)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
