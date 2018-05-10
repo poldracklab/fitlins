@@ -77,8 +77,8 @@ def get_parser():
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
                         help='location of BIDS model description (default bids_dir/model.json)')
-    g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
-                        help='location of preprocessed data (default output_dir/fmriprep)')
+    g_bids.add_argument('-p', '--preproc-dir', action='store', default=None,
+                        help='location of preprocessed data (default bids_dir/fmriprep)')
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
                         help='registered space of input datasets')
@@ -124,7 +124,7 @@ def create_workflow(opts):
     model = default_path(opts.model, bids_dir, 'model.json')
     if opts.model in (None, 'default') and not os.path.exists(model):
         model = 'default'
-    preproc_dir = default_path(opts.preproc_dir, output_dir, 'fmriprep')
+    preproc_dir = opts.preproc_dir
     deriv_dir = op.join(output_dir, 'fitlins')
 
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'

@@ -71,9 +71,9 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directory')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -90,7 +90,7 @@ class ModelSpecLoader(SimpleInterface):
     def _run_interface(self, runtime):
         models = self.inputs.model
         if not isinstance(models, list):
-            layout = gb.BIDSLayout(self.inputs.bids_dirs)
+            layout = gb.BIDSLayout(self.inputs.bids_dir)
 
             if not isdefined(models):
                 models = layout.get(type='model')
@@ -113,9 +113,11 @@ class ModelSpecLoader(SimpleInterface):
 
 
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directory')
+    preproc_dir = Directory(exists=True,
+                            desc='Optional preprocessed files directory')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
@@ -143,8 +145,13 @@ class LoadLevel1BIDSModel(SimpleInterface):
             include = None
         if not isdefined(exclude):
             exclude = None
-        layout = gb.BIDSLayout(self.inputs.bids_dirs, include=include,
-                               exclude=exclude)
+
+        if self.inputs.preproc_dir is not None:
+            config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
+        else:
+            config = None
+        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config,
+                               include=include, exclude=exclude)
 
         selectors = self.inputs.selectors
 
@@ -220,9 +227,11 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directories')
+    preproc_dir = Directory(exists=True,
+                            desc='Optional preprocessed files directory')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -239,7 +248,11 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
-        layout = gb.BIDSLayout(self.inputs.bids_dirs)
+        if self.inputs.preproc_dir is not None:
+            config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
+        else:
+            config = None
+        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config)
         bold_files = []
         mask_files = []
         entities = []
@@ -250,12 +263,12 @@ class BIDSSelect(SimpleInterface):
             if len(bold_file) == 0:
                 raise FileNotFoundError(
                     "Could not find BOLD file in {} with entities {}"
-                    "".format(self.inputs.bids_dirs, selectors))
+                    "".format(self.inputs.bids_dir, selectors))
             elif len(bold_file) > 1:
                 raise ValueError(
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(self.inputs.bids_dirs, selectors,
+                    "".format(self.inputs.bids_dir, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
                                       f.filename,
