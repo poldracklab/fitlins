@@ -10,6 +10,7 @@ import sys
 import os
 import os.path as op
 import time
+import json
 import logging
 import warnings
 from argparse import ArgumentParser
@@ -126,6 +127,10 @@ def create_workflow(opts):
         model = 'default'
     preproc_dir = opts.preproc_dir
     deriv_dir = op.join(output_dir, 'fitlins')
+
+    desc = op.join(deriv_dir, 'dataset_description.json')
+    with open(desc, 'w') as fobj:
+        json.dump({'Name': 'FitLins output', 'BIDSVersion': '1.1.0'}, fobj)
 
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
