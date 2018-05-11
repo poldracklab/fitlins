@@ -276,8 +276,8 @@ class BIDSSelect(SimpleInterface):
                                   for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
-            bold_ents = layout.parse_file_entities(bold_file[0].filename,
-                                                   domains=['bids'])
+            bold_ents = layout.parse_file_entities(
+                bold_file[0].filename, domains=['bids', 'derivatives'])
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
 
@@ -346,6 +346,7 @@ class BIDSDataSink(IOBase):
 
     def _list_outputs(self):
         base_dir = self.inputs.base_directory
+        makedirs(base_dir, exist_ok=True)
 
         layout = gb.BIDSLayout(base_dir)
         if self.inputs.path_patterns:

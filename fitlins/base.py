@@ -68,7 +68,7 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 def init(model_fname, bids_dir, preproc_dir):
     layout = grabbids.BIDSLayout(
         bids_dir,
-        config=[('bids', bids_dir), ('preproc', preproc_dir)])
+        config=[('bids', bids_dir), ('derivatives', preproc_dir)])
 
     analysis = ba.Analysis(model=model_fname, layout=layout)
     analysis.setup()
