@@ -14,6 +14,8 @@ Fetch some test data
     >>> os.chdir(data_root)
 
 """
+import os
+import json
 import warnings
 from bids.grabbids import BIDSLayout
 
@@ -105,3 +107,46 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
         warnings.warn(exc.msg, BIDSWarning)
 
     return found_label
+
+
+def write_derivative_description(bids_dir, deriv_dir):
+    from fitlins import __version__
+
+    desc = {
+        'PipelineDescription': {
+            'Name': 'FitLins',
+            'Version': __version__,
+            'CodeURL': 'https://github.com/poldracklab/fitlins',
+            },
+        'CodeURL': 'https://github.com/poldracklab/fitlins',
+        'HowToAcknowledge': 'https://github.com/poldracklab/fitlins',
+        }
+
+    # Keys that can only be set by environment
+    if 'FITLINS_DOCKER_TAG' in os.environ:
+        desc['DockerHubContainerTag'] = os.environ['FITLINS_DOCKER_TAG']
+    if 'FITLINS_SINGULARITY_URL' in os.environ:
+        singularity_url = os.environ['FITLINS_SINGULARITY_URL']
+        desc['SingularityContainerURL'] = singularity_url
+        try:
+            desc['SingularityContainerMD5'] = _get_shub_version(singularity_url)
+        except ValueError:
+            pass
+
+    # Keys deriving from source dataset
+    with open(os.path.join(bids_dir, 'dataset_description.json')) as fobj:
+        orig_desc = json.load(fobj)
+
+    if 'DatasetDOI' in orig_desc:
+        desc['SourceDatasetsURLs'] = ['https://doi.org/{}'.format(
+                                          orig_desc['DatasetDOI'])]
+    if 'License' in orig_desc:
+        desc['License'] = orig_desc['License']
+
+    os.makedirs(deriv_dir, exist_ok=True)
+    with open(os.path.join(deriv_dir, 'dataset_description.json'), 'w') as fobj:
+        json.dump(desc, fobj)
+
+
+def _get_shub_version(singularity_url):
+    raise ValueError("Not yet implemented")
