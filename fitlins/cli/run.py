@@ -73,7 +73,7 @@ def get_parser():
     parser.add_argument('-v', '--version', action='version', version=verstr)
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
-    g_bids.add_argument('--participant-label', action='store', nargs='+', default=[],
+    g_bids.add_argument('--participant-label', action='store', nargs='+', default=None,
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
@@ -110,8 +110,12 @@ def create_workflow(opts):
 
     # First check that bids_dir looks like a BIDS folder
     bids_dir = op.abspath(opts.bids_dir)
-    subject_list = bids.collect_participants(
-        bids_dir, participant_label=opts.participant_label)
+
+    if opts.participant_label is not None:
+        subject_list = bids.collect_participants(
+            bids_dir, participant_label=opts.participant_label)
+    else:
+        subject_list = opts.participant_label
 
     output_dir = op.abspath(opts.output_dir)
     os.makedirs(output_dir, exist_ok=True)
