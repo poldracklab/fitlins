@@ -345,7 +345,6 @@ class BIDSDataSink(IOBase):
 
     def _list_outputs(self):
         base_dir = self.inputs.base_directory
-        makedirs(base_dir, exist_ok=True)
 
         layout = gb.BIDSLayout(base_dir)
         if self.inputs.path_patterns:

@@ -118,7 +118,6 @@ def create_workflow(opts):
         subject_list = opts.participant_label
 
     output_dir = op.abspath(opts.output_dir)
-    os.makedirs(output_dir, exist_ok=True)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -131,6 +130,7 @@ def create_workflow(opts):
         model = 'default'
     preproc_dir = opts.preproc_dir
     deriv_dir = op.join(output_dir, 'fitlins')
+    os.makedirs(deriv_dir, exist_ok=True)
 
     desc = op.join(deriv_dir, 'dataset_description.json')
     with open(desc, 'w') as fobj:
