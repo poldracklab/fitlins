@@ -5,7 +5,7 @@ from ..interfaces.nistats import FirstLevelModel
 
 
 def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
-                    model=None, participants='.*',
+                    model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -17,10 +17,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
     if not all_models:
         raise RuntimeError("Unable to find or construct models")
 
+    selectors = {'subject': participants} if participants is not None else {}
+
     loader = pe.Node(
         LoadLevel1BIDSModel(bids_dir=bids_dir,
                             preproc_dir=preproc_dir,
-                            selectors={'subject': participants}),
+                            selectors=selectors),
         name='loader')
     if isinstance(all_models, list):
         loader.iterables = ('model', all_models)

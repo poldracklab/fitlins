@@ -156,7 +156,6 @@ class LoadLevel1BIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        selectors.update(analysis.model['input'])
         analysis.setup(**selectors)
         block = analysis.blocks[0]
 
