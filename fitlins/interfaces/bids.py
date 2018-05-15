@@ -146,7 +146,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         if not isdefined(exclude):
             exclude = None
 
-        if self.inputs.preproc_dir is not None:
+        if isdefined(self.inputs.preproc_dir):
             config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
         else:
             config = None
@@ -247,7 +247,7 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
-        if self.inputs.preproc_dir is not None:
+        if isdefined(self.inputs.preproc_dir):
             config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
         else:
             config = None

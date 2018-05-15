@@ -21,9 +21,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
 
     loader = pe.Node(
         LoadLevel1BIDSModel(bids_dir=bids_dir,
-                            preproc_dir=preproc_dir,
                             selectors=selectors),
         name='loader')
+
+    if preproc_dir is not None:
+        loader.inputs.preproc_dir = preproc_dir
     if isinstance(all_models, list):
         loader.iterables = ('model', all_models)
     else:
@@ -31,9 +33,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
 
     getter = pe.Node(
         BIDSSelect(bids_dir=bids_dir,
-                   preproc_dir=preproc_dir,
                    selectors={'type': 'preproc', 'space': space}),
         name='getter')
+
+    if preproc_dir is not None:
+        getter.inputs.preproc_dir=preproc_dir,
 
     flm = pe.MapNode(
         FirstLevelModel(),
