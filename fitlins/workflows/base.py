@@ -42,7 +42,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='getter')
 
     if preproc_dir is not None:
-        getter.inputs.preproc_dir=preproc_dir,
+        getter.inputs.preproc_dir = preproc_dir
 
     flm = pe.MapNode(
         FirstLevelModel(),
