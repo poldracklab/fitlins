@@ -4,8 +4,8 @@ from ..interfaces.bids import (
 from ..interfaces.nistats import FirstLevelModel
 
 
-def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
-                    model=None, participants=None,
+def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
+                    include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -26,6 +26,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
 
     if preproc_dir is not None:
         loader.inputs.preproc_dir = preproc_dir
+    if exclude_pattern is not None:
+        loader.inputs.exclude_pattern = exclude_pattern
+    if include_pattern is not None:
+        loader.inputs.include_pattern = include_pattern
+
     if isinstance(all_models, list):
         loader.iterables = ('model', all_models)
     else:

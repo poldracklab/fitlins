@@ -140,14 +140,15 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
     def _run_interface(self, runtime):
         include = self.inputs.include_pattern
-        exclude = self.inputs.include_pattern
+        exclude = self.inputs.exclude_pattern
         if not isdefined(include):
             include = None
         if not isdefined(exclude):
             exclude = None
 
         if isdefined(self.inputs.preproc_dir):
-            config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
+            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
+                      ('derivatives', self.inputs.preproc_dir)]
         else:
             config = None
         layout = gb.BIDSLayout(self.inputs.bids_dir, config=config,
@@ -248,10 +249,12 @@ class BIDSSelect(SimpleInterface):
 
     def _run_interface(self, runtime):
         if isdefined(self.inputs.preproc_dir):
-            config = [('bids', self.inputs.bids_dir), ('derivatives', self.inputs.preproc_dir)]
+            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
+                      ('derivatives', self.inputs.preproc_dir)]
         else:
             config = None
         layout = gb.BIDSLayout(self.inputs.bids_dir, config=config)
+
         bold_files = []
         mask_files = []
         entities = []
@@ -276,10 +279,9 @@ class BIDSSelect(SimpleInterface):
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_file_entities(
-                bold_file[0].filename, domains=['bids', 'derivatives'])
+                bold_file[0].filename)
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
-
             bold_ents.pop('type')
 
             bold_files.append(bold_file[0].filename)
