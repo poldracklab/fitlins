@@ -8,7 +8,6 @@ from functools import reduce
 from scipy import stats as sps
 import pandas as pd
 from nilearn import plotting as nlp
-import nistats.reporting  # noqa: F401
 from nistats import second_level_model as level2
 
 import pkg_resources as pkgr
@@ -66,9 +65,13 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 
 
 def init(model_fname, bids_dir, preproc_dir):
-    layout = grabbids.BIDSLayout(
-        bids_dir,
-        config=[('bids', [bids_dir, preproc_dir]), ('derivatives', preproc_dir)])
+    if preproc_dir is not None:
+        config = [('bids', [bids_dir, preproc_dir]),
+                  ('derivatives', preproc_dir)]
+    else:
+        config = None
+
+    layout = grabbids.BIDSLayout(bids_dir, config=config)
 
     analysis = ba.Analysis(model=model_fname, layout=layout)
     analysis.setup()
@@ -82,11 +85,10 @@ def second_level(analysis, block, space, deriv_dir):
         config=['bids', 'derivatives',
                 pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
-
     analyses = []
-
     # pybids likes to give us a lot of extraneous columns
     fmri_glm = level2.SecondLevelModel()
+
     for contrasts, idx, ents in block.get_contrasts():
         if contrasts.empty:
             continue
