@@ -42,6 +42,8 @@
                     "explode"
                 ],
                 "variables": [
+                    "accept",
+                    "explode",
                     "FramewiseDisplacement",
                     "X",
                     "Y",
