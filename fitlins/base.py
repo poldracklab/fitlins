@@ -80,6 +80,7 @@ def init(model_fname, bids_dir, preproc_dir):
 
 
 def second_level(analysis, block, space, deriv_dir):
+    print(deriv_dir)
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
         config=['bids', 'derivatives',
@@ -95,15 +96,18 @@ def second_level(analysis, block, space, deriv_dir):
 
         data = []
         for in_name, sub_ents in zip(contrasts.index, idx.to_dict(orient='record')):
+            print(in_name)
             # The underlying contrast name might have been added to by a transform
             for option in [in_name] + in_name.split('.'):
+                print(snake_to_camel(option))
                 files = fl_layout.get(contrast=snake_to_camel(option),
                                       type='stat', space=space, **sub_ents)
                 if files:
+                    print(files[0].filename )
                     data.append(files[0].filename)
                     break
-            else:
-                raise ValueError("Unknown input: {}".format(in_name))
+            # else: ### Comment out to skip errors with periods
+            #     raise ValueError("Unknown input: {}".format(in_name))
 
         out_ents = reduce(dict_intersection,
                           map(fl_layout.parse_file_entities, data))

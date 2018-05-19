@@ -202,13 +202,11 @@ class LoadLevel1BIDSModel(SimpleInterface):
             info['confounds'] = confounds_file
             info['repetition_time'] = TR
 
-            # Transpose so each contrast gets a row of data instead of column
-            contrasts = block.get_contrasts([contrast['name']
-                                             for contrast in block.contrasts],
+            # Make contrast for each HRF_variable
+            contrasts = block.get_contrasts([con for con in block.model['HRF_variables']],
                                             **ents)[0][0].T
             # Add test indicator column
-            contrasts['type'] = [contrast['type']
-                                 for contrast in block.contrasts]
+            contrasts['type'] = ['T' for contrast in contrasts]
 
             contrasts_file = os.path.join(runtime.cwd,
                                           '{}_contrasts.h5'.format(ent_string))

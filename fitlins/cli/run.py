@@ -149,7 +149,7 @@ def create_workflow(opts):
         )
 
     try:
-        fitlins_wf.run(plugin='MultiProc')
+        # fitlins_wf.run(plugin='MultiProc')
         if model != 'default':
             retcode = run_model(model, opts.space, level, bids_dir, opts.preproc_dir,
                                 deriv_dir)
