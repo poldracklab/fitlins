@@ -4,12 +4,12 @@ from ..interfaces.bids import (
 from ..interfaces.nistats import FirstLevelModel
 
 
-def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
-                    model=None, participants='.*',
+def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
+                    include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
-    specs = ModelSpecLoader(bids_dirs=bids_dir)
+    specs = ModelSpecLoader(bids_dir=bids_dir)
     if model is not None:
         specs.inputs.model = model
 
@@ -17,19 +17,32 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space,
     if not all_models:
         raise RuntimeError("Unable to find or construct models")
 
+    selectors = {'subject': participants} if participants is not None else {}
+
     loader = pe.Node(
-        LoadLevel1BIDSModel(bids_dirs=[bids_dir, preproc_dir],
-                            selectors={'subject': participants}),
+        LoadLevel1BIDSModel(bids_dir=bids_dir,
+                            selectors=selectors),
         name='loader')
+
+    if preproc_dir is not None:
+        loader.inputs.preproc_dir = preproc_dir
+    if exclude_pattern is not None:
+        loader.inputs.exclude_pattern = exclude_pattern
+    if include_pattern is not None:
+        loader.inputs.include_pattern = include_pattern
+
     if isinstance(all_models, list):
         loader.iterables = ('model', all_models)
     else:
         loader.inputs.model = all_models
 
     getter = pe.Node(
-        BIDSSelect(bids_dirs=preproc_dir,
+        BIDSSelect(bids_dir=bids_dir,
                    selectors={'type': 'preproc', 'space': space}),
         name='getter')
+
+    if preproc_dir is not None:
+        getter.inputs.preproc_dir = preproc_dir
 
     flm = pe.MapNode(
         FirstLevelModel(),

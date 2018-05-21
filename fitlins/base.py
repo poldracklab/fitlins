@@ -8,7 +8,6 @@ from functools import reduce
 from scipy import stats as sps
 import pandas as pd
 from nilearn import plotting as nlp
-import nistats.reporting  # noqa: F401
 from nistats import second_level_model as level2
 
 import pkg_resources as pkgr
@@ -66,9 +65,16 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 
 
 def init(model_fname, bids_dir, preproc_dir):
-    analysis = ba.Analysis(model=model_fname,
-                           layout=grabbids.BIDSLayout([bids_dir, preproc_dir]))
-    analysis.setup(**analysis.model['input'])
+    if preproc_dir is not None:
+        config = [('bids', [bids_dir, preproc_dir]),
+                  ('derivatives', preproc_dir)]
+    else:
+        config = None
+
+    layout = grabbids.BIDSLayout(bids_dir, config=config)
+
+    analysis = ba.Analysis(model=model_fname, layout=layout)
+    analysis.setup()
     analysis.layout.path_patterns[:0] = PATH_PATTERNS
     return analysis
 
@@ -79,13 +85,11 @@ def second_level(analysis, block, space, deriv_dir):
         config=['bids', 'derivatives',
                 pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
-
     analyses = []
-
     # pybids likes to give us a lot of extraneous columns
-    cnames = [contrast['name'] for contrast in block.contrasts]
     fmri_glm = level2.SecondLevelModel()
-    for contrasts, idx, ents in block.get_contrasts(names=cnames):
+
+    for contrasts, idx, ents in block.get_contrasts():
         if contrasts.empty:
             continue
 
@@ -152,13 +156,14 @@ def second_level(analysis, block, space, deriv_dir):
             paradigm = pd.DataFrame(cols)
 
             fmri_glm.fit(data, design_matrix=paradigm)
-            stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast][0]
+            stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast] or ['T']
+            stat_type = stat_type[0]
             stat = fmri_glm.compute_contrast(
                 cname,
                 second_level_stat_type={'T': 't', 'F': 'F'}[stat_type],
                 )
-            data = stat.get_data()
-            masked_vals = data[data != 0]
+            stat_data = stat.get_data()
+            masked_vals = stat_data[stat_data != 0]
             if np.isnan(masked_vals).all():
                 raise ValueError("nistats was unable to perform this contrast")
             stat.to_filename(stat_fname)

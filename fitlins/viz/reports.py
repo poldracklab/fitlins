@@ -48,7 +48,7 @@ def parse_directory(deriv_dir, analysis):
             'contrasts_svg': contrast_svg.filename,
             }
         if ents.get('subject'):
-            job_desc['subject_id']: ents.get('subject')
+            job_desc['subject_id'] = ents.get('subject')
         if correlation_matrix:
             job_desc['correlation_matrix_svg'] = correlation_matrix[0].filename
         if design_matrix:

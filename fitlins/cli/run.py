@@ -10,6 +10,7 @@ import sys
 import os
 import os.path as op
 import time
+import json
 import logging
 import warnings
 from argparse import ArgumentParser
@@ -72,16 +73,20 @@ def get_parser():
     parser.add_argument('-v', '--version', action='version', version=verstr)
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
-    g_bids.add_argument('--participant-label', action='store', nargs='+', default=[],
+    g_bids.add_argument('--participant-label', action='store', nargs='+', default=None,
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
                         help='location of BIDS model description (default bids_dir/model.json)')
-    g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
-                        help='location of preprocessed data (default output_dir/fmriprep)')
+    g_bids.add_argument('-p', '--preproc-dir', action='store', default=None,
+                        help='location of preprocessed data (default bids_dir/fmriprep)')
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
                         help='registered space of input datasets')
+    g_bids.add_argument('--include', action='store', default=None,
+                        help='regex pattern to include files')
+    g_bids.add_argument('--exclude', action='store', default=None,
+                        help='regex pattern to exclude files')
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--debug', action='store_true', default=False,
@@ -109,11 +114,14 @@ def create_workflow(opts):
 
     # First check that bids_dir looks like a BIDS folder
     bids_dir = op.abspath(opts.bids_dir)
-    subject_list = bids.collect_participants(
-        bids_dir, participant_label=opts.participant_label)
+
+    if opts.participant_label is not None:
+        subject_list = bids.collect_participants(
+            bids_dir, participant_label=opts.participant_label)
+    else:
+        subject_list = opts.participant_label
 
     output_dir = op.abspath(opts.output_dir)
-    os.makedirs(output_dir, exist_ok=True)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -124,19 +132,26 @@ def create_workflow(opts):
     model = default_path(opts.model, bids_dir, 'model.json')
     if opts.model in (None, 'default') and not os.path.exists(model):
         model = 'default'
-    preproc_dir = default_path(opts.preproc_dir, output_dir, 'fmriprep')
     deriv_dir = op.join(output_dir, 'fitlins')
+    os.makedirs(deriv_dir, exist_ok=True)
+
+    desc = op.join(deriv_dir, 'dataset_description.json')
+    with open(desc, 'w') as fobj:
+        json.dump({'Name': 'FitLins output', 'BIDSVersion': '1.1.0'}, fobj)
 
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
-    fitlins_wf = init_fitlins_wf(bids_dir, preproc_dir, deriv_dir, opts.space, model,
-                                 subject_list, base_dir=opts.work_dir)
+    fitlins_wf = init_fitlins_wf(
+        bids_dir, opts.preproc_dir, deriv_dir, opts.space, model=model,
+        participants=subject_list, base_dir=opts.work_dir,
+        include_pattern=opts.include, exclude_pattern=opts.exclude
+        )
 
     try:
         fitlins_wf.run(plugin='MultiProc')
         if model != 'default':
-            retcode = run_model(model, opts.space, level, bids_dir, preproc_dir,
+            retcode = run_model(model, opts.space, level, bids_dir, opts.preproc_dir,
                                 deriv_dir)
         else:
             retcode = 0

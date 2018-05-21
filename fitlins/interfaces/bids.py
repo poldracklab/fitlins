@@ -71,9 +71,9 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directory')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -90,7 +90,7 @@ class ModelSpecLoader(SimpleInterface):
     def _run_interface(self, runtime):
         models = self.inputs.model
         if not isinstance(models, list):
-            layout = gb.BIDSLayout(self.inputs.bids_dirs)
+            layout = gb.BIDSLayout(self.inputs.bids_dir)
 
             if not isdefined(models):
                 models = layout.get(type='model')
@@ -113,9 +113,11 @@ class ModelSpecLoader(SimpleInterface):
 
 
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directory')
+    preproc_dir = Directory(exists=True,
+                            desc='Optional preprocessed files directory')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
@@ -138,18 +140,23 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
     def _run_interface(self, runtime):
         include = self.inputs.include_pattern
-        exclude = self.inputs.include_pattern
+        exclude = self.inputs.exclude_pattern
         if not isdefined(include):
             include = None
         if not isdefined(exclude):
             exclude = None
-        layout = gb.BIDSLayout(self.inputs.bids_dirs, include=include,
-                               exclude=exclude)
+
+        if isdefined(self.inputs.preproc_dir):
+            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
+                      ('derivatives', self.inputs.preproc_dir)]
+        else:
+            config = None
+        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config,
+                               include=include, exclude=exclude)
 
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        selectors.update(analysis.model['input'])
         analysis.setup(**selectors)
         block = analysis.blocks[0]
 
@@ -220,9 +227,11 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
-    bids_dirs = InputMultiPath(Directory(exists=True),
-                               mandatory=True,
-                               desc='BIDS dataset root directories')
+    bids_dir = Directory(exists=True,
+                         mandatory=True,
+                         desc='BIDS dataset root directories')
+    preproc_dir = Directory(exists=True,
+                            desc='Optional preprocessed files directory')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -239,7 +248,13 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
-        layout = gb.BIDSLayout(self.inputs.bids_dirs)
+        if isdefined(self.inputs.preproc_dir):
+            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
+                      ('derivatives', self.inputs.preproc_dir)]
+        else:
+            config = None
+        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config)
+
         bold_files = []
         mask_files = []
         entities = []
@@ -250,12 +265,12 @@ class BIDSSelect(SimpleInterface):
             if len(bold_file) == 0:
                 raise FileNotFoundError(
                     "Could not find BOLD file in {} with entities {}"
-                    "".format(self.inputs.bids_dirs, selectors))
+                    "".format(self.inputs.bids_dir, selectors))
             elif len(bold_file) > 1:
                 raise ValueError(
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(self.inputs.bids_dirs, selectors,
+                    "".format(self.inputs.bids_dir, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
                                       f.filename,
@@ -263,10 +278,10 @@ class BIDSSelect(SimpleInterface):
                                   for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
-            bold_ents = layout.parse_file_entities(bold_file[0].filename)
+            bold_ents = layout.parse_file_entities(
+                bold_file[0].filename)
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
-
             bold_ents.pop('type')
 
             bold_files.append(bold_file[0].filename)
@@ -329,6 +344,8 @@ class BIDSDataSinkOutputSpec(TraitedSpec):
 class BIDSDataSink(IOBase):
     input_spec = BIDSDataSinkInputSpec
     output_spec = BIDSDataSinkOutputSpec
+
+    _always_run=True
 
     def _list_outputs(self):
         base_dir = self.inputs.base_directory
