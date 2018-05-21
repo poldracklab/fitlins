@@ -9,6 +9,7 @@ def main():
     from os import path as op
     from inspect import getfile, currentframe
     from setuptools import setup, find_packages
+    import versioneer
 
     this_path = op.dirname(op.abspath(getfile(currentframe())))
 
@@ -26,6 +27,7 @@ def main():
     setup(
         name=ldict['__packagename__'],
         version=ldict['__version__'],
+        cmdclass=versioneer.get_cmdclass(),
         description=ldict['__description__'],
         long_description=ldict['__longdesc__'],
         author=ldict['__author__'],
