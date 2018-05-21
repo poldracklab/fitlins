@@ -135,9 +135,7 @@ def create_workflow(opts):
     deriv_dir = op.join(output_dir, 'fitlins')
     os.makedirs(deriv_dir, exist_ok=True)
 
-    desc = op.join(deriv_dir, 'dataset_description.json')
-    with open(desc, 'w') as fobj:
-        json.dump({'Name': 'FitLins output', 'BIDSVersion': '1.1.0'}, fobj)
+    bids.write_derivative_description(bids_dir, deriv_dir)
 
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level

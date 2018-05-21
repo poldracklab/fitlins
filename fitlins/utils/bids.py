@@ -113,6 +113,8 @@ def write_derivative_description(bids_dir, deriv_dir):
     from fitlins import __version__
 
     desc = {
+        'Name': 'Fitlins output',
+        'BIDSVersion': '1.1.0',
         'PipelineDescription': {
             'Name': 'FitLins',
             'Version': __version__,
