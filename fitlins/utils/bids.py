@@ -145,7 +145,6 @@ def write_derivative_description(bids_dir, deriv_dir):
     if 'License' in orig_desc:
         desc['License'] = orig_desc['License']
 
-    os.makedirs(deriv_dir, exist_ok=True)
     with open(os.path.join(deriv_dir, 'dataset_description.json'), 'w') as fobj:
         json.dump(desc, fobj)
 
