@@ -186,7 +186,7 @@ def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
 
 
 def main():
-    sys.exit(run_fitlins(sys.argv))
+    sys.exit(run_fitlins(sys.argv[1:]))
 
 
 if __name__ == '__main__':
