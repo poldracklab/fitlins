@@ -80,6 +80,8 @@ def get_parser():
                         help='location of BIDS model description (default bids_dir/model.json)')
     g_bids.add_argument('-p', '--preproc-dir', action='store', default=None,
                         help='location of preprocessed data (default bids_dir/fmriprep)')
+    g_bids.add_argument('--derivative-label', action='store', type=str,
+                        help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
                         help='registered space of input datasets')
@@ -132,7 +134,11 @@ def create_workflow(opts):
     model = default_path(opts.model, bids_dir, 'model.json')
     if opts.model in (None, 'default') and not os.path.exists(model):
         model = 'default'
-    deriv_dir = op.join(output_dir, 'fitlins')
+
+    pipeline_name = 'fitlins'
+    if opts.derivative_label:
+        pipeline_name += '_' + opts.derivative_label
+    deriv_dir = op.join(output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
 
     bids.write_derivative_description(bids_dir, deriv_dir)
