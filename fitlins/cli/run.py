@@ -10,7 +10,6 @@ import sys
 import os
 import os.path as op
 import time
-import json
 import logging
 import warnings
 from argparse import ArgumentParser
