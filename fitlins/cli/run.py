@@ -102,24 +102,16 @@ def get_parser():
     return parser
 
 
-def main(args=None):
-    """Entry point"""
+def run_fitlins(argv=None):
     warnings.showwarning = _warn_redirect
-    opts = get_parser().parse_args(args)
+    opts = get_parser().parse_args(argv)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
 
-    create_workflow(opts)
-
-
-def create_workflow(opts):
-    """Build workflow"""
-
+    subject_list = None
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
             opts.bids_dir, participant_label=opts.participant_label)
-    else:
-        subject_list = opts.participant_label
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -179,7 +171,7 @@ def create_workflow(opts):
         report_dicts = parse_directory(deriv_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
-    sys.exit(retcode)
+    return retcode
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
@@ -192,6 +184,10 @@ def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
             break
 
     return 0
+
+
+def main():
+    sys.exit(run_fitlins(sys.argv))
 
 
 if __name__ == '__main__':
