@@ -483,6 +483,18 @@ def get_versions():
 
     cfg = get_config()
     verbose = cfg.verbose
+    root_dir = os.path.dirname(__file__)
+    if os.path.isfile(os.path.join(root_dir, 'VERSION')):
+        with open(os.path.join(root_dir, 'VERSION')) as vfile:
+            version = vfile.readline().strip()
+
+        return {
+            "version": version,
+            "full-revisionid": None,
+            "dirty": False,
+            "error": None,
+            "date": None
+            }
 
     try:
         return git_versions_from_keywords(get_keywords(), cfg.tag_prefix,
