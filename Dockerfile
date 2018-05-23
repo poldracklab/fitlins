@@ -5,7 +5,7 @@
 # pull request on our GitHub repository:
 #     https://github.com/kaczmarj/neurodocker
 #
-# Timestamp: 2018-05-22 20:52:23
+# Timestamp: 2018-05-23 00:49:26
 
 FROM neurodebian@sha256:5fbbad8c68525b588a459092254094436aae9dc1f3920f8d871a03053b10377c
 
@@ -90,10 +90,10 @@ RUN conda install -y -q --name neuro numpy=1.14.1 \
 
 COPY [".", "/src/fitlins"]
 
+USER root
+
 # User-defined instruction
 RUN echo "$VERSION" > /src/fitlins/fitlins/VERSION
-
-USER root
 
 # User-defined instruction
 RUN mkdir /work && chown -R neuro /src /work
@@ -188,12 +188,12 @@ RUN echo '{ \
     \n      ] \
     \n    ], \
     \n    [ \
-    \n      "run", \
-    \n      "echo \"$VERSION\" > /src/fitlins/fitlins/VERSION" \
-    \n    ], \
-    \n    [ \
     \n      "user", \
     \n      "root" \
+    \n    ], \
+    \n    [ \
+    \n      "run", \
+    \n      "echo \"$VERSION\" > /src/fitlins/fitlins/VERSION" \
     \n    ], \
     \n    [ \
     \n      "run", \
@@ -241,6 +241,6 @@ RUN echo '{ \
     \n      } \
     \n    ] \
     \n  ], \
-    \n  "generation_timestamp": "2018-05-22 20:52:23", \
+    \n  "generation_timestamp": "2018-05-23 00:49:26", \
     \n  "neurodocker_version": "0.3.2" \
     \n}' > /neurodocker/neurodocker_specs.json
