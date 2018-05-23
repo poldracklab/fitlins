@@ -56,11 +56,13 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_estimate_maps')
     ds_contrast_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrast_maps')
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
@@ -70,11 +72,13 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_estimate_plots')
     ds_contrast_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrast_plots')
 
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
@@ -83,12 +87,14 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_design')
 
     ds_corr = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_corr')
 
     ds_contrasts = pe.MapNode(
@@ -96,6 +102,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
                      fixed_entities={'type': 'contrasts'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrasts')
 
     wf.connect([
