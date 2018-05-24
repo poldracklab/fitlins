@@ -80,7 +80,6 @@ def init(model_fname, bids_dir, preproc_dir):
 
 
 def second_level(analysis, block, space, deriv_dir):
-    print(deriv_dir)
     fl_layout = grabbids.BIDSLayout(
         deriv_dir,
         config=['bids', 'derivatives',

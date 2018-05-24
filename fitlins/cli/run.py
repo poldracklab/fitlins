@@ -148,15 +148,15 @@ def create_workflow(opts):
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
 
-    try:
-        fitlins_wf.run(plugin='MultiProc')
-        if model != 'default':
-            retcode = run_model(model, opts.space, level, bids_dir, opts.preproc_dir,
-                                deriv_dir)
-        else:
-            retcode = 0
-    except Exception:
-        retcode = 1
+    # try:
+    fitlins_wf.run(plugin='MultiProc')
+    if model != 'default':
+        retcode = run_model(model, opts.space, level, bids_dir, opts.preproc_dir,
+                            deriv_dir)
+    else:
+        retcode = 0
+    # except Exception:
+    #     retcode = 1
 
     layout = gb.BIDSLayout(bids_dir)
     models = ba.auto_model(layout) if model == 'default' else [model]
@@ -171,7 +171,7 @@ def create_workflow(opts):
         report_dicts = parse_directory(deriv_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
-    sys.exit(retcode)
+    # sys.exit(retcode)
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
