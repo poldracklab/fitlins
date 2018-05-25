@@ -50,7 +50,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='flm')
 
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
-        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_{type<stat>}.nii.gz',
     ds_estimate_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
@@ -66,7 +66,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='ds_contrast_maps')
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
-        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_ortho.png',
     ds_estimate_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
@@ -82,7 +82,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='ds_contrast_plots')
 
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
-        '[ses-{session}_]task-{task}_bold_{type<design|corr|contrasts>}.svg'
+        '[ses-{session}_]task-{task}_[run-{run}_]bold_' \
+        '{type<design|corr|contrasts>}.svg'
     ds_design = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
                      path_patterns=image_pattern),
