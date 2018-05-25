@@ -150,7 +150,7 @@ def run_fitlins(argv=None):
     try:
         fitlins_wf.run(plugin='MultiProc')
         if model != 'default':
-            retcode = run_model(model, opts.space, level, opts.bids_dir, opts.preproc_dir,
+            retcode = run_model(model, opts.space, level, opts.bids_dir, preproc_dir,
                                 deriv_dir)
         else:
             retcode = 0
