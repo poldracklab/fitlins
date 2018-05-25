@@ -10,7 +10,6 @@ import sys
 import os
 import os.path as op
 import time
-import json
 import logging
 import warnings
 from argparse import ArgumentParser
@@ -60,10 +59,10 @@ def get_parser():
     # Arguments as specified by BIDS-Apps
     # required, positional arguments
     # IMPORTANT: they must go directly with the parser object
-    parser.add_argument('bids_dir', action='store',
+    parser.add_argument('bids_dir', action='store', type=op.abspath,
                         help='the root folder of a BIDS valid dataset (sub-XXXXX folders should '
                              'be found at the top level in this folder).')
-    parser.add_argument('output_dir', action='store',
+    parser.add_argument('output_dir', action='store', type=op.abspath,
                         help='the output path for the outcomes of preprocessing and visual '
                              'reports')
     parser.add_argument('analysis_level', choices=['run', 'session', 'participant', 'dataset'],
@@ -78,8 +77,11 @@ def get_parser():
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
                         help='location of BIDS model description (default bids_dir/model.json)')
-    g_bids.add_argument('-p', '--preproc-dir', action='store', default=None,
-                        help='location of preprocessed data (default bids_dir/fmriprep)')
+    g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
+                        help='location of preprocessed data (if relative path, search '
+                             'bids_dir/derivatives, followed by output_dir)')
+    g_bids.add_argument('--derivative-label', action='store', type=str,
+                        help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
                         help='registered space of input datasets')
@@ -93,35 +95,22 @@ def get_parser():
                          help='run debug version of workflow')
 
     g_other = parser.add_argument_group('Other options')
-    g_other.add_argument('-w', '--work-dir', action='store',
+    g_other.add_argument('-w', '--work-dir', action='store', type=op.abspath,
                          help='path where intermediate results should be stored')
 
     return parser
 
 
-def main(args=None):
-    """Entry point"""
+def run_fitlins(argv=None):
     warnings.showwarning = _warn_redirect
-    opts = get_parser().parse_args(args)
+    opts = get_parser().parse_args(argv)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
 
-    create_workflow(opts)
-
-
-def create_workflow(opts):
-    """Build workflow"""
-
-    # First check that bids_dir looks like a BIDS folder
-    bids_dir = op.abspath(opts.bids_dir)
-
+    subject_list = None
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
-            bids_dir, participant_label=opts.participant_label)
-    else:
-        subject_list = opts.participant_label
-
-    output_dir = op.abspath(opts.output_dir)
+            opts.bids_dir, participant_label=opts.participant_label)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -129,25 +118,36 @@ def create_workflow(opts):
         subject_list=subject_list)
     )
 
-    model = default_path(opts.model, bids_dir, 'model.json')
-    if opts.model in (None, 'default') and not os.path.exists(model):
+    model = default_path(opts.model, opts.bids_dir, 'model.json')
+    if opts.model in (None, 'default') and not op.exists(model):
         model = 'default'
-    deriv_dir = op.join(output_dir, 'fitlins')
+
+    preproc_dir = default_path(opts.preproc_dir,
+                               op.join(opts.bids_dir, 'derivatives'),
+                               'fmriprep')
+    if not op.exists(preproc_dir):
+        preproc_dir = default_path(opts.preproc_dir, opts.output_dir, 'fmriprep')
+        if not op.exists(preproc_dir):
+            raise RuntimeError("Preprocessed data could not be found")
+
+    pipeline_name = 'fitlins'
+    if opts.derivative_label:
+        pipeline_name += '_' + opts.derivative_label
+    deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
 
-    desc = op.join(deriv_dir, 'dataset_description.json')
-    with open(desc, 'w') as fobj:
-        json.dump({'Name': 'FitLins output', 'BIDSVersion': '1.1.0'}, fobj)
+    bids.write_derivative_description(opts.bids_dir, deriv_dir)
 
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
     fitlins_wf = init_fitlins_wf(
-        bids_dir, opts.preproc_dir, deriv_dir, opts.space, model=model,
+        opts.bids_dir, preproc_dir, deriv_dir, opts.space, model=model,
         participants=subject_list, base_dir=opts.work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
 
+<<<<<<< HEAD
     # try:
     fitlins_wf.run(plugin='MultiProc')
     if model != 'default':
@@ -157,8 +157,19 @@ def create_workflow(opts):
         retcode = 0
     # except Exception:
     #     retcode = 1
+=======
+    try:
+        fitlins_wf.run(plugin='MultiProc')
+        if model != 'default':
+            retcode = run_model(model, opts.space, level, opts.bids_dir, opts.preproc_dir,
+                                deriv_dir)
+        else:
+            retcode = 0
+    except Exception:
+        retcode = 1
+>>>>>>> fix/run_derivatives
 
-    layout = gb.BIDSLayout(bids_dir)
+    layout = gb.BIDSLayout(opts.bids_dir)
     models = ba.auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
@@ -171,7 +182,11 @@ def create_workflow(opts):
         report_dicts = parse_directory(deriv_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
+<<<<<<< HEAD
     # sys.exit(retcode)
+=======
+    return retcode
+>>>>>>> fix/run_derivatives
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
@@ -184,6 +199,10 @@ def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
             break
 
     return 0
+
+
+def main():
+    sys.exit(run_fitlins(sys.argv[1:]))
 
 
 if __name__ == '__main__':

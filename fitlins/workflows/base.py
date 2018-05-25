@@ -50,45 +50,52 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='flm')
 
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
-        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_{type<stat>}.nii.gz',
     ds_estimate_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_estimate_maps')
     ds_contrast_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrast_maps')
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
-        '[ses-{session}_]task-{task}_bold[_space-{space}]_' \
+        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_ortho.png',
     ds_estimate_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_estimate_plots')
     ds_contrast_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
         iterfield=['fixed_entities', 'entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrast_plots')
 
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
-        '[ses-{session}_]task-{task}_bold_{type<design|corr|contrasts>}.svg'
+        '[ses-{session}_]task-{task}_[run-{run}_]bold_' \
+        '{type<design|corr|contrasts>}.svg'
     ds_design = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_design')
 
     ds_corr = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_corr')
 
     ds_contrasts = pe.MapNode(
@@ -96,6 +103,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
                      fixed_entities={'type': 'contrasts'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
         name='ds_contrasts')
 
     wf.connect([
