@@ -80,15 +80,12 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    estimate_maps = OutputMultiObject(File)
     contrast_maps = OutputMultiObject(File)
-    estimate_metadata = OutputMultiObject(traits.Dict)
     contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
     design_matrix_plot = File()
     correlation_matrix_plot = File()
     contrast_matrix_plot = File()
-    estimate_map_plots = OutputMultiObject(File)
     contrast_map_plots = OutputMultiObject(File)
 
 
@@ -127,6 +124,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             drift_model=None if 'Cosine00' in confounds.columns else 'cosine',
             )
 
+        # Assume that explanatory variables == HRF-convolved variables
         exp_vars = events['condition'].unique().tolist()
 
         contrast_matrix, contrast_types = build_contrast_matrix(contrast_spec,
@@ -154,11 +152,8 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         flm = level1.FirstLevelModel(mask=mask_file)
         flm.fit(img, design_matrices=mat)
 
-        estimate_maps = []
         contrast_maps = []
-        estimate_metadata = []
         contrast_metadata = []
-        estimate_map_plots = []
         contrast_map_plots = []
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
         plot_fmt = os.path.join(runtime.cwd, '{}.png').format
@@ -173,21 +168,12 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
                                  display_mode='lyrz', axes=None,
                                  output_file=plot_fname)
 
-            if contrast in exp_vars:
-                estimate_maps.append(stat_fname)
-                estimate_map_plots.append(plot_fname)
-                estimate_metadata.append({'contrast': contrast,
-                                          'type': 'stat'})
-            else:
-                contrast_maps.append(stat_fname)
-                contrast_map_plots.append(plot_fname)
-                contrast_metadata.append({'contrast': contrast,
-                                          'type': 'stat'})
-        self._results['estimate_maps'] = estimate_maps
+            contrast_maps.append(stat_fname)
+            contrast_map_plots.append(plot_fname)
+            contrast_metadata.append({'contrast': contrast,
+                                      'type': 'stat'})
         self._results['contrast_maps'] = contrast_maps
-        self._results['estimate_metadata'] = estimate_metadata
         self._results['contrast_metadata'] = contrast_metadata
-        self._results['estimate_map_plots'] = estimate_map_plots
         self._results['contrast_map_plots'] = contrast_map_plots
 
         return runtime
