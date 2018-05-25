@@ -360,7 +360,7 @@ class BIDSDataSink(IOBase):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
 
-            ents = {k: snake_to_camel(v) for k, v in ents.items()}
+            ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(ents))
