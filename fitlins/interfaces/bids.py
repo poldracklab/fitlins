@@ -4,6 +4,8 @@ import json
 import shutil
 import nibabel as nb
 
+from collections import defaultdict
+
 from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
@@ -131,6 +133,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
     contrast_info = traits.List(traits.List(File()))
+    contrast_indices = traits.List(traits.List(traits.List(traits.Dict)))
     entities = traits.List(traits.List(traits.Dict()))
 
 
@@ -171,6 +174,7 @@ class LoadBIDSModel(SimpleInterface):
 
         entities = []
         session_info = []
+        contrast_indices = []
         contrast_info = []
         for paradigm, _, ents in block.get_design_matrix(
                 block.model['HRF_variables'], mode='sparse'):
@@ -212,9 +216,11 @@ class LoadBIDSModel(SimpleInterface):
             info['repetition_time'] = TR
 
             # Transpose so each contrast gets a row of data instead of column
-            contrasts = block.get_contrasts([contrast['name']
-                                             for contrast in block.contrasts],
-                                            **ents)[0][0].T
+            contrasts, index, _ = block.get_contrasts(
+                [contrast['name'] for contrast in block.contrasts],
+                **ents)[0]
+
+            contrasts = contrasts.T
             # Add test indicator column
             contrasts['type'] = [contrast['type']
                                  for contrast in block.contrasts]
@@ -225,32 +231,43 @@ class LoadBIDSModel(SimpleInterface):
 
             entities.append(ents)
             session_info.append(info)
+            contrast_indices.append(index.to_dict('records'))
             contrast_info.append(contrasts_file)
 
         self._results['session_info'] = session_info
         self._results.setdefault('entities', []).append(entities)
+        self._results.setdefault('contrast_indices', []).append(contrast_indices)
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
         for block in analysis.blocks[1:]:
-            cnames = [contrast['name'] for contrast in block.contrasts]
-
             entities = []
+            contrast_indices = []
             contrast_info = []
-            for contrasts, idx, ents in block.get_contrasts(names=cnames):
+            for contrasts, index, ents in block.get_contrasts():
                 if contrasts.empty:
                     continue
+
+                # The contrast index is the name of the input contrasts,
+                # which will very frequently be non-unique
+                # Hence, add the contrast to the index (table of entities)
+                # and switch to a matching numeric index
+                index['contrast'] = contrasts.index
+                contrasts.index = index.index
+
+                contrast_type_map = defaultdict(lambda: 'T')
+                contrast_type_map.update({contrast['name']: contrast['type']
+                                          for contrast in block.contrasts})
+                contrast_type_list = [contrast_type_map[contrast]
+                                      for contrast in contrasts.columns]
 
                 ent_string = '_'.join('{}-{}'.format(key, val)
                                       for key, val in ents.items())
 
                 # Transpose so each contrast gets a row of data instead of column
                 contrasts = contrasts.T
-                # Inputs will typically repeat, so remove names
-                contrasts.columns = range(len(contrasts.columns))
                 # Add test indicator column
-                contrasts['type'] = [contrast['type']
-                                     for contrast in block.contrasts]
+                contrasts['type'] = contrast_type_list
 
                 contrasts_file = os.path.join(runtime.cwd, block.level,
                                               '{}_contrasts.h5'.format(ent_string))
@@ -258,10 +275,12 @@ class LoadBIDSModel(SimpleInterface):
                 contrasts.to_hdf(contrasts_file, key='contrasts')
 
                 entities.append(ents)
+                contrast_indices.append(index.to_dict('records'))
                 contrast_info.append(contrasts_file)
 
             self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
+            self._results['contrast_indices'].append(contrast_indices)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
