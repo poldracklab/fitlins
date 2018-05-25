@@ -147,17 +147,6 @@ def run_fitlins(argv=None):
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
 
-<<<<<<< HEAD
-    # try:
-    fitlins_wf.run(plugin='MultiProc')
-    if model != 'default':
-        retcode = run_model(model, opts.space, level, bids_dir, opts.preproc_dir,
-                            deriv_dir)
-    else:
-        retcode = 0
-    # except Exception:
-    #     retcode = 1
-=======
     try:
         fitlins_wf.run(plugin='MultiProc')
         if model != 'default':
@@ -167,7 +156,6 @@ def run_fitlins(argv=None):
             retcode = 0
     except Exception:
         retcode = 1
->>>>>>> fix/run_derivatives
 
     layout = gb.BIDSLayout(opts.bids_dir)
     models = ba.auto_model(layout) if model == 'default' else [model]
@@ -182,11 +170,7 @@ def run_fitlins(argv=None):
         report_dicts = parse_directory(deriv_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
-<<<<<<< HEAD
-    # sys.exit(retcode)
-=======
     return retcode
->>>>>>> fix/run_derivatives
 
 
 def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
