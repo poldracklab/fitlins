@@ -21,7 +21,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     selectors = {'subject': participants} if participants is not None else {}
 
     loader = pe.Node(
-        LoadBIDSModel(bids_dirs=bids_dir,
+        LoadBIDSModel(bids_dir=bids_dir,
                       preproc_dir=preproc_dir,
                       selectors=selectors),
         name='loader')
