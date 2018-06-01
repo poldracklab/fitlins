@@ -157,7 +157,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, **selectors)
+        analysis.setup(drop_na=False, derivatives='only', **selectors)
         block = analysis.blocks[0]
 
         entities = []
@@ -204,11 +204,12 @@ class LoadLevel1BIDSModel(SimpleInterface):
             info['confounds'] = confounds_file
             info['repetition_time'] = TR
 
-            # Make contrast for each HRF_variable
-            contrasts = block.get_contrasts([con for con in block.model['HRF_variables']],
+            contrasts = block.get_contrasts([contrast['name']
+                                             for contrast in block.contrasts],
                                             **ents)[0][0].T
             # Add test indicator column
-            contrasts['type'] = ['T' for contrast in contrasts]
+            contrasts['type'] = [contrast['type']
+                                 for contrast in block.contrasts]
 
             contrasts_file = os.path.join(runtime.cwd,
                                           '{}_contrasts.h5'.format(ent_string))
