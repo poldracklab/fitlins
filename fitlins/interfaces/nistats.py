@@ -6,7 +6,7 @@ from nilearn import plotting as nlp
 import nistats as nis
 import nistats.reporting  # noqa: F401
 from nistats import design_matrix as dm
-from nistats import first_level_model as level1, second_level_model as level2
+from nistats import first_level_model as level1
 
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
@@ -160,26 +160,26 @@ class FirstLevelModel(SimpleInterface):
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
         plot_fmt = os.path.join(runtime.cwd, '{}.png').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
-            stat = flm.compute_contrast(contrast_matrix[contrast].values,
-                                        {'T': 't', 'F': 'F'}[ctype])
-            stat_fname = stat_fmt(contrast)
-            stat.to_filename(stat_fname)
-
+            es = flm.compute_contrast(contrast_matrix[contrast].values,
+                                        {'T': 't', 'F': 'F'}[ctype],
+                                        output_type='effect_size')
+            es_fname = stat_fmt(contrast)
+            es.to_filename(es_fname)
             plot_fname = plot_fmt(contrast)
-            nlp.plot_glass_brain(stat, colorbar=True, plot_abs=False,
+            nlp.plot_glass_brain(es, colorbar=True, plot_abs=False,
                                  display_mode='lyrz', axes=None,
                                  output_file=plot_fname)
 
             if contrast in exp_vars:
-                estimate_maps.append(stat_fname)
+                estimate_maps.append(es_fname)
                 estimate_map_plots.append(plot_fname)
                 estimate_metadata.append({'contrast': contrast,
-                                          'type': 'stat'})
+                                          'type': 'effect'})
             else:
-                contrast_maps.append(stat_fname)
+                contrast_maps.append(es_fname)
                 contrast_map_plots.append(plot_fname)
                 contrast_metadata.append({'contrast': contrast,
-                                          'type': 'stat'})
+                                          'type': 'effect'})
         self._results['estimate_maps'] = estimate_maps
         self._results['contrast_maps'] = contrast_maps
         self._results['estimate_metadata'] = estimate_metadata
