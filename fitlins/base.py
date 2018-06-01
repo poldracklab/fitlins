@@ -102,8 +102,8 @@ def second_level(analysis, block, space, deriv_dir):
                 if files:
                     data.append(files[0].filename)
                     break
-            # else: ### Comment out to skip errors with periods
-            #     raise ValueError("Unknown input: {}".format(in_name))
+            else:
+                raise ValueError("Unknown input: {}".format(in_name))
 
         out_ents = reduce(dict_intersection,
                           map(fl_layout.parse_file_entities, data))
