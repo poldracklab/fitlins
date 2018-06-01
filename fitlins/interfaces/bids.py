@@ -157,14 +157,14 @@ class LoadLevel1BIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(**selectors)
+        analysis.setup(drop_na=False, **selectors)
         block = analysis.blocks[0]
 
         entities = []
         session_info = []
         contrast_info = []
         for paradigm, _, ents in block.get_design_matrix(
-                block.model['HRF_variables'], mode='sparse'):
+                block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
             bold_files = layout.get(type='bold',
@@ -177,8 +177,10 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
             # Required field in seconds
             TR = layout.get_metadata(fname)['RepetitionTime']
+            dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
-            _, confounds, _ = block.get_design_matrix(mode='dense',
+            _, confounds, _ = block.get_design_matrix(dense_vars,
+                                                      mode='dense',
                                                       sampling_rate=1/TR,
                                                       **ents)[0]
 
