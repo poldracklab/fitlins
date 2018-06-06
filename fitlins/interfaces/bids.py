@@ -157,7 +157,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, derivatives='only', **selectors)
+        analysis.setup(drop_na=False, **selectors)
         block = analysis.blocks[0]
 
         entities = []
