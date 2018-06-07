@@ -91,6 +91,8 @@ def get_parser():
                         help='regex pattern to exclude files')
 
     g_perfm = parser.add_argument_group('Options to handle performance')
+    g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
+                         help='maximum number of threads across all processes')
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
 
@@ -111,6 +113,19 @@ def run_fitlins(argv=None):
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
             opts.bids_dir, participant_label=opts.participant_label)
+
+    ncpus = opts.n_cpus
+    if ncpus < 1:
+        ncpus = cpu_count()
+
+    plugin_settings = {
+        'plugin': 'MultiProc',
+        'plugin_args': {
+            'n_procs': ncpus,
+            'raise_insufficient': False,
+            'maxtasksperchild': 1,
+        }
+    }
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -148,7 +163,7 @@ def run_fitlins(argv=None):
         )
 
     try:
-        fitlins_wf.run(plugin='MultiProc')
+        fitlins_wf.run(**plugin_settings)
         if model != 'default':
             retcode = run_model(model, opts.space, level, opts.bids_dir, preproc_dir,
                                 deriv_dir)
