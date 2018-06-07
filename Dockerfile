@@ -36,9 +36,6 @@ LABEL maintainer="Christopher J. Markiewicz"
 
 ARG PYTHON_VERSION_MAJOR="3"
 ARG PYTHON_VERSION_MINOR="6"
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
 
 ENV MKL_NUM_THREADS="1" \
     OMP_NUM_THREADS="1"
@@ -92,6 +89,8 @@ COPY [".", "/src/fitlins"]
 
 USER root
 
+ARG VERSION
+
 # User-defined instruction
 RUN echo "$VERSION" > /src/fitlins/fitlins/VERSION
 
@@ -117,6 +116,9 @@ RUN /bin/bash -c "source activate neuro \
 WORKDIR /work
 
 ENTRYPOINT ["/neurodocker/startup.sh", "fitlins"]
+
+ARG BUILD_DATE
+ARG VCS_REF
 
 LABEL org.label-schema.build-date="$BUILD_DATE" \
       org.label-schema.name="FitLins" \
