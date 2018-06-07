@@ -29,6 +29,10 @@ jobs:
           name: Verify executable can be run
           command: docker run --rm -it poldracklab/fitlins:latest --help
       - run:
+          name: Check version
+          command: |
+              docker run --rm -it poldracklab/fitlins:latest --version
+      - run:
           name: Docker save
           no_output_timeout: 40m
           command: |
