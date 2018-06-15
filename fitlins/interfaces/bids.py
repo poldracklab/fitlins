@@ -167,16 +167,18 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
-            bold_files = layout.get(type='bold',
+            space = layout.get_spaces(type='preproc')[0]
+            preproc_files = layout.get(type='preproc',
                                     extensions=['.nii', '.nii.gz'],
+                                    space=space,
                                     **ents)
-            if len(bold_files) != 1:
+            if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
-            fname = bold_files[0].filename
+            fname = preproc_files[0].filename
 
             # Required field in seconds
-            TR = layout.get_metadata(fname)['RepetitionTime']
+            TR = layout.get_metadata(fname, type='bold')['RepetitionTime']
             dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
             _, confounds, _ = block.get_design_matrix(dense_vars,
