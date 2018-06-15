@@ -167,11 +167,12 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
-            space = layout.get_spaces(type='preproc')[0]
+            space = layout.get_spaces(type='preproc',
+                                      extensions=['.nii', '.nii.gz'])[0]
             preproc_files = layout.get(type='preproc',
-                                    extensions=['.nii', '.nii.gz'],
-                                    space=space,
-                                    **ents)
+                                       extensions=['.nii', '.nii.gz'],
+                                       space=space,
+                                       **ents)
             if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
