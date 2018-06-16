@@ -14,6 +14,7 @@ import logging
 import warnings
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
+from multiprocessing import cpu_count
 
 from bids import grabbids as gb, analysis as ba
 
