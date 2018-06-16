@@ -136,8 +136,12 @@ def write_derivative_description(bids_dir, deriv_dir):
             pass
 
     # Keys deriving from source dataset
-    with open(os.path.join(bids_dir, 'dataset_description.json')) as fobj:
-        orig_desc = json.load(fobj)
+    fname = os.path.join(bids_dir, 'dataset_description.json')
+    if os.path.exists(fname):
+        with open(fname) as fobj:
+            orig_desc = json.load(fobj)
+    else:
+        orig_desc = {}
 
     if 'DatasetDOI' in orig_desc:
         desc['SourceDatasetsURLs'] = ['https://doi.org/{}'.format(
