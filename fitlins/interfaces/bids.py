@@ -160,7 +160,7 @@ class LoadBIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = ba.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(**selectors)
+        analysis.setup(drop_na=False, **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
@@ -177,21 +177,26 @@ class LoadBIDSModel(SimpleInterface):
         contrast_indices = []
         contrast_info = []
         for paradigm, _, ents in block.get_design_matrix(
-                block.model['HRF_variables'], mode='sparse'):
+                block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
-            bold_files = analysis.layout.get(type='bold',
-                                             extensions=['.nii', '.nii.gz'],
-                                             **ents)
-            if len(bold_files) != 1:
+            space = analysis.layout.get_spaces(type='preproc',
+                                               extensions=['.nii', '.nii.gz'])[0]
+            preproc_files = analysis.layout.get(type='preproc',
+                                                extensions=['.nii', '.nii.gz'],
+                                                space=space,
+                                                **ents)
+            if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
-            fname = bold_files[0].filename
+            fname = preproc_files[0].filename
 
             # Required field in seconds
-            TR = analysis.layout.get_metadata(fname)['RepetitionTime']
+            TR = analysis.layout.get_metadata(fname, type='bold')['RepetitionTime']
+            dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
-            _, confounds, _ = block.get_design_matrix(mode='dense',
+            _, confounds, _ = block.get_design_matrix(dense_vars,
+                                                      mode='dense',
                                                       sampling_rate=1/TR,
                                                       **ents)[0]
 

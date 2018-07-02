@@ -86,7 +86,7 @@ def second_level(analysis, block, space, deriv_dir):
                 pkgr.resource_filename('fitlins', 'data/fitlins.json')])
     fl_layout.path_patterns[:0] = PATH_PATTERNS
     analyses = []
-    # pybids likes to give us a lot of extraneous columns
+
     fmri_glm = level2.SecondLevelModel()
 
     for contrasts, idx, ents in block.get_contrasts():
@@ -98,7 +98,7 @@ def second_level(analysis, block, space, deriv_dir):
             # The underlying contrast name might have been added to by a transform
             for option in [in_name] + in_name.split('.'):
                 files = fl_layout.get(contrast=snake_to_camel(option),
-                                      type='stat', space=space, **sub_ents)
+                                      type='effect', space=space, **sub_ents)
                 if files:
                     data.append(files[0].filename)
                     break
@@ -107,6 +107,7 @@ def second_level(analysis, block, space, deriv_dir):
 
         out_ents = reduce(dict_intersection,
                           map(fl_layout.parse_file_entities, data))
+        out_ents['type'] = 'stat'
 
         contrasts_ents = out_ents.copy()
         contrasts_ents['type'] = 'contrasts'
@@ -147,21 +148,18 @@ def second_level(analysis, block, space, deriv_dir):
             if op.exists(stat_fname):
                 continue
 
-            cols = {'intercept': np.ones(len(data))}
-            cname = 'intercept'
-            if not np.allclose(contrasts[contrast], 1):
-                cname = contrast
-                cols[contrast] = contrasts[contrast]
+            # Each contrast is computed as the intercept (omitting 0s)
+            intercept = contrasts[contrast]
+            i_data = list(np.array(data)[intercept != 0.0])
+            intercept = intercept[intercept != 0.0]
 
-            paradigm = pd.DataFrame(cols)
-
-            fmri_glm.fit(data, design_matrix=paradigm)
+            fmri_glm.fit(i_data,
+                         design_matrix=pd.DataFrame({'intercept': intercept}))
             stat_type = [c['type'] for c in block.contrasts if c['name'] == contrast] or ['T']
-            stat_type = stat_type[0]
-            stat = fmri_glm.compute_contrast(
-                cname,
-                second_level_stat_type={'T': 't', 'F': 'F'}[stat_type],
-                )
+            stat_type = {'T': 't', 'F': 'F'}[stat_type[0]]
+
+            stat = fmri_glm.compute_contrast(second_level_stat_type=stat_type)
+
             stat_data = stat.get_data()
             masked_vals = stat_data[stat_data != 0]
             if np.isnan(masked_vals).all():
