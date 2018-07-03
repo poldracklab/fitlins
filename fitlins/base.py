@@ -65,13 +65,10 @@ def expand_contrast_matrix(contrast_matrix, design_matrix):
 
 
 def init(model_fname, bids_dir, preproc_dir):
+    paths = [(bids_dir, 'bids')]
     if preproc_dir is not None:
-        config = [('bids', [bids_dir, preproc_dir]),
-                  ('derivatives', preproc_dir)]
-    else:
-        config = None
-
-    layout = grabbids.BIDSLayout(bids_dir, config=config)
+        paths.append((preproc_dir, ['bids', 'derivatives']))
+    layout = grabbids.BIDSLayout(paths)
 
     analysis = ba.Analysis(model=model_fname, layout=layout)
     analysis.setup()
@@ -81,9 +78,8 @@ def init(model_fname, bids_dir, preproc_dir):
 
 def second_level(analysis, block, space, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
-        deriv_dir,
-        config=['bids', 'derivatives',
-                pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+        (deriv_dir, ['bids', 'derivatives',
+                     pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
     fl_layout.path_patterns[:0] = PATH_PATTERNS
     analyses = []
 

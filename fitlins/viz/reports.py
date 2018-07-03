@@ -28,9 +28,8 @@ def deroot(val, root):
 
 def parse_directory(deriv_dir, analysis):
     fl_layout = grabbids.BIDSLayout(
-        deriv_dir,
-        config=['bids', 'derivatives',
-                pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+        (deriv_dir, ['bids', 'derivatives',
+                     pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
     contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
 
     analyses = []
@@ -68,9 +67,8 @@ def parse_directory(deriv_dir, analysis):
 
 def write_report(level, report_dicts, run_context, deriv_dir):
     fl_layout = grabbids.BIDSLayout(
-        deriv_dir,
-        config=['bids', 'derivatives',
-                pkgr.resource_filename('fitlins', 'data/fitlins.json')])
+        (deriv_dir, ['bids', 'derivatives',
+                     pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
     fl_layout.path_patterns = PATH_PATTERNS
 
     env = jinja2.Environment(
