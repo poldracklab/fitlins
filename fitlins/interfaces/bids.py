@@ -146,13 +146,10 @@ class LoadLevel1BIDSModel(SimpleInterface):
         if not isdefined(exclude):
             exclude = None
 
+        paths = [(self.inputs.bids_dir, 'bids')]
         if isdefined(self.inputs.preproc_dir):
-            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
-                      ('derivatives', self.inputs.preproc_dir)]
-        else:
-            config = None
-        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config,
-                               include=include, exclude=exclude)
+            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
+        layout = gb.BIDSLayout(paths, include=include, exclude=exclude)
 
         selectors = self.inputs.selectors
 
@@ -179,7 +176,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
             fname = preproc_files[0].filename
 
             # Required field in seconds
-            TR = layout.get_metadata(fname, type='bold')['RepetitionTime']
+            TR = layout.get_metadata(fname, type='bold', full_search=True)['RepetitionTime']
             dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
             _, confounds, _ = block.get_design_matrix(dense_vars,
@@ -259,12 +256,10 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
+        paths = [(self.inputs.bids_dir, 'bids')]
         if isdefined(self.inputs.preproc_dir):
-            config = [('bids', [self.inputs.bids_dir, self.inputs.preproc_dir]),
-                      ('derivatives', self.inputs.preproc_dir)]
-        else:
-            config = None
-        layout = gb.BIDSLayout(self.inputs.bids_dir, config=config)
+            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
+        layout = gb.BIDSLayout(paths)
 
         bold_files = []
         mask_files = []
