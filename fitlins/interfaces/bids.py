@@ -176,7 +176,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
             fname = preproc_files[0].filename
 
             # Required field in seconds
-            TR = layout.get_metadata(fname, type='bold')['RepetitionTime']
+            TR = layout.get_metadata(fname, type='bold', full_search=True)['RepetitionTime']
             dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
             _, confounds, _ = block.get_design_matrix(dense_vars,
