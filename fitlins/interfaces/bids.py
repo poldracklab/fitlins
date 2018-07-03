@@ -3,7 +3,7 @@ from gzip import GzipFile
 import json
 import shutil
 import nibabel as nb
-
+import pandas as pd
 from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
@@ -184,25 +184,32 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
             _, confounds, _ = block.get_design_matrix(dense_vars,
                                                       mode='dense',
+                                                      force=True,
                                                       sampling_rate=1/TR,
                                                       **ents)[0]
 
-            # Note that FMRIPREP includes CosineXX columns to accompany
-            # t/aCompCor
-            # We may want to add criteria to include HPF columns that are not
-            # explicitly listed in the model
-            names = [col for col in confounds.columns
-                     if col.startswith('NonSteadyStateOutlier') or
-                     col in block.model['variables']]
-
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
+
             events_file = os.path.join(runtime.cwd,
                                        '{}_events.h5'.format(ent_string))
-            confounds_file = os.path.join(runtime.cwd,
-                                          '{}_confounds.h5'.format(ent_string))
             paradigm.to_hdf(events_file, key='events')
-            confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
+
+            if confounds is not None:
+                # Note that FMRIPREP includes CosineXX columns to accompany
+                # t/aCompCor
+                # We may want to add criteria to include HPF columns that are not
+                # explicitly listed in the model
+                names = [col for col in confounds.columns
+                         if col.startswith('NonSteadyStateOutlier') or
+                         col in block.model['variables']]
+                confounds_file = os.path.join(runtime.cwd,
+                                              '{}_confounds.h5'.format(ent_string))
+                confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
+            else:
+                confounds_file = None
+
+
             info['events'] = events_file
             info['confounds'] = confounds_file
             info['repetition_time'] = TR
