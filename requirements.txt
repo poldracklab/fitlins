@@ -4,6 +4,6 @@ seaborn>=0.7.1
 numpy>=1.11
 nilearn>=0.4.0
 pandas>=0.19
-git+https://github.com/grabbles/grabbit.git@a4eb51881e7ef8abb72a6db35f0541b1f06e63f6#egg=grabbit
+grabbit>=0.2.1
 pybids>=0.6.3
 git+https://github.com/nistats/nistats.git@ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats-0.0.1b-dev
