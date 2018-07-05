@@ -3,7 +3,6 @@ from gzip import GzipFile
 import json
 import shutil
 import nibabel as nb
-import pandas as pd
 from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
