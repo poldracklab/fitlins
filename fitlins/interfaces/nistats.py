@@ -108,7 +108,16 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         vols = img.shape[3]
 
         events = pd.read_hdf(info['events'], key='events')
-        confounds = pd.read_hdf(info['confounds'], key='confounds')
+
+        if info['confounds'] is not None:
+            confounds = pd.read_hdf(info['confounds'], key='confounds')
+            confound_names = confounds.columns.tolist()
+            drift_model = None if 'Cosine00' in confound_names else 'cosine'
+        else:
+            confounds = None
+            confound_names = None
+            drift_model = 'cosine'
+
         if isdefined(self.inputs.contrast_info):
             contrast_spec = pd.read_hdf(self.inputs.contrast_info,
                                         key='contrasts')
@@ -120,8 +129,8 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             paradigm=events.rename(columns={'condition': 'trial_type',
                                             'amplitude': 'modulation'}),
             add_regs=confounds,
-            add_reg_names=confounds.columns.tolist(),
-            drift_model=None if 'Cosine00' in confounds.columns else 'cosine',
+            add_reg_names=confound_names,
+            drift_model=drift_model,
             )
 
         # Assume that explanatory variables == HRF-convolved variables
