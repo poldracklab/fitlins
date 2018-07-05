@@ -47,6 +47,8 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
+    'git+https://github.com/grabbles/grabbit.git@'
+    'a4eb51881e7ef8abb72a6db35f0541b1f06e63f6#egg=grabbit',
 ]
 
 TESTS_REQUIRES = [
