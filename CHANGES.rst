@@ -1,6 +1,7 @@
 0.0.4 (July 05, 2018)
 =====================
 
+* ENH: Allow models without non-HRF variables (https://github.com/poldracklab/fitlins/pull/55)
 * ENH: Make dataset_description optional (https://github.com/poldracklab/fitlins/pull/51)
 * ENH: Loop over preproc files, instead of raw BOLD files (https://github.com/poldracklab/fitlins/pull/50)
 * ENH: Add --n-cpus option to CLI (https://github.com/poldracklab/fitlins/pull/49)
