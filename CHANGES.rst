@@ -1,4 +1,4 @@
-0.0.4 (July 03, 2018)
+0.0.4 (July 05, 2018)
 =====================
 
   * ENH: Make dataset_description optional (https://github.com/poldracklab/fitlins/pull/51)
@@ -17,6 +17,7 @@
   * FIX: Versioneer adjustments (https://github.com/poldracklab/fitlins/pull/36)
   * FIX: Create group level results dir (https://github.com/poldracklab/fitlins/pull/22)
   * RF: Simplify entry-points, restore preproc discovery (https://github.com/poldracklab/fitlins/pull/38)
+  * MAINT: Update pybids 0.6.3, grabbit 0.2.1 (https://github.com/poldracklab/fitlins/pull/52)
   * MAINT: Manage version with versioneer (https://github.com/poldracklab/fitlins/pull/35)
   * MAINT: Neuroscout changes / pybids updates (https://github.com/poldracklab/fitlins/pull/28)
   * MAINT: Add nipype dependency, remove unused code (https://github.com/poldracklab/fitlins/pull/27)
@@ -31,10 +32,12 @@ Maintenance release
 * Incorporate nistats/nistats#165 (#13)
 * Update Dockerfile, versioning (#14)
 
+
 0.0.2 (March 5, 2018)
 ---------------------
 
 Hotfix, addressing deployment issues.
+
 
 0.0.1 (March 5, 2018)
 ---------------------
