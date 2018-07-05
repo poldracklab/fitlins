@@ -24,7 +24,7 @@
 
 
 0.0.3 (March 9, 2018)
----------------------
+=====================
 
 Maintenance release
 
@@ -34,12 +34,12 @@ Maintenance release
 
 
 0.0.2 (March 5, 2018)
----------------------
+=====================
 
 Hotfix, addressing deployment issues.
 
 
 0.0.1 (March 5, 2018)
----------------------
+=====================
 
 Initial release of FitLins, a BIDS-model fitting BIDS app.
