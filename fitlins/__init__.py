@@ -3,7 +3,12 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-import matplotlib
+try:
+    import matplotlib
+except ImportError:
+    pass
+else:
+    matplotlib.use('Agg')
 
 from .__about__ import (
     __version__,
@@ -19,6 +24,4 @@ from .__about__ import (
     __description__,
     __longdesc__
 )
-
-matplotlib.use('Agg')
 

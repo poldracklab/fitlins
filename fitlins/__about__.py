@@ -41,7 +41,7 @@ REQUIRES = [
     'pandas>=0.19',
     'tables>=3.2.1',
     'nistats>=0.0.1a',
-    'grabbit>=0.2.0',
+    'grabbit>=0.2.1',
     'pybids>=0.6.3',
     'jinja2',
 ]
