@@ -199,9 +199,21 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 names = [col for col in confounds.columns
                          if col.startswith('NonSteadyStateOutlier') or
                          col in block.model['variables']]
+                confounds = confounds[names]
+                for imputable in ('FramewiseDisplacement',
+                                  'stdDVARS', 'non-stdDVARS',
+                                  'vx-wisestdDVARS'):
+                    if imputable in confounds.columns:
+                        vals = confounds[imputable].values
+                        if not np.isnan(vals).any():
+                            continue
+
+                        # Impute the mean non-zero, non-NaN value
+                        meanval = np.nanmean(vals[vals != 0])
+                        confounds[imputable] = confounds[imputable].fillna(meanval)
                 confounds_file = os.path.join(runtime.cwd,
                                               '{}_confounds.h5'.format(ent_string))
-                confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
+                confounds.to_hdf(confounds_file, key='confounds')
             else:
                 confounds_file = None
 
