@@ -3,6 +3,7 @@ from gzip import GzipFile
 import json
 import shutil
 import nibabel as nb
+from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
@@ -13,6 +14,8 @@ from nipype.interfaces.io import IOBase
 from bids import grabbids as gb, analysis as ba
 
 from ..utils import snake_to_camel
+
+iflogger = logging.getLogger('nipype.interface')
 
 
 def bids_split_filename(fname):
@@ -218,6 +221,10 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
                         # Impute the mean non-zero, non-NaN value
                         confounds[imputable][0] = np.nanmean(vals[vals != 0])
+
+                if np.isnan(confounds.values).any():
+                    iflogger.warning('Unexpected NaNs found in confounds; '
+                                     'regression may fail.')
 
                 confounds_file = os.path.join(runtime.cwd,
                                               '{}_confounds.h5'.format(ent_string))
