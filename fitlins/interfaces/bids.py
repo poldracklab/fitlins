@@ -200,17 +200,25 @@ class LoadLevel1BIDSModel(SimpleInterface):
                          if col.startswith('NonSteadyStateOutlier') or
                          col in block.model['variables']]
                 confounds = confounds[names]
+
+                # These confounds are defined pairwise with the current volume
+                # and its predecessor, and thus may be undefined (have value
+                # NaN) at the first volume.
+                # In these cases, we impute the mean non-zero value, for the
+                # expected NaN only.
+                # Any other NaNs must be handled by an explicit transform in
+                # the BIDS model.
                 for imputable in ('FramewiseDisplacement',
                                   'stdDVARS', 'non-stdDVARS',
                                   'vx-wisestdDVARS'):
                     if imputable in confounds.columns:
                         vals = confounds[imputable].values
-                        if not np.isnan(vals).any():
+                        if not np.isnan(vals[0]):
                             continue
 
                         # Impute the mean non-zero, non-NaN value
-                        meanval = np.nanmean(vals[vals != 0])
-                        confounds[imputable] = confounds[imputable].fillna(meanval)
+                        confounds[imputable][0] = np.nanmean(vals[vals != 0])
+
                 confounds_file = os.path.join(runtime.cwd,
                                               '{}_confounds.h5'.format(ent_string))
                 confounds.to_hdf(confounds_file, key='confounds')
