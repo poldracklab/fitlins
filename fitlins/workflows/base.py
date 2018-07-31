@@ -49,6 +49,16 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
 
+
+    snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
+        '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
+    ds_model_warnings = pe.MapNode(
+        BIDSDataSink(base_directory=str(Path(base_dir) / 'reportlets'),
+                     path_patterns=snippet_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_model_warning')
+
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_{type<effect>}.nii.gz',
@@ -110,6 +120,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (loader, getter,  [('entities', 'entities')]),
         (loader, flm, [('session_info', 'session_info'),
                        ('contrast_info', 'contrast_info')]),
+        (loader, ds_model_warnings, [('entities', 'entities'),
+                                     ('warnings', 'in_file')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
         (getter, ds_estimate_maps, [('entities', 'fixed_entities')]),
