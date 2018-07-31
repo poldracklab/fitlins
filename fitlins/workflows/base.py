@@ -1,3 +1,4 @@
+from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
@@ -59,6 +60,16 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
 
+
+    snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
+        '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
+    ds_model_warnings = pe.MapNode(
+        BIDSDataSink(base_directory=str(Path(base_dir) / 'reportlets' / 'fitlins'),
+                     path_patterns=snippet_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_model_warning')
+
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_{type<effect>}.nii.gz',
@@ -108,8 +119,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (loader, select_l1_contrasts, [('contrast_info', 'inlist')]),
         (loader, select_l1_entities, [('entities', 'inlist')]),
         (loader, flm, [('session_info', 'session_info')]),
+        (loader, ds_model_warnings, [('warnings', 'in_file')]),
         (select_l1_entities, getter,  [('out', 'entities')]),
         (select_l1_contrasts, flm,  [('out', 'contrast_info')]),
+        (select_l1_entities, ds_model_warnings,  [('out', 'entities')]),
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
         (getter, ds_contrast_maps, [('entities', 'fixed_entities')]),

@@ -183,7 +183,7 @@ def run_fitlins(argv=None):
 
     for model in models:
         analysis = ba.Analysis(layout, model=model)
-        report_dicts = parse_directory(deriv_dir, analysis)
+        report_dicts = parse_directory(deriv_dir, opts.work_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
     return retcode

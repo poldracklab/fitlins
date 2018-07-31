@@ -1,7 +1,9 @@
 from os import path as op
+from pathlib import Path
+import grabbit
 import jinja2
 import pkg_resources as pkgr
-from bids import grabbids
+import bids
 
 from ..utils import snake_to_camel
 
@@ -26,10 +28,11 @@ def deroot(val, root):
     return val
 
 
-def parse_directory(deriv_dir, analysis):
-    fl_layout = grabbids.BIDSLayout(
+def parse_directory(deriv_dir, work_dir, analysis):
+    fl_layout = bids.BIDSLayout(
         (deriv_dir, ['bids', 'derivatives',
                      pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
+    wd_layout = bids.BIDSLayout(str(Path(work_dir) / 'reportlets' / 'fitlins'))
     contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
 
     analyses = []
@@ -53,6 +56,11 @@ def parse_directory(deriv_dir, analysis):
         if design_matrix:
             job_desc['design_matrix_svg'] = design_matrix[0].filename
 
+        snippet = wd_layout.get(extensions='.html', type='snippet', **ents)
+        if snippet:
+            with open(snippet[0].filename) as fobj:
+                job_desc['warning'] = fobj.read()
+
         contrasts = fl_layout.get(extensions='.png', type='ortho', **ents)
         # TODO: Split contrasts from estimates
         job_desc['contrasts'] = [{'image_file': c.filename,
@@ -66,7 +74,7 @@ def parse_directory(deriv_dir, analysis):
 
 
 def write_report(level, report_dicts, run_context, deriv_dir):
-    fl_layout = grabbids.BIDSLayout(
+    fl_layout = bids.BIDSLayout(
         (deriv_dir, ['bids', 'derivatives',
                      pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
     fl_layout.path_patterns = PATH_PATTERNS
