@@ -120,7 +120,7 @@ IMPUTATION_SNIPPET = """
 <div class="warning">
     The following confounds had NaN values for the first volume: {}.
     The mean of non-zero values for the remaining entries was imputed.
-    If another strategy is desired, it must be cxplicitly specified in
+    If another strategy is desired, it must be explicitly specified in
     the model.
 </div>
 """

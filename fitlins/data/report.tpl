@@ -10,6 +10,11 @@
 .elem-title {}
 .elem-desc {}
 .elem-filename {}
+.warning {
+    border: 1px solid #ffaaaa;
+    background: #ffe8e8;
+    padding: 0.8em;
+}
 </style>
 </head>
 <body>
