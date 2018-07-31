@@ -399,7 +399,7 @@ class BIDSDataSink(IOBase):
     input_spec = BIDSDataSinkInputSpec
     output_spec = BIDSDataSinkOutputSpec
 
-    _always_run=True
+    _always_run = True
 
     def _list_outputs(self):
         base_dir = self.inputs.base_directory
