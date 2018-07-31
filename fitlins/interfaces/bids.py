@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 from gzip import GzipFile
 import json
 import shutil
+import numpy as np
 import nibabel as nb
 from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
@@ -114,6 +116,16 @@ class ModelSpecLoader(SimpleInterface):
         return runtime
 
 
+IMPUTATION_SNIPPET = """
+<div class="warning">
+    The following confounds had NaN values for the first volume: {}.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be cxplicitly specified in
+    the model.
+</div>
+"""
+
+
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
@@ -132,8 +144,9 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(File())
+    contrast_info = traits.List(File)
     entities = traits.List(traits.Dict())
+    warnings = traits.List(File)
 
 
 class LoadLevel1BIDSModel(SimpleInterface):
@@ -141,6 +154,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
     output_spec = LoadLevel1BIDSModelOutputSpec
 
     def _run_interface(self, runtime):
+        cwd = Path(runtime.cwd)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         if not isdefined(include):
@@ -162,6 +176,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         entities = []
         session_info = []
         contrast_info = []
+        warnings = []
         for paradigm, _, ents in block.get_design_matrix(
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
@@ -194,6 +209,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
                                        '{}_events.h5'.format(ent_string))
             paradigm.to_hdf(events_file, key='events')
 
+            imputed = []
             if confounds is not None:
                 # Note that FMRIPREP includes CosineXX columns to accompany
                 # t/aCompCor
@@ -221,6 +237,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
                         # Impute the mean non-zero, non-NaN value
                         confounds[imputable][0] = np.nanmean(vals[vals != 0])
+                        imputed.append(imputable)
 
                 if np.isnan(confounds.values).any():
                     iflogger.warning('Unexpected NaNs found in confounds; '
@@ -248,15 +265,22 @@ class LoadLevel1BIDSModel(SimpleInterface):
                                           '{}_contrasts.h5'.format(ent_string))
             contrasts.to_hdf(contrasts_file, key='contrasts')
 
+            warning_file = cwd / '{}_warning.html'.format(ent_string)
+            with warning_file.open('w') as fobj:
+                if imputed:
+                    fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
+
             entities.append(ents)
             session_info.append(info)
             contrast_info.append(contrasts_file)
+            warnings.append(str(warning_file))
 
         runtime.analysis = analysis
 
         self._results['entities'] = entities
         self._results['session_info'] = session_info
         self._results['contrast_info'] = contrast_info
+        self._results['warnings'] = warnings
         return runtime
 
 
