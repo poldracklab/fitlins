@@ -205,8 +205,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            events_file = os.path.join(runtime.cwd,
-                                       '{}_events.h5'.format(ent_string))
+            events_file = cwd / '{}_events.h5'.format(ent_string)
             paradigm.to_hdf(events_file, key='events')
 
             imputed = []
@@ -243,15 +242,14 @@ class LoadLevel1BIDSModel(SimpleInterface):
                     iflogger.warning('Unexpected NaNs found in confounds; '
                                      'regression may fail.')
 
-                confounds_file = os.path.join(runtime.cwd,
-                                              '{}_confounds.h5'.format(ent_string))
+                confounds_file = cwd / '{}_confounds.h5'.format(ent_string)
                 confounds.to_hdf(confounds_file, key='confounds')
+
             else:
                 confounds_file = None
 
-
-            info['events'] = events_file
-            info['confounds'] = confounds_file
+            info['events'] = str(events_file)
+            info['confounds'] = str(confounds_file)
             info['repetition_time'] = TR
 
             contrasts = block.get_contrasts([contrast['name']
@@ -272,7 +270,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
 
             entities.append(ents)
             session_info.append(info)
-            contrast_info.append(contrasts_file)
+            contrast_info.append(str(contrasts_file))
             warnings.append(str(warning_file))
 
         runtime.analysis = analysis
