@@ -3,7 +3,7 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-from ..interfaces.nistats import FirstLevelModel
+from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
 
 
 def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
@@ -66,6 +66,20 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     l1_metadata = pe.MapNode(niu.Function(function=join_dict),
                              iterfield=['base_dict', 'dict_list'],
                              name='l1_metadata')
+
+    select_l2_indices = pe.Node(
+        niu.Select(index=1),
+        name='select_l2_indices')
+
+    select_l2_contrasts = pe.Node(
+        niu.Select(index=1),
+        name='select_l2_contrasts')
+
+    #slm = pe.MapNode(
+    slm = pe.Node(
+        SecondLevelModel(),
+    #    iterfield=['contrast_info', 'stat_files', 'stat_metadata', 'contrast_indices']
+        name='slm')
 
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
@@ -145,6 +159,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (flm, ds_design, [('design_matrix_plot', 'in_file')]),
         (flm, ds_corr, [('correlation_matrix_plot', 'in_file')]),
         (flm, ds_contrasts, [('contrast_matrix_plot', 'in_file')]),
+        (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
+        (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
+        (flm, slm, [('contrast_maps', 'stat_files')]),
+        (l1_metadata, slm, [('out', 'stat_metadata')]),
+        (select_l2_contrasts, slm, [('out', 'contrast_info')]),
+        (select_l2_indices, slm, [('out', 'contrast_indices')]),
         ])
 
     return wf

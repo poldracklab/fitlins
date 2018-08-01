@@ -7,6 +7,7 @@ import nistats as nis
 import nistats.reporting  # noqa: F401
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1
+from nistats import second_level_model as level2
 
 from nipype.interfaces.base import (
     LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -185,4 +186,30 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         self._results['contrast_metadata'] = contrast_metadata
         self._results['contrast_map_plots'] = contrast_map_plots
 
+        return runtime
+
+
+class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
+    stat_files = InputMultiObject(traits.List(File(exists=True)), mandatory=True)
+    stat_metadata = InputMultiObject(traits.List(traits.Dict))
+    contrast_info = InputMultiObject(File(exists=True))
+    contrast_indices = traits.List(traits.Dict)
+
+
+class SecondLevelModelOutputSpec(TraitedSpec):
+    contrast_maps = OutputMultiObject(File)
+    contrast_metadata = OutputMultiObject(traits.Dict)
+    design_matrix = File()
+    design_matrix_plot = File()
+    correlation_matrix_plot = File()
+    contrast_matrix_plot = File()
+    contrast_map_plots = OutputMultiObject(File)
+
+
+class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
+    input_spec = SecondLevelModelInputSpec
+    output_spec = SecondLevelModelOutputSpec
+
+    def _run_interface(self, runtime):
+        model = level2.SecondLevelModel()
         return runtime
