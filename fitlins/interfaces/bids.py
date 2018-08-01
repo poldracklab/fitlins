@@ -119,7 +119,7 @@ class ModelSpecLoader(SimpleInterface):
         return runtime
 
 
-IMPUTATION_SNIPPET = """
+IMPUTATION_SNIPPET = """\
 <div class="warning">
     The following confounds had NaN values for the first volume: {}.
     The mean of non-zero values for the remaining entries was imputed.
