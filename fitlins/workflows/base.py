@@ -60,6 +60,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
 
+    def join_dict(base_dict, dict_list):
+        return [{**base_dict, **iter_dict} for iter_dict in dict_list]
+
+    l1_metadata = pe.MapNode(niu.Function(function=join_dict),
+                             iterfield=['base_dict', 'dict_list'],
+                             name='l1_metadata')
 
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
@@ -126,6 +132,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (getter, flm, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
         (getter, ds_contrast_maps, [('entities', 'fixed_entities')]),
+        (select_l1_entities, l1_metadata, [('out', 'base_dict')]),
+        (flm, l1_metadata, [('contrast_metadata', 'dict_list')]),
         (flm, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                  ('contrast_metadata', 'entities')]),
         (getter, ds_contrast_plots, [('entities', 'fixed_entities')]),
