@@ -1,6 +1,5 @@
 from os import path as op
 from pathlib import Path
-import grabbit
 import jinja2
 import pkg_resources as pkgr
 import bids
@@ -32,7 +31,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
     fl_layout = bids.BIDSLayout(
         (deriv_dir, ['bids', 'derivatives',
                      pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
-    wd_layout = bids.BIDSLayout(str(Path(work_dir) / 'reportlets' / 'fitlins'))
+    wd_layout = bids.BIDSLayout((Path(work_dir) / 'reportlets' / 'fitlins').as_posix())
     contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
 
     analyses = []

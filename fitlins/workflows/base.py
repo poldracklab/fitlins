@@ -50,11 +50,14 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
 
+    reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
+    reportlet_dir.mkdir(parents=True, exist_ok=True)
+
 
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
     ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(Path(base_dir) / 'reportlets' / 'fitlins'),
+        BIDSDataSink(base_directory=reportlet_dir.as_posix(),
                      path_patterns=snippet_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
