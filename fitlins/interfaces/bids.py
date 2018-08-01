@@ -158,7 +158,6 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        cwd = Path(runtime.cwd)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         if not isdefined(include):
@@ -185,6 +184,8 @@ class LoadBIDSModel(SimpleInterface):
 
     def _load_level1(self, runtime, analysis):
         block = analysis.blocks[0]
+        block_subdir = Path(runtime.cwd) / block.level
+        block_subdir.mkdir(parents=True, exist_ok=True)
 
         entities = []
         session_info = []
@@ -220,7 +221,7 @@ class LoadBIDSModel(SimpleInterface):
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            events_file = cwd / '{}_events.h5'.format(ent_string)
+            events_file = block_subdir / '{}_events.h5'.format(ent_string)
             paradigm.to_hdf(events_file, key='events')
 
             imputed = []
@@ -257,7 +258,7 @@ class LoadBIDSModel(SimpleInterface):
                     iflogger.warning('Unexpected NaNs found in confounds; '
                                      'regression may fail.')
 
-                confounds_file = cwd / '{}_confounds.h5'.format(ent_string)
+                confounds_file = block_subdir / '{}_confounds.h5'.format(ent_string)
                 confounds.to_hdf(confounds_file, key='confounds')
 
             else:
@@ -277,11 +278,11 @@ class LoadBIDSModel(SimpleInterface):
             contrasts['type'] = [contrast['type']
                                  for contrast in block.contrasts]
 
-            contrasts_file = os.path.join(runtime.cwd,
-                                          '{}_contrasts.h5'.format(ent_string))
+            contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
+            contrasts_file.parent.mkdir(parents=True, exist_ok=True)
             contrasts.to_hdf(contrasts_file, key='contrasts')
 
-            warning_file = cwd / '{}_warning.html'.format(ent_string)
+            warning_file = block_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
                 if imputed:
                     fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
@@ -299,7 +300,11 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
+        cwd = Path(runtime.cwd)
         for block in analysis.blocks[1:]:
+            block_subdir = cwd / block.level
+            block_subdir.mkdir(parents=True, exist_ok=True)
+
             entities = []
             contrast_indices = []
             contrast_info = []
@@ -328,14 +333,13 @@ class LoadBIDSModel(SimpleInterface):
                 # Add test indicator column
                 contrasts['type'] = contrast_type_list
 
-                contrasts_file = os.path.join(runtime.cwd, block.level,
-                                              '{}_contrasts.h5'.format(ent_string))
-                makedirs(os.path.dirname(contrasts_file), exist_ok=True)
+                contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
+                contrasts_file.parent.mkdir(parents=True, exist_ok=True)
                 contrasts.to_hdf(contrasts_file, key='contrasts')
 
                 entities.append(ents)
                 contrast_indices.append(index.to_dict('records'))
-                contrast_info.append(contrasts_file)
+                contrast_info.append(str(contrasts_file))
 
             self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
