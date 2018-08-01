@@ -1,7 +1,7 @@
 0.0.5 (August 01, 2018)
 =======================
 
-  * FIX: Limit NaN imputation and use mean non-zero value (https://github.com/poldracklab/fitlins/pull/57)
+* FIX: Limit NaN imputation and use mean non-zero value (https://github.com/poldracklab/fitlins/pull/57)
 
 
 0.0.4 (July 05, 2018)
