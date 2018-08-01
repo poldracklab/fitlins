@@ -62,7 +62,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_{type<effect>}.nii.gz',
+        'contrast-{contrast}_{type<effect>}.nii.gz'
     ds_estimate_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
@@ -78,7 +78,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_ortho.png',
+        'contrast-{contrast}_ortho.png'
     ds_estimate_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
