@@ -81,7 +81,7 @@ RUN conda install -y -q --name neuro numpy=1.14.1 \
                                      seaborn=0.8.1 \
                                      pytables=3.4.2 \
                                      pandas=0.22.0 \
-                                     nipype=1.0.3 \
+                                     nipype=1.1.1 \
                                      patsy \
     && sync && conda clean -tipsy && sync
 

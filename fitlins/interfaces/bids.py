@@ -1,8 +1,11 @@
 import os
+from pathlib import Path
 from gzip import GzipFile
 import json
 import shutil
+import numpy as np
 import nibabel as nb
+from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
@@ -13,6 +16,8 @@ from nipype.interfaces.io import IOBase
 from bids import grabbids as gb, analysis as ba
 
 from ..utils import snake_to_camel
+
+iflogger = logging.getLogger('nipype.interface')
 
 
 def bids_split_filename(fname):
@@ -111,6 +116,16 @@ class ModelSpecLoader(SimpleInterface):
         return runtime
 
 
+IMPUTATION_SNIPPET = """\
+<div class="warning">
+    The following confounds had NaN values for the first volume: {}.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+"""
+
+
 class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
@@ -129,8 +144,9 @@ class LoadLevel1BIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadLevel1BIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(File())
+    contrast_info = traits.List(File)
     entities = traits.List(traits.Dict())
+    warnings = traits.List(File)
 
 
 class LoadLevel1BIDSModel(SimpleInterface):
@@ -138,6 +154,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
     output_spec = LoadLevel1BIDSModelOutputSpec
 
     def _run_interface(self, runtime):
+        cwd = Path(runtime.cwd)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         if not isdefined(include):
@@ -159,6 +176,7 @@ class LoadLevel1BIDSModel(SimpleInterface):
         entities = []
         session_info = []
         contrast_info = []
+        warnings = []
         for paradigm, _, ents in block.get_design_matrix(
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
@@ -187,10 +205,10 @@ class LoadLevel1BIDSModel(SimpleInterface):
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            events_file = os.path.join(runtime.cwd,
-                                       '{}_events.h5'.format(ent_string))
+            events_file = cwd / '{}_events.h5'.format(ent_string)
             paradigm.to_hdf(events_file, key='events')
 
+            imputed = []
             if confounds is not None:
                 # Note that FMRIPREP includes CosineXX columns to accompany
                 # t/aCompCor
@@ -199,15 +217,39 @@ class LoadLevel1BIDSModel(SimpleInterface):
                 names = [col for col in confounds.columns
                          if col.startswith('NonSteadyStateOutlier') or
                          col in block.model['variables']]
-                confounds_file = os.path.join(runtime.cwd,
-                                              '{}_confounds.h5'.format(ent_string))
-                confounds[names].fillna(0).to_hdf(confounds_file, key='confounds')
+                confounds = confounds[names]
+
+                # These confounds are defined pairwise with the current volume
+                # and its predecessor, and thus may be undefined (have value
+                # NaN) at the first volume.
+                # In these cases, we impute the mean non-zero value, for the
+                # expected NaN only.
+                # Any other NaNs must be handled by an explicit transform in
+                # the BIDS model.
+                for imputable in ('FramewiseDisplacement',
+                                  'stdDVARS', 'non-stdDVARS',
+                                  'vx-wisestdDVARS'):
+                    if imputable in confounds.columns:
+                        vals = confounds[imputable].values
+                        if not np.isnan(vals[0]):
+                            continue
+
+                        # Impute the mean non-zero, non-NaN value
+                        confounds[imputable][0] = np.nanmean(vals[vals != 0])
+                        imputed.append(imputable)
+
+                if np.isnan(confounds.values).any():
+                    iflogger.warning('Unexpected NaNs found in confounds; '
+                                     'regression may fail.')
+
+                confounds_file = cwd / '{}_confounds.h5'.format(ent_string)
+                confounds.to_hdf(confounds_file, key='confounds')
+
             else:
                 confounds_file = None
 
-
-            info['events'] = events_file
-            info['confounds'] = confounds_file
+            info['events'] = str(events_file)
+            info['confounds'] = str(confounds_file)
             info['repetition_time'] = TR
 
             contrasts = block.get_contrasts([contrast['name']
@@ -221,15 +263,22 @@ class LoadLevel1BIDSModel(SimpleInterface):
                                           '{}_contrasts.h5'.format(ent_string))
             contrasts.to_hdf(contrasts_file, key='contrasts')
 
+            warning_file = cwd / '{}_warning.html'.format(ent_string)
+            with warning_file.open('w') as fobj:
+                if imputed:
+                    fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
+
             entities.append(ents)
             session_info.append(info)
-            contrast_info.append(contrasts_file)
+            contrast_info.append(str(contrasts_file))
+            warnings.append(str(warning_file))
 
         runtime.analysis = analysis
 
         self._results['entities'] = entities
         self._results['session_info'] = session_info
         self._results['contrast_info'] = contrast_info
+        self._results['warnings'] = warnings
         return runtime
 
 
@@ -350,10 +399,12 @@ class BIDSDataSink(IOBase):
     input_spec = BIDSDataSinkInputSpec
     output_spec = BIDSDataSinkOutputSpec
 
-    _always_run=True
+    _always_run = True
 
     def _list_outputs(self):
         base_dir = self.inputs.base_directory
+
+        os.makedirs(base_dir, exist_ok=True)
 
         layout = gb.BIDSLayout(base_dir)
         if self.inputs.path_patterns:
