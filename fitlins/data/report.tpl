@@ -10,6 +10,11 @@
 .elem-title {}
 .elem-desc {}
 .elem-filename {}
+.warning {
+    border: 1px solid #ffaaaa;
+    background: #ffe8e8;
+    padding: 0.8em;
+}
 </style>
 </head>
 <body>
@@ -23,6 +28,7 @@
     </div>
     <div id="model">
         <h1 class="sub-report-title">Model</h1>
+        {{ warning }}
         {% if design_matrix_svg %}
         <h2>Design matrix</h3>
         <img src="{{ design_matrix_svg }}" />
