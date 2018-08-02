@@ -12,6 +12,7 @@ import os.path as op
 import time
 import logging
 import warnings
+from tempfile import mkdtemp
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
@@ -154,12 +155,14 @@ def run_fitlins(argv=None):
 
     bids.write_derivative_description(opts.bids_dir, deriv_dir)
 
+    work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
+
     # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
     level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
 
     fitlins_wf = init_fitlins_wf(
         opts.bids_dir, preproc_dir, deriv_dir, opts.space, model=model,
-        participants=subject_list, base_dir=opts.work_dir,
+        participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
 
@@ -183,7 +186,7 @@ def run_fitlins(argv=None):
 
     for model in models:
         analysis = ba.Analysis(layout, model=model)
-        report_dicts = parse_directory(deriv_dir, opts.work_dir, analysis)
+        report_dicts = parse_directory(deriv_dir, work_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
     return retcode

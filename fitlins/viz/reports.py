@@ -1,6 +1,5 @@
 from os import path as op
 from pathlib import Path
-import grabbit
 import jinja2
 import pkg_resources as pkgr
 import bids
