@@ -31,7 +31,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
     fl_layout = bids.BIDSLayout(
         (deriv_dir, ['bids', 'derivatives',
                      pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
-    wd_layout = bids.BIDSLayout((Path(work_dir) / 'reportlets' / 'fitlins').as_posix())
+    wd_layout = bids.BIDSLayout(str(Path(work_dir) / 'reportlets' / 'fitlins'))
     contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
 
     analyses = []
