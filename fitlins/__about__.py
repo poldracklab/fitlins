@@ -47,6 +47,8 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
+    'git+https://github.com/effigies/nipype.git@'
+    'c50839ee31494714cd93f2715bc3220131bc3215#egg=nipype',
     'git+https://github.com/INCF/pybids.git@'
     'a86a0e862e93001536bff28e4c2ba35906824d2c#egg=pybids',
     'git+https://github.com/nistats/nistats.git@'
