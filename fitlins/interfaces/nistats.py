@@ -14,6 +14,7 @@ from nipype.interfaces.base import (
     InputMultiObject, OutputMultiObject, File, traits, isdefined
     )
 
+from ..utils import dict_intersection, snake_to_camel
 from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 
@@ -190,9 +191,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
 
 class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
-    stat_files = InputMultiObject(traits.List(File(exists=True)), mandatory=True)
-    stat_metadata = InputMultiObject(traits.List(traits.Dict))
-    contrast_info = InputMultiObject(File(exists=True))
+    stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
+    stat_metadata = traits.List(traits.List(traits.Dict))
+    contrast_info = File(exists=True)
     contrast_indices = traits.List(traits.Dict)
 
 
@@ -206,10 +207,50 @@ class SecondLevelModelOutputSpec(TraitedSpec):
     contrast_map_plots = OutputMultiObject(File)
 
 
+def _flatten(x):
+    return [elem for sublist in x for elem in sublist]
+
+
+def _match(query, metadata):
+    for key, val in query.items():
+        if metadata.get(key) != val:
+            return False
+    return True
+
+
 class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     input_spec = SecondLevelModelInputSpec
     output_spec = SecondLevelModelOutputSpec
 
     def _run_interface(self, runtime):
         model = level2.SecondLevelModel()
+        files = []
+        # Super inefficient... think more about this later
+        for idx in self.inputs.contrast_indices:
+            for fname, metadata in zip(_flatten(self.inputs.stat_files),
+                                       _flatten(self.inputs.stat_metadata)):
+                if _match(idx, metadata):
+                    files.append(fname)
+                    break
+            else:
+                raise ValueError
+
+        contrast_spec = pd.read_hdf(self.inputs.contrast_info,
+                                    key='contrasts')
+
+        contrast_matrix = contrast_spec.drop(columns=['type']).T
+        contrast_types = contrast_spec['type']
+
+        out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
+
+        for contrast, ctype in zip(contrast_matrix, contrast_types):
+            intercept = contrast_matrix[contrast]
+            data = np.array(files)[intercept != 0].tolist()
+            intercept = intercept[intercept != 0]
+
+            model.fit(data, design_matrix=pd.DataFrame({'intercept': intercept}))
+            stat_type = {'T': 't', 'F': 'F'}[ctype]
+
+            stat = fmri_glm.compute_contrast(second_level_stat_type=stat_type)
+
         return runtime

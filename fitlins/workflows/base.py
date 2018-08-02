@@ -75,10 +75,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         niu.Select(index=1),
         name='select_l2_contrasts')
 
-    #slm = pe.MapNode(
-    slm = pe.Node(
+    # slm = pe.Node(
+    slm = pe.MapNode(
         SecondLevelModel(),
-    #    iterfield=['contrast_info', 'stat_files', 'stat_metadata', 'contrast_indices']
+        iterfield=['contrast_info', 'contrast_indices'],
         name='slm')
 
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
