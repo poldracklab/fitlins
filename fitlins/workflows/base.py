@@ -5,7 +5,7 @@ from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
 from ..interfaces.visualizations import (
-    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot)
+    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
 from ..interfaces.utils import MergeAll
 
 
@@ -88,6 +88,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_contrast_matrix')
 
+    plot_contrasts = pe.MapNode(
+        GlassBrainPlot(image_type='png'),
+        iterfield='data',
+        name='plot_contrasts')
+
     def join_dict(base_dict, dict_list):
         return [{**base_dict, **iter_dict} for iter_dict in dict_list]
 
@@ -133,10 +138,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
         'contrast-{contrast}_ortho.png'
-    ds_contrast_plots = pe.MapNode(
+    ds_contrast_plots = pe.Node(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
-        iterfield=['fixed_entities', 'entities', 'in_file'],
         run_without_submitting=True,
         name='ds_contrast_plots')
 
@@ -181,9 +185,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
         (collate_first_level, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                                  ('contrast_metadata', 'entities')]),
-        (getter, ds_contrast_plots, [('entities', 'fixed_entities')]),
-        (flm, ds_contrast_plots, [('contrast_map_plots', 'in_file'),
-                                  ('contrast_metadata', 'entities')]),
+        (collate_first_level, plot_contrasts, [('contrast_maps', 'data')]),
+        (collate_first_level, ds_contrast_plots, [('contrast_metadata', 'entities')]),
+        (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (select_l1_entities, ds_corr, [('out', 'entities')]),
         (select_l1_entities, ds_contrasts, [('out', 'entities')]),

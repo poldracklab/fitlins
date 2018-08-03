@@ -3,7 +3,6 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 import nibabel as nb
-from nilearn import plotting as nlp
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1
 from nistats import second_level_model as level2
@@ -84,7 +83,6 @@ class FirstLevelModelOutputSpec(TraitedSpec):
     contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
     contrast_matrix = File()
-    contrast_map_plots = OutputMultiObject(File)
 
 
 class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
@@ -92,14 +90,6 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = FirstLevelModelOutputSpec
 
     def _run_interface(self, runtime):
-        import matplotlib
-        matplotlib.use('Agg')
-        import seaborn as sns
-        from matplotlib import pyplot as plt
-        sns.set_style('white')
-        plt.rcParams['svg.fonttype'] = 'none'
-        plt.rcParams['image.interpolation'] = 'nearest'
-
         info = self.inputs.session_info
 
         img = nb.load(self.inputs.bold_file)
@@ -153,27 +143,19 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         contrast_maps = []
         contrast_metadata = []
-        contrast_map_plots = []
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
-        plot_fmt = os.path.join(runtime.cwd, '{}.png').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             es = flm.compute_contrast(contrast_matrix[contrast].values,
                                         {'T': 't', 'F': 'F'}[ctype],
                                         output_type='effect_size')
             es_fname = stat_fmt(contrast)
             es.to_filename(es_fname)
-            plot_fname = plot_fmt(contrast)
-            nlp.plot_glass_brain(es, colorbar=True, plot_abs=False,
-                                 display_mode='lyrz', axes=None,
-                                 output_file=plot_fname)
 
             contrast_maps.append(es_fname)
-            contrast_map_plots.append(plot_fname)
             contrast_metadata.append({'contrast': contrast,
                                       'type': 'effect'})
         self._results['contrast_maps'] = contrast_maps
         self._results['contrast_metadata'] = contrast_metadata
-        self._results['contrast_map_plots'] = contrast_map_plots
 
         return runtime
 
