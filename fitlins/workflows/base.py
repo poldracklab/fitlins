@@ -4,6 +4,7 @@ from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
+from ..interfaces.visualizations import DesignPlot, DesignCorrelationPlot
 
 
 def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
@@ -59,6 +60,23 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='flm')
+
+    plot_design = pe.MapNode(
+        DesignPlot(image_type='svg'),
+        iterfield='data',
+        name='plot_design')
+
+    def _get_evs(info):
+        import pandas as pd
+        events = pd.read_hdf(info['events'], key='events')
+        return len(events['condition'].unique())
+
+    get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
+
+    plot_corr = pe.MapNode(
+        DesignCorrelationPlot(image_type='svg'),
+        iterfield=['data', 'explanatory_variables'],
+        name='plot_corr')
 
     def join_dict(base_dict, dict_list):
         return [{**base_dict, **iter_dict} for iter_dict in dict_list]
@@ -156,8 +174,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (select_l1_entities, ds_corr, [('out', 'entities')]),
         (select_l1_entities, ds_contrasts, [('out', 'entities')]),
-        (flm, ds_design, [('design_matrix_plot', 'in_file')]),
-        (flm, ds_corr, [('correlation_matrix_plot', 'in_file')]),
+        (flm, plot_design, [('design_matrix', 'data')]),
+        (plot_design, ds_design, [('figure', 'in_file')]),
+        (loader, get_evs, [('session_info', 'info')]),
+        (flm, plot_corr, [('design_matrix', 'data')]),
+        (get_evs, plot_corr, [('out', 'explanatory_variables')]),
+        (plot_corr, ds_corr, [('figure', 'in_file')]),
         (flm, ds_contrasts, [('contrast_matrix_plot', 'in_file')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
         (loader, select_l2_indices, [('contrast_indices', 'inlist')]),

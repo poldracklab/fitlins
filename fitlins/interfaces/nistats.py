@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
-import nistats as nis
-import nistats.reporting  # noqa: F401
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1
 from nistats import second_level_model as level2
@@ -16,7 +14,7 @@ from nipype.interfaces.base import (
     )
 
 from ..utils import dict_intersection, snake_to_camel
-from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
+from ..viz import plot_and_save, plot_contrast_matrix
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -86,8 +84,6 @@ class FirstLevelModelOutputSpec(TraitedSpec):
     contrast_maps = OutputMultiObject(File)
     contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
-    design_matrix_plot = File()
-    correlation_matrix_plot = File()
     contrast_matrix_plot = File()
     contrast_map_plots = OutputMultiObject(File)
 
@@ -142,15 +138,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         contrast_matrix, contrast_types = build_contrast_matrix(contrast_spec,
                                                                 mat, exp_vars)
 
-        plt.set_cmap('viridis')
-        plot_and_save('design.svg', nis.reporting.plot_design_matrix, mat)
-        self._results['design_matrix_plot'] = os.path.join(runtime.cwd,
-                                                           'design.svg')
-
-        plot_and_save('correlation.svg', plot_corr_matrix,
-                      mat.drop(columns='constant').corr(), len(exp_vars))
-        self._results['correlation_matrix_plot'] = os.path.join(
-            runtime.cwd, 'correlation.svg')
+        mat.to_csv('design.tsv', sep='\t')
+        self._results['design_matrix'] = os.path.join(runtime.cwd,
+                                                           'design.tsv')
 
         plot_and_save('contrast.svg', plot_contrast_matrix,
                       contrast_matrix.drop(['constant'], 'index'),
