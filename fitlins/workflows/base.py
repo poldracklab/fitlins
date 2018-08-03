@@ -58,10 +58,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     if preproc_dir is not None:
         getter.inputs.preproc_dir = preproc_dir
 
-    flm = pe.MapNode(
+    l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-        name='flm')
+        name='l1_model')
 
     collate_first_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
                                   name='collate_first_level')
@@ -108,11 +108,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         niu.Select(index=1),
         name='select_l2_contrasts')
 
-    # slm = pe.Node(
-    slm = pe.MapNode(
+    l2_model = pe.MapNode(
         SecondLevelModel(),
         iterfield=['contrast_info', 'contrast_indices'],
-        name='slm')
+        name='l2_model')
 
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
@@ -172,16 +171,16 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     wf.connect([
         (loader, select_l1_contrasts, [('contrast_info', 'inlist')]),
         (loader, select_l1_entities, [('entities', 'inlist')]),
-        (loader, flm, [('session_info', 'session_info')]),
+        (loader, l1_model, [('session_info', 'session_info')]),
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
         (select_l1_entities, getter,  [('out', 'entities')]),
-        (select_l1_contrasts, flm,  [('out', 'contrast_info')]),
+        (select_l1_contrasts, l1_model,  [('out', 'contrast_info')]),
         (select_l1_entities, ds_model_warnings,  [('out', 'entities')]),
-        (getter, flm, [('bold_files', 'bold_file'),
+        (getter, l1_model, [('bold_files', 'bold_file'),
                        ('mask_files', 'mask_file')]),
         (getter, l1_metadata, [('entities', 'base_dict')]),
-        (flm, collate_first_level, [('contrast_maps', 'contrast_maps')]),
-        (flm, l1_metadata, [('contrast_metadata', 'dict_list')]),
+        (l1_model, collate_first_level, [('contrast_maps', 'contrast_maps')]),
+        (l1_model, l1_metadata, [('contrast_metadata', 'dict_list')]),
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
         (collate_first_level, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                                  ('contrast_metadata', 'entities')]),
@@ -191,20 +190,20 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (select_l1_entities, ds_corr, [('out', 'entities')]),
         (select_l1_entities, ds_contrasts, [('out', 'entities')]),
-        (flm, plot_design, [('design_matrix', 'data')]),
+        (l1_model, plot_design, [('design_matrix', 'data')]),
         (plot_design, ds_design, [('figure', 'in_file')]),
         (loader, get_evs, [('session_info', 'info')]),
-        (flm, plot_corr, [('design_matrix', 'data')]),
+        (l1_model, plot_corr, [('design_matrix', 'data')]),
         (get_evs, plot_corr, [('out', 'explanatory_variables')]),
         (plot_corr, ds_corr, [('figure', 'in_file')]),
-        (flm, plot_contrast_matrix, [('contrast_matrix', 'data')]),
+        (l1_model, plot_contrast_matrix, [('contrast_matrix', 'data')]),
         (plot_contrast_matrix, ds_contrasts, [('figure', 'in_file')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
         (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
-        (flm, slm, [('contrast_maps', 'stat_files')]),
-        (l1_metadata, slm, [('out', 'stat_metadata')]),
-        (select_l2_contrasts, slm, [('out', 'contrast_info')]),
-        (select_l2_indices, slm, [('out', 'contrast_indices')]),
+        (l1_model, l2_model, [('contrast_maps', 'stat_files')]),
+        (l1_metadata, l2_model, [('out', 'stat_metadata')]),
+        (select_l2_contrasts, l2_model, [('out', 'contrast_info')]),
+        (select_l2_indices, l2_model, [('out', 'contrast_indices')]),
         ])
 
     return wf
