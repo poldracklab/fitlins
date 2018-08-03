@@ -92,6 +92,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['contrast_info', 'contrast_indices'],
         name='l2_model')
 
+    collate_second_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
+                                   name='collate_second_level')
+
     #
     # Plotting
     #
@@ -125,6 +128,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_l1_contrasts')
 
+    plot_l2_contrasts = pe.MapNode(
+        GlassBrainPlot(image_type='png'),
+        iterfield='data',
+        name='plot_l2_contrasts')
+
 
     #
     # HTML snippets to be included directly in report, not
@@ -147,15 +155,23 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     # Derivatives
     #
 
+    # NIfTIs
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_{type<effect>}.nii.gz'
+        'contrast-{contrast}_{type<effect|stat>}.nii.gz'
     ds_l1_contrast_maps = pe.Node(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
         run_without_submitting=True,
         name='ds_l1_contrast_maps')
 
+    ds_l2_contrast_maps = pe.Node(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_pattern),
+        run_without_submitting=True,
+        name='ds_l2_contrast_maps')
+
+    # Images
     image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold_' \
         '{type<design|corr|contrasts>}.svg'
@@ -190,6 +206,12 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_l1_contrast_plots')
 
+    ds_l2_contrast_plots = pe.Node(
+        BIDSDataSink(base_directory=out_dir,
+                     path_patterns=contrast_plot_pattern),
+        run_without_submitting=True,
+        name='ds_l2_contrast_plots')
+
     #
     # Connections
     #
@@ -223,6 +245,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (select_l2_indices, l2_model, [('out', 'contrast_indices')]),
         (select_l2_contrasts, l2_model, [('out', 'contrast_info')]),
 
+        (l2_model, collate_second_level, [('contrast_maps', 'contrast_maps'),
+                                          ('contrast_metadata', 'contrast_metadata')]),
+
         #
         # Plotting
         #
@@ -236,6 +261,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
         (collate_first_level, plot_l1_contrasts, [('contrast_maps', 'data')]),
 
+        (collate_second_level, plot_l2_contrasts, [('contrast_maps', 'data')]),
+
         #
         # HTML snippets
         #
@@ -246,7 +273,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         # Derivatives
         #
         (collate_first_level, ds_l1_contrast_maps, [('contrast_maps', 'in_file'),
-                                                 ('contrast_metadata', 'entities')]),
+                                                    ('contrast_metadata', 'entities')]),
+
+        (collate_second_level, ds_l2_contrast_maps, [('contrast_maps', 'in_file'),
+                                                     ('contrast_metadata', 'entities')]),
 
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (plot_design, ds_design, [('figure', 'in_file')]),
@@ -260,6 +290,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
+
+        (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
+        (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
         ])
 
     return wf

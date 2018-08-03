@@ -23,7 +23,6 @@ class MergeAll(IOBase):
         for key in self._fields:
             val = getattr(self.inputs, key)
             _lengths = list(map(len, val))
-            print(_lengths)
             if lengths is None:
                 lengths = _lengths
             elif _lengths != lengths:

@@ -207,6 +207,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         contrast_types = contrast_spec['type']
 
         out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
+        out_ents['type'] = 'stat'
 
         contrast_maps = []
         contrast_metadata = []
@@ -224,8 +225,9 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             stat.to_filename(stat_fname)
 
             contrast_maps.append(stat_fname)
-            contrast_metadata.append({'contrast': contrast,
-                                      'type': stat_type})
+            metadata = out_ents.copy()
+            metadata['contrast'] = contrast
+            contrast_metadata.append(metadata)
 
         self._results['contrast_maps'] = contrast_maps
         self._results['contrast_metadata'] = contrast_metadata
