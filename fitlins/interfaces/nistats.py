@@ -1,4 +1,5 @@
 import os
+from functools import reduce
 import numpy as np
 import pandas as pd
 import nibabel as nb
@@ -200,11 +201,6 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
 class SecondLevelModelOutputSpec(TraitedSpec):
     contrast_maps = OutputMultiObject(File)
     contrast_metadata = OutputMultiObject(traits.Dict)
-    design_matrix = File()
-    design_matrix_plot = File()
-    correlation_matrix_plot = File()
-    contrast_matrix_plot = File()
-    contrast_map_plots = OutputMultiObject(File)
 
 
 def _flatten(x):
@@ -243,6 +239,9 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
         out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
 
+        contrast_maps = []
+        contrast_metadata = []
+        stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             intercept = contrast_matrix[contrast]
             data = np.array(files)[intercept != 0].tolist()
@@ -251,6 +250,15 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             model.fit(data, design_matrix=pd.DataFrame({'intercept': intercept}))
             stat_type = {'T': 't', 'F': 'F'}[ctype]
 
-            stat = fmri_glm.compute_contrast(second_level_stat_type=stat_type)
+            stat = model.compute_contrast(second_level_stat_type=stat_type)
+            stat_fname = stat_fmt(contrast)
+            stat.to_filename(stat_fname)
+
+            contrast_maps.append(stat_fname)
+            contrast_metadata.append({'contrast': contrast,
+                                      'type': stat_type})
+
+        self._results['contrast_maps'] = contrast_maps
+        self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
