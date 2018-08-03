@@ -4,7 +4,8 @@ from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
-from ..interfaces.visualizations import DesignPlot, DesignCorrelationPlot
+from ..interfaces.visualizations import (
+    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot)
 
 
 def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
@@ -77,6 +78,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         DesignCorrelationPlot(image_type='svg'),
         iterfield=['data', 'explanatory_variables'],
         name='plot_corr')
+
+    plot_contrast_matrix = pe.MapNode(
+        ContrastMatrixPlot(image_type='svg'),
+        iterfield='data',
+        name='plot_contrast_matrix')
 
     def join_dict(base_dict, dict_list):
         return [{**base_dict, **iter_dict} for iter_dict in dict_list]
@@ -183,7 +189,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (flm, plot_corr, [('design_matrix', 'data')]),
         (get_evs, plot_corr, [('out', 'explanatory_variables')]),
         (plot_corr, ds_corr, [('figure', 'in_file')]),
-        (flm, ds_contrasts, [('contrast_matrix_plot', 'in_file')]),
+        (flm, plot_contrast_matrix, [('contrast_matrix', 'data')]),
+        (plot_contrast_matrix, ds_contrasts, [('figure', 'in_file')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
         (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
         (flm, slm, [('contrast_maps', 'stat_files')]),

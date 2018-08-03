@@ -14,7 +14,6 @@ from nipype.interfaces.base import (
     )
 
 from ..utils import dict_intersection, snake_to_camel
-from ..viz import plot_and_save, plot_contrast_matrix
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -84,7 +83,7 @@ class FirstLevelModelOutputSpec(TraitedSpec):
     contrast_maps = OutputMultiObject(File)
     contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
-    contrast_matrix_plot = File()
+    contrast_matrix = File()
     contrast_map_plots = OutputMultiObject(File)
 
 
@@ -142,11 +141,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         self._results['design_matrix'] = os.path.join(runtime.cwd,
                                                            'design.tsv')
 
-        plot_and_save('contrast.svg', plot_contrast_matrix,
-                      contrast_matrix.drop(['constant'], 'index'),
-                      ornt='horizontal')
-        self._results['contrast_matrix_plot'] = os.path.join(
-            runtime.cwd, 'contrast.svg')
+        contrast_matrix.to_csv('contrasts.tsv', sep='\t')
+        self._results['contrast_matrix'] = os.path.join(
+            runtime.cwd, 'contrasts.tsv')
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):

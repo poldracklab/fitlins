@@ -85,7 +85,7 @@ class ContrastMatrixPlot(Visualization):
     def _visualize(self, data, out_name):
         plot_and_save(out_name, plot_contrast_matrix,
                       data.drop(index='constant'),
-                      ornt=self.inputs.ornt)
+                      ornt=self.inputs.orientation)
 
 
 class GlassBrainPlot(Visualization):
