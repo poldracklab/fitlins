@@ -99,10 +99,13 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield=['contrast_info', 'contrast_indices'],
         name='slm')
 
+    reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
+    reportlet_dir.mkdir(parents=True, exist_ok=True)
+
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
     ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(Path(base_dir) / 'reportlets' / 'fitlins'),
+        BIDSDataSink(base_directory=str(reportlet_dir),
                      path_patterns=snippet_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
@@ -110,7 +113,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_{type<effect>}.nii.gz',
+        'contrast-{contrast}_{type<effect>}.nii.gz'
     ds_contrast_maps = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
@@ -120,7 +123,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
         '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_ortho.png',
+        'contrast-{contrast}_ortho.png'
     ds_contrast_plots = pe.MapNode(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
