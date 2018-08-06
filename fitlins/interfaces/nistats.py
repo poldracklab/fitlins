@@ -170,6 +170,7 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
 class SecondLevelModelOutputSpec(TraitedSpec):
     contrast_maps = OutputMultiObject(File)
     contrast_metadata = OutputMultiObject(traits.Dict)
+    contrast_matrix = File()
 
 
 def _flatten(x):
@@ -205,6 +206,10 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
         contrast_matrix = contrast_spec.drop(columns=['type']).T
         contrast_types = contrast_spec['type']
+
+        contrast_matrix.to_csv('contrasts.tsv', sep='\t')
+        self._results['contrast_matrix'] = os.path.join(
+            runtime.cwd, 'contrasts.tsv')
 
         out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
         out_ents['type'] = 'stat'

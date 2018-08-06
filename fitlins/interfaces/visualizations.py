@@ -83,8 +83,9 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        plot_and_save(out_name, plot_contrast_matrix,
-                      data.drop(index='constant'),
+        if 'constant' in data.index:
+            data = data.drop(index='constant')
+        plot_and_save(out_name, plot_contrast_matrix, data,
                       ornt=self.inputs.orientation)
 
 

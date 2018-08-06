@@ -82,6 +82,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     collate_first_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
                                   name='collate_first_level')
 
+    select_l2_entities = pe.Node(niu.Select(index=1), name='select_l2_entities')
     select_l2_indices = pe.Node(niu.Select(index=1), name='select_l2_indices')
     select_l2_contrasts = pe.Node(niu.Select(index=1), name='select_l2_contrasts')
 
@@ -127,6 +128,11 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         GlassBrainPlot(image_type='png'),
         iterfield='data',
         name='plot_l1_contrasts')
+
+    plot_l2_contrast_matrix = pe.MapNode(
+        ContrastMatrixPlot(image_type='svg'),
+        iterfield='data',
+        name='plot_l2_contrast_matrix')
 
     plot_l2_contrasts = pe.MapNode(
         GlassBrainPlot(image_type='png'),
@@ -199,6 +205,14 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_l1_contrasts')
 
+    ds_l2_contrasts = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir,
+                     fixed_entities={'type': 'contrasts'},
+                     path_patterns=image_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_l2_contrasts')
+
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
@@ -240,6 +254,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (l1_model, collate_first_level, [('contrast_maps', 'contrast_maps')]),
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
 
+        (loader, select_l2_entities, [('entities', 'inlist')]),
         (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
 
@@ -263,6 +278,8 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_first_level, plot_l1_contrasts, [('contrast_maps', 'data')]),
+
+        (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_second_level, plot_l2_contrasts, [('contrast_maps', 'data')]),
 
@@ -293,6 +310,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
+
+        (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
+        (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
 
         (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
