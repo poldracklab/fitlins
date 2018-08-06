@@ -156,9 +156,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     #
 
     # NIfTIs
-    contrast_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
-        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_{type<effect|stat>}.nii.gz'
+    contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
+        '[_space-{space}]_contrast-{contrast}_{type<effect|stat>}.nii.gz'
     ds_l1_contrast_maps = pe.Node(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_pattern),
@@ -172,8 +173,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         name='ds_l2_contrast_maps')
 
     # Images
-    image_pattern = 'sub-{subject}/[ses-{session}/]sub-{subject}_' \
-        '[ses-{session}_]task-{task}_[run-{run}_]bold_' \
+    image_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
         '{type<design|corr|contrasts>}.svg'
     ds_design = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
@@ -197,9 +199,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_l1_contrasts')
 
-    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]'\
-        '[ses-{session}_]task-{task}_[run-{run}_]bold[_space-{space}]_' \
-        'contrast-{contrast}_ortho.png'
+    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
+        '[_space-{space}]_contrast-{contrast}_ortho.png'
     ds_l1_contrast_plots = pe.Node(
         BIDSDataSink(base_directory=out_dir,
                      path_patterns=contrast_plot_pattern),
