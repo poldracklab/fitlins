@@ -201,17 +201,23 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             else:
                 raise ValueError
 
+        out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
+        in_ents = [{key: val for key, val in index.items() if key not in out_ents}
+                   for index in self.inputs.contrast_indices]
+
         contrast_spec = pd.read_hdf(self.inputs.contrast_info,
                                     key='contrasts')
 
         contrast_matrix = contrast_spec.drop(columns=['type']).T
         contrast_types = contrast_spec['type']
 
+        contrast_matrix.index = ['_'.join('{}-{}'.format(key, val)
+                                          for key, val in ents.items())
+                                 for ents in in_ents]
         contrast_matrix.to_csv('contrasts.tsv', sep='\t')
         self._results['contrast_matrix'] = os.path.join(
             runtime.cwd, 'contrasts.tsv')
 
-        out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
         out_ents['type'] = 'stat'
 
         contrast_maps = []
