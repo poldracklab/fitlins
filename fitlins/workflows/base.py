@@ -139,7 +139,6 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_l2_contrasts')
 
-
     #
     # HTML snippets to be included directly in report, not
     # saved as individual derivative files

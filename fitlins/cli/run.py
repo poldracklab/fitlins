@@ -156,9 +156,6 @@ def run_fitlins(argv=None):
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
-    # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
-    level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
-
     fitlins_wf = init_fitlins_wf(
         opts.bids_dir, preproc_dir, deriv_dir, opts.space, model=model,
         participants=subject_list, base_dir=work_dir,

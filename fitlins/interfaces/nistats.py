@@ -9,10 +9,10 @@ from nistats import second_level_model as level2
 
 from nipype.interfaces.base import (
     LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    InputMultiObject, OutputMultiObject, File, traits, isdefined
+    OutputMultiObject, File, traits, isdefined
     )
 
-from ..utils import dict_intersection, snake_to_camel
+from ..utils import dict_intersection
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -129,7 +129,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         mat.to_csv('design.tsv', sep='\t')
         self._results['design_matrix'] = os.path.join(runtime.cwd,
-                                                           'design.tsv')
+                                                      'design.tsv')
 
         contrast_matrix.to_csv('contrasts.tsv', sep='\t')
         self._results['contrast_matrix'] = os.path.join(
@@ -146,8 +146,8 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             es = flm.compute_contrast(contrast_matrix[contrast].values,
-                                        {'T': 't', 'F': 'F'}[ctype],
-                                        output_type='effect_size')
+                                      {'T': 't', 'F': 'F'}[ctype],
+                                      output_type='effect_size')
             es_fname = stat_fmt(contrast)
             es.to_filename(es_fname)
 
