@@ -64,6 +64,110 @@ space.
 It is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
 
+Models
+------
+
+By default, FitLins will look for a ``model.json`` in the root of the BIDS
+directory.
+A simple example model for `OpenFMRI dataset ds000030`_ is reproduced below::
+
+
+	{
+	    "name": "ds000030_bart",
+	    "description": "model for balloon analog risk task",
+	    "input": {
+	        "task": "bart"
+	    },
+	    "blocks": [
+	        {
+	            "level": "run",
+	            "transformations": [
+	                {
+	                    "name": "factor",
+	                    "input": [
+	                        "trial_type",
+	                        "action"
+	                    ]
+	                },
+	                {
+	                    "name": "and",
+	                    "input": [
+	                        "trial_type.BALOON",
+	                        "action.ACCEPT"
+	                    ],
+	                    "output": [
+	                        "accept"
+	                    ]
+	                },
+	                {
+	                    "name": "and",
+	                    "input": [
+	                        "trial_type.BALOON",
+	                        "action.EXPLODE"
+	                    ],
+	                    "output": [
+	                        "explode"
+	                    ]
+	                }
+	            ],
+	            "model": {
+	                "HRF_variables":[
+	                    "accept",
+	                    "explode"
+	                ],
+	                "variables": [
+	                    "accept",
+	                    "explode",
+	                    "FramewiseDisplacement",
+	                    "X",
+	                    "Y",
+	                    "Z",
+	                    "RotX",
+	                    "RotY",
+	                    "RotZ"
+	                ]
+	            },
+	            "contrasts": [
+	                {
+	                    "name": "accept_vs_explode",
+	                    "condition_list": [
+	                        "accept",
+	                        "explode"
+	                    ],
+	                    "weights": [1, -1],
+	                    "type": "T"
+	                }
+	            ]
+	        },
+	        {
+	            "level": "dataset",
+	            "model": {
+	                "variables": [
+	                    "accept_vs_explode"
+	                ]
+	            },
+	            "contrasts": [
+	                {
+	                    "name": "group_accept_vs_explode",
+	                    "condition_list":[
+	                        "accept_vs_explode"
+	                    ],
+	                    "weights": [1],
+	                    "type": "T"
+	                }
+	            ]
+	        }
+	    ]
+	}
+
+Additional examples can be found in the `models`_ branch of the main FitLins
+repository.
+
+.. Note:
+
+    The BIDS Model specification is a draft standard, and some details may
+    change over time.
+
 Warning
 -------
 
@@ -77,3 +181,5 @@ The command-line interface outlined above should be fairly stable, however.
 .. _`BIDS Derivatives`: https://docs.google.com/document/d/1Wwc4A6Mow4ZPPszDIWfCUCRNstn7d_zzaWPcfcHmgI4/
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _FMRIPREP: https://fmriprep.readthedocs.io
+.. _`OpenFMRI dataset ds000030`: http://datasets.datalad.org/?dir=/openfmri/ds000030/
+.. _models: https://github.com/poldracklab/fitlins/tree/models
