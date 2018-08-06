@@ -22,7 +22,6 @@ from bids import grabbids as gb, analysis as ba
 from .. import __version__
 from ..workflows import init_fitlins_wf
 from ..utils import bids
-from ..base import init, second_level
 from ..viz.reports import write_report, parse_directory
 
 logging.addLevelName(25, 'INFO')  # Add a new level between INFO and WARNING
@@ -157,22 +156,15 @@ def run_fitlins(argv=None):
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
-    # BIDS-Apps prefers 'participant', BIDS-Model prefers 'subject'
-    level = 'subject' if opts.analysis_level == 'participant' else opts.analysis_level
-
     fitlins_wf = init_fitlins_wf(
         opts.bids_dir, preproc_dir, deriv_dir, opts.space, model=model,
         participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
 
+    retcode = 0
     try:
         fitlins_wf.run(**plugin_settings)
-        if model != 'default':
-            retcode = run_model(model, opts.space, level, opts.bids_dir, preproc_dir,
-                                deriv_dir)
-        else:
-            retcode = 0
     except Exception:
         retcode = 1
 
@@ -190,18 +182,6 @@ def run_fitlins(argv=None):
         write_report('unknown', report_dicts, run_context, deriv_dir)
 
     return retcode
-
-
-def run_model(model, space, target_level, bids_dir, preproc_dir, deriv_dir):
-    analysis = init(model, bids_dir, preproc_dir)
-    if analysis.blocks[0].level == target_level:
-        return 0
-    for block in analysis.blocks[1:]:
-        second_level(analysis, block, space, deriv_dir)
-        if block.level == target_level:
-            break
-
-    return 0
 
 
 def main():

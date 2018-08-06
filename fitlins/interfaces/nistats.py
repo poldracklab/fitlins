@@ -1,20 +1,22 @@
 import os
+from functools import reduce
 import numpy as np
 import pandas as pd
 import nibabel as nb
-from nilearn import plotting as nlp
-import nistats as nis
-import nistats.reporting  # noqa: F401
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1
+from nistats import second_level_model as level2
 
 from nipype.interfaces.base import (
-    BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
-    OutputMultiPath, File,
-    traits, isdefined
+    LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
+    OutputMultiObject, File, traits, isdefined
     )
 
-from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
+from ..utils import dict_intersection
+
+
+class NistatsBaseInterface(LibraryBaseInterface):
+    _pkg = 'nistats'
 
 
 def build_contrast_matrix(contrast_spec, design_matrix,
@@ -77,31 +79,17 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    estimate_maps = OutputMultiPath(File)
-    contrast_maps = OutputMultiPath(File)
-    estimate_metadata = OutputMultiPath(traits.Dict)
-    contrast_metadata = OutputMultiPath(traits.Dict)
+    contrast_maps = OutputMultiObject(File)
+    contrast_metadata = OutputMultiObject(traits.Dict)
     design_matrix = File()
-    design_matrix_plot = File()
-    correlation_matrix_plot = File()
-    contrast_matrix_plot = File()
-    estimate_map_plots = OutputMultiPath(File)
-    contrast_map_plots = OutputMultiPath(File)
+    contrast_matrix = File()
 
 
-class FirstLevelModel(SimpleInterface):
+class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
     input_spec = FirstLevelModelInputSpec
     output_spec = FirstLevelModelOutputSpec
 
     def _run_interface(self, runtime):
-        import matplotlib
-        matplotlib.use('Agg')
-        import seaborn as sns
-        from matplotlib import pyplot as plt
-        sns.set_style('white')
-        plt.rcParams['svg.fonttype'] = 'none'
-        plt.rcParams['image.interpolation'] = 'nearest'
-
         info = self.inputs.session_info
 
         img = nb.load(self.inputs.bold_file)
@@ -133,26 +121,19 @@ class FirstLevelModel(SimpleInterface):
             drift_model=drift_model,
             )
 
+        # Assume that explanatory variables == HRF-convolved variables
         exp_vars = events['condition'].unique().tolist()
 
         contrast_matrix, contrast_types = build_contrast_matrix(contrast_spec,
                                                                 mat, exp_vars)
 
-        plt.set_cmap('viridis')
-        plot_and_save('design.svg', nis.reporting.plot_design_matrix, mat)
-        self._results['design_matrix_plot'] = os.path.join(runtime.cwd,
-                                                           'design.svg')
+        mat.to_csv('design.tsv', sep='\t')
+        self._results['design_matrix'] = os.path.join(runtime.cwd,
+                                                      'design.tsv')
 
-        plot_and_save('correlation.svg', plot_corr_matrix,
-                      mat.drop(columns='constant').corr(), len(exp_vars))
-        self._results['correlation_matrix_plot'] = os.path.join(
-            runtime.cwd, 'correlation.svg')
-
-        plot_and_save('contrast.svg', plot_contrast_matrix,
-                      contrast_matrix.drop(['constant'], 'index'),
-                      ornt='horizontal')
-        self._results['contrast_matrix_plot'] = os.path.join(
-            runtime.cwd, 'contrast.svg')
+        contrast_matrix.to_csv('contrasts.tsv', sep='\t')
+        self._results['contrast_matrix'] = os.path.join(
+            runtime.cwd, 'contrasts.tsv')
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
@@ -160,40 +141,106 @@ class FirstLevelModel(SimpleInterface):
         flm = level1.FirstLevelModel(mask=mask_file)
         flm.fit(img, design_matrices=mat)
 
-        estimate_maps = []
         contrast_maps = []
-        estimate_metadata = []
         contrast_metadata = []
-        estimate_map_plots = []
-        contrast_map_plots = []
         stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
-        plot_fmt = os.path.join(runtime.cwd, '{}.png').format
         for contrast, ctype in zip(contrast_matrix, contrast_types):
             es = flm.compute_contrast(contrast_matrix[contrast].values,
-                                        {'T': 't', 'F': 'F'}[ctype],
-                                        output_type='effect_size')
+                                      {'T': 't', 'F': 'F'}[ctype],
+                                      output_type='effect_size')
             es_fname = stat_fmt(contrast)
             es.to_filename(es_fname)
-            plot_fname = plot_fmt(contrast)
-            nlp.plot_glass_brain(es, colorbar=True, plot_abs=False,
-                                 display_mode='lyrz', axes=None,
-                                 output_file=plot_fname)
 
-            if contrast in exp_vars:
-                estimate_maps.append(es_fname)
-                estimate_map_plots.append(plot_fname)
-                estimate_metadata.append({'contrast': contrast,
-                                          'type': 'effect'})
-            else:
-                contrast_maps.append(es_fname)
-                contrast_map_plots.append(plot_fname)
-                contrast_metadata.append({'contrast': contrast,
-                                          'type': 'effect'})
-        self._results['estimate_maps'] = estimate_maps
+            contrast_maps.append(es_fname)
+            contrast_metadata.append({'contrast': contrast,
+                                      'type': 'effect'})
         self._results['contrast_maps'] = contrast_maps
-        self._results['estimate_metadata'] = estimate_metadata
         self._results['contrast_metadata'] = contrast_metadata
-        self._results['estimate_map_plots'] = estimate_map_plots
-        self._results['contrast_map_plots'] = contrast_map_plots
+
+        return runtime
+
+
+class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
+    stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
+    stat_metadata = traits.List(traits.List(traits.Dict))
+    contrast_info = File(exists=True)
+    contrast_indices = traits.List(traits.Dict)
+
+
+class SecondLevelModelOutputSpec(TraitedSpec):
+    contrast_maps = OutputMultiObject(File)
+    contrast_metadata = OutputMultiObject(traits.Dict)
+    contrast_matrix = File()
+
+
+def _flatten(x):
+    return [elem for sublist in x for elem in sublist]
+
+
+def _match(query, metadata):
+    for key, val in query.items():
+        if metadata.get(key) != val:
+            return False
+    return True
+
+
+class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
+    input_spec = SecondLevelModelInputSpec
+    output_spec = SecondLevelModelOutputSpec
+
+    def _run_interface(self, runtime):
+        model = level2.SecondLevelModel()
+        files = []
+        # Super inefficient... think more about this later
+        for idx in self.inputs.contrast_indices:
+            for fname, metadata in zip(_flatten(self.inputs.stat_files),
+                                       _flatten(self.inputs.stat_metadata)):
+                if _match(idx, metadata):
+                    files.append(fname)
+                    break
+            else:
+                raise ValueError
+
+        out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
+        in_ents = [{key: val for key, val in index.items() if key not in out_ents}
+                   for index in self.inputs.contrast_indices]
+
+        contrast_spec = pd.read_hdf(self.inputs.contrast_info,
+                                    key='contrasts')
+
+        contrast_matrix = contrast_spec.drop(columns=['type']).T
+        contrast_types = contrast_spec['type']
+
+        contrast_matrix.index = ['_'.join('{}-{}'.format(key, val)
+                                          for key, val in ents.items())
+                                 for ents in in_ents]
+        contrast_matrix.to_csv('contrasts.tsv', sep='\t')
+        self._results['contrast_matrix'] = os.path.join(
+            runtime.cwd, 'contrasts.tsv')
+
+        out_ents['type'] = 'stat'
+
+        contrast_maps = []
+        contrast_metadata = []
+        stat_fmt = os.path.join(runtime.cwd, '{}.nii.gz').format
+        for contrast, ctype in zip(contrast_matrix, contrast_types):
+            intercept = contrast_matrix[contrast]
+            data = np.array(files)[intercept != 0].tolist()
+            intercept = intercept[intercept != 0]
+
+            model.fit(data, design_matrix=pd.DataFrame({'intercept': intercept}))
+            stat_type = {'T': 't', 'F': 'F'}[ctype]
+
+            stat = model.compute_contrast(second_level_stat_type=stat_type)
+            stat_fname = stat_fmt(contrast)
+            stat.to_filename(stat_fname)
+
+            contrast_maps.append(stat_fname)
+            metadata = out_ents.copy()
+            metadata['contrast'] = contrast
+            contrast_metadata.append(metadata)
+
+        self._results['contrast_maps'] = contrast_maps
+        self._results['contrast_metadata'] = contrast_metadata
 
         return runtime

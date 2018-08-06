@@ -103,7 +103,8 @@ USER neuro
 # Update conda environment
 #-------------------------
 RUN /bin/bash -c "source activate neuro \
-      && pip install -q --no-cache-dir -r /src/fitlins/requirements.txt" \
+      && pip install -q --no-cache-dir --upgrade pip \
+      && pip install -q --no-cache-dir --upgrade -r /src/fitlins/requirements.txt" \
     && sync
 
 #-------------------------

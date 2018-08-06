@@ -24,4 +24,3 @@ from .__about__ import (
     __description__,
     __longdesc__
 )
-
