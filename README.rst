@@ -17,8 +17,10 @@ See the output of ``fitlins --help`` for all valid options::
 
     usage: fitlins [-h] [-v]
                    [--participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
-                   [-m MODEL] [-p PREPROC_DIR] [--space {MNI152NLin2009cAsym}]
-                   [--debug]
+                   [-m MODEL] [-p PREPROC_DIR]
+                   [--derivative-label DERIVATIVE_LABEL]
+                   [--space {MNI152NLin2009cAsym}] [--include INCLUDE]
+                   [--exclude EXCLUDE] [--n-cpus N_CPUS] [--debug] [-w WORK_DIR]
                    bids_dir output_dir {run,session,participant,dataset}
 
     FitLins: Workflows for Fitting Linear models to fMRI
@@ -40,12 +42,22 @@ See the output of ``fitlins --help`` for all valid options::
       -m MODEL, --model MODEL
                             location of BIDS model description (default bids_dir/model.json)
       -p PREPROC_DIR, --preproc-dir PREPROC_DIR
-                            location of preprocessed data (default output_dir/fmriprep)
+                            location of preprocessed data (if relative path, search
+                            bids_dir/derivatives, followed by output_dir)
+      --derivative-label DERIVATIVE_LABEL
+                            execution label to append to derivative directory name
       --space {MNI152NLin2009cAsym}
                             registered space of input datasets
+      --include INCLUDE     regex pattern to include files
+      --exclude EXCLUDE     regex pattern to exclude files
 
     Options to handle performance:
+      --n-cpus N_CPUS       maximum number of threads across all processes
       --debug               run debug version of workflow
+
+    Other options:
+      -w WORK_DIR, --work-dir WORK_DIR
+                            path where intermediate results should be stored
 
 At present, FitLins does not support smoothing or operate in subject-native
 space.
