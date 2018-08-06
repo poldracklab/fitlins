@@ -22,7 +22,6 @@ from bids import grabbids as gb, analysis as ba
 from .. import __version__
 from ..workflows import init_fitlins_wf
 from ..utils import bids
-from ..base import init, second_level
 from ..viz.reports import write_report, parse_directory
 
 logging.addLevelName(25, 'INFO')  # Add a new level between INFO and WARNING
