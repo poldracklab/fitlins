@@ -1,4 +1,5 @@
 import os
+from functools import reduce
 from pathlib import Path
 from gzip import GzipFile
 import json
@@ -18,7 +19,7 @@ from nipype.interfaces.base import (
 from nipype.interfaces.io import IOBase
 from bids import grabbids as gb, analysis as ba
 
-from ..utils import snake_to_camel
+from ..utils import dict_intersection, snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -325,8 +326,19 @@ class LoadBIDSModel(SimpleInterface):
                 contrast_type_list = [contrast_type_map[contrast]
                                       for contrast in contrasts.columns]
 
+                indices = index.to_dict('records')
+
+                # Entities for a given contrast matrix include the intersection of
+                # entities of inputs, e.g., if this level is within-subject, the
+                # subject should persist
+                out_ents = reduce(dict_intersection, indices)
+                # Explicit entities take precedence over derived
+                out_ents.update(ents)
+                # Input-level contrasts will be overridden by the current level
+                out_ents.pop('contrast', None)
+
                 ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in ents.items())
+                                      for key, val in out_ents.items())
 
                 # Transpose so each contrast gets a row of data instead of column
                 contrasts = contrasts.T
@@ -337,8 +349,8 @@ class LoadBIDSModel(SimpleInterface):
                 contrasts_file.parent.mkdir(parents=True, exist_ok=True)
                 contrasts.to_hdf(contrasts_file, key='contrasts')
 
-                entities.append(ents)
-                contrast_indices.append(index.to_dict('records'))
+                entities.append(out_ents)
+                contrast_indices.append(indices)
                 contrast_info.append(str(contrasts_file))
 
             self._results['entities'].append(entities)
