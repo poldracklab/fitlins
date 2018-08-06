@@ -1,3 +1,11 @@
+0.0.6 (August 06, 2018)
+=======================
+
+Hotfix release.
+
+* FIX: Explicitly create working directory (https://github.com/poldracklab/fitlins/pull/61)
+
+
 0.0.5 (August 01, 2018)
 =======================
 
