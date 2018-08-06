@@ -163,7 +163,7 @@ A simple example model for `OpenFMRI dataset ds000030`_ is reproduced below::
 Additional examples can be found in the `models`_ branch of the main FitLins
 repository.
 
-.. Note:
+.. note::
 
     The BIDS Model specification is a draft standard, and some details may
     change over time.
