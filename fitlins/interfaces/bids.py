@@ -96,6 +96,7 @@ class ModelSpecLoader(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
+        from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
             layout = bids.BIDSLayout(self.inputs.bids_dir)
@@ -481,7 +482,7 @@ class BIDSDataSink(IOBase):
     _always_run = True
 
     def _list_outputs(self):
-        from bids.analysis import auto_model
+        import bids
         base_dir = self.inputs.base_directory
 
         os.makedirs(base_dir, exist_ok=True)
