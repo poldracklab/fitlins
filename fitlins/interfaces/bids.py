@@ -17,7 +17,6 @@ from nipype.interfaces.base import (
     traits, isdefined
     )
 from nipype.interfaces.io import IOBase
-from bids import grabbids as gb, analysis as ba
 
 from ..utils import dict_intersection, snake_to_camel
 
@@ -96,16 +95,17 @@ class ModelSpecLoader(SimpleInterface):
     output_spec = ModelSpecLoaderOutputSpec
 
     def _run_interface(self, runtime):
+        import bids
         models = self.inputs.model
         if not isinstance(models, list):
-            layout = gb.BIDSLayout(self.inputs.bids_dir)
+            layout = bids.BIDSLayout(self.inputs.bids_dir)
 
             if not isdefined(models):
                 models = layout.get(type='model')
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
-                models = ba.auto_model(layout)
+                models = auto_model(layout)
 
         models = [_ensure_model(m) for m in models]
 
@@ -159,6 +159,8 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
+        import bids
+        bids.config.set_options(loop_preproc=True)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         if not isdefined(include):
@@ -169,11 +171,11 @@ class LoadBIDSModel(SimpleInterface):
         paths = [(self.inputs.bids_dir, 'bids')]
         if isdefined(self.inputs.preproc_dir):
             paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = gb.BIDSLayout(paths, include=include, exclude=exclude)
+        layout = bids.BIDSLayout(paths, include=include, exclude=exclude)
 
         selectors = self.inputs.selectors
 
-        analysis = ba.Analysis(model=self.inputs.model, layout=layout)
+        analysis = bids.Analysis(model=self.inputs.model, layout=layout)
         analysis.setup(drop_na=False, **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
@@ -380,10 +382,11 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
+        import bids
         paths = [(self.inputs.bids_dir, 'bids')]
         if isdefined(self.inputs.preproc_dir):
             paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = gb.BIDSLayout(paths)
+        layout = bids.BIDSLayout(paths)
 
         bold_files = []
         mask_files = []
@@ -478,11 +481,12 @@ class BIDSDataSink(IOBase):
     _always_run = True
 
     def _list_outputs(self):
+        from bids.analysis import auto_model
         base_dir = self.inputs.base_directory
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = gb.BIDSLayout(base_dir)
+        layout = bids.BIDSLayout(base_dir)
         if self.inputs.path_patterns:
             layout.path_patterns[:0] = self.inputs.path_patterns
 
