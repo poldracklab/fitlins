@@ -79,8 +79,8 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = OutputMultiObject(File)
-    contrast_metadata = OutputMultiObject(traits.Dict)
+    contrast_maps = traits.List(File)
+    contrast_metadata = traits.List(traits.Dict)
     design_matrix = File()
     contrast_matrix = File()
 
