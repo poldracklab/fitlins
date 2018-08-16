@@ -275,10 +275,15 @@ class LoadBIDSModel(SimpleInterface):
             # Transpose so each contrast gets a row of data instead of column
             contrasts, index, _ = block.get_contrasts(**ents)[0]
 
+            contrast_type_map = defaultdict(lambda: 'T')
+            contrast_type_map.update({contrast['name']: contrast['type']
+                                      for contrast in block.contrasts})
+            contrast_type_list = [contrast_type_map[contrast]
+                                  for contrast in contrasts.columns]
+
             contrasts = contrasts.T
             # Add test indicator column
-            contrasts['type'] = [contrast['type']
-                                 for contrast in block.contrasts]
+            contrasts['type'] = contrast_type_list
 
             contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
             contrasts_file.parent.mkdir(parents=True, exist_ok=True)
