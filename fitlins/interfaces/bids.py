@@ -273,9 +273,7 @@ class LoadBIDSModel(SimpleInterface):
             info['repetition_time'] = TR
 
             # Transpose so each contrast gets a row of data instead of column
-            contrasts, index, _ = block.get_contrasts(
-                [contrast['name'] for contrast in block.contrasts],
-                **ents)[0]
+            contrasts, index, _ = block.get_contrasts(**ents)[0]
 
             contrasts = contrasts.T
             # Add test indicator column
