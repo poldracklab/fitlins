@@ -146,7 +146,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - deploy:
+      - deploy_master:
           requires:
             - build
           filters:
