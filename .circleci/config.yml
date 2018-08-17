@@ -76,6 +76,33 @@ jobs:
             echo "${CIRCLE_TAG}" > fitlins/VERSION
             python setup.py sdist
 
+  deploy_master:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/fitlins
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              zcat /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Deploy to Docker Hub
+          no_output_timeout: 40m
+          command: |
+            if [[ -n "$DOCKER_PASS" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+              docker tag poldracklab/fitlins poldracklab/fitlins:master
+              docker push poldracklab/fitlins:master
+            fi
+
   deploy:
     machine:
       image: circleci/classic:201711-01
@@ -119,6 +146,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
       - deploy_test:
           requires:
             - build
