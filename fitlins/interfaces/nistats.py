@@ -179,7 +179,10 @@ def _flatten(x):
 
 def _match(query, metadata):
     for key, val in query.items():
-        if metadata.get(key) != val:
+        if key == 'run':
+            if int(metadata.get(key, -1)) != int(val):
+                return False
+        elif metadata.get(key) != val:
             return False
     return True
 
