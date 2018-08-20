@@ -168,8 +168,8 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class SecondLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = OutputMultiObject(File)
-    contrast_metadata = OutputMultiObject(traits.Dict)
+    contrast_maps = traits.List(File)
+    contrast_metadata = traits.List(traits.Dict)
     contrast_matrix = File()
 
 
