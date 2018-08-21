@@ -34,23 +34,19 @@ SETUP_REQUIRES = [
 
 REQUIRES = [
     'nibabel>=2.0',
-    'nipype>=1.1.0',
+    'nipype>=1.1.2',
     'seaborn>=0.7.1',
     'numpy>=1.11',
     'nilearn>=0.4.0',
     'pandas>=0.19',
     'tables>=3.2.1',
     'nistats>=0.0.1a',
-    'grabbit>=0.2.2',
-    'pybids>=0.6.4',
+    'grabbit>=0.2.3',
+    'pybids>=0.6.5',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/nipy/nipype.git@'
-    '91fbcce799e322483391b803862844f4ea56dfd9#egg=nipype',
-    'git+https://github.com/INCF/pybids.git@'
-    'a86a0e862e93001536bff28e4c2ba35906824d2c#egg=pybids',
     'git+https://github.com/nistats/nistats.git@'
     'ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats',
 ]

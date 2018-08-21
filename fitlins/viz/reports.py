@@ -76,7 +76,6 @@ def write_report(level, report_dicts, run_context, deriv_dir):
     fl_layout = bids.BIDSLayout(
         (deriv_dir, ['bids', 'derivatives',
                      pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
-    fl_layout.path_patterns = PATH_PATTERNS
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(
@@ -87,7 +86,7 @@ def write_report(level, report_dicts, run_context, deriv_dir):
     for context in report_dicts:
         ents = context['ents'].copy()
         ents['model'] = snake_to_camel(context['model_name'])
-        target_file = op.join(deriv_dir, fl_layout.build_path(ents))
+        target_file = op.join(deriv_dir, fl_layout.build_path(ents, PATH_PATTERNS))
         html = tpl.render(deroot({'level': level, **context, **run_context},
                                  op.dirname(target_file)))
         with open(target_file, 'w') as fobj:
