@@ -491,8 +491,9 @@ class BIDSDataSink(IOBase):
         os.makedirs(base_dir, exist_ok=True)
 
         layout = bids.BIDSLayout(base_dir)
-        if self.inputs.path_patterns:
-            layout.path_patterns[:0] = self.inputs.path_patterns
+        path_patterns = self.inputs.path_patterns
+        if not isdefined(path_patterns):
+            path_patterns = None
 
         out_files = []
         for entities, in_file in zip(self.inputs.entities,
@@ -503,7 +504,7 @@ class BIDSDataSink(IOBase):
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
-                base_dir, layout.build_path(ents))
+                base_dir, layout.build_path(ents, path_patterns))
             makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)
