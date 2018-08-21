@@ -179,7 +179,10 @@ def _flatten(x):
 
 def _match(query, metadata):
     for key, val in query.items():
-        if metadata.get(key) != val:
+        if key == 'run':
+            if int(metadata.get(key, -1)) != int(val):
+                return False
+        elif metadata.get(key) != val:
             return False
     return True
 
@@ -193,13 +196,14 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         files = []
         # Super inefficient... think more about this later
         for idx in self.inputs.contrast_indices:
+            all_metadata = _flatten(self.inputs.stat_metadata)
             for fname, metadata in zip(_flatten(self.inputs.stat_files),
-                                       _flatten(self.inputs.stat_metadata)):
+                                       all_metadata):
                 if _match(idx, metadata):
                     files.append(fname)
                     break
             else:
-                raise ValueError
+                raise ValueError('IDX: {!r}; METADATA: {!r}'.format(idx, all_metadata))
 
         out_ents = reduce(dict_intersection, self.inputs.contrast_indices)
         in_ents = [{key: val for key, val in index.items() if key not in out_ents}
