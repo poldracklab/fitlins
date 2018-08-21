@@ -4,6 +4,6 @@ numpy>=1.11
 nilearn>=0.4.0
 pandas>=0.19
 nipype>=1.1.2
-git+https://github.com/grabbles/grabbit.git@ce0e7a6857962c41f7b89cf2859ba15e4c8ae754#egg=grabbit
+grabbit>=0.2.3
 git+https://github.com/effigies/pybids.git@10840a000527f1c81b0bfa92635f47a83001b0ab#egg=pybids
 git+https://github.com/nistats/nistats.git@ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats

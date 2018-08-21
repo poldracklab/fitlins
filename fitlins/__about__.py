@@ -41,14 +41,12 @@ REQUIRES = [
     'pandas>=0.19',
     'tables>=3.2.1',
     'nistats>=0.0.1a',
-    'grabbit>=0.2.2',
+    'grabbit>=0.2.3',
     'pybids>=0.6.4',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/grabbles/grabbit.git@'
-    'ce0e7a6857962c41f7b89cf2859ba15e4c8ae754#egg=grabbit',
     'git+https://github.com/effigies/pybids.git@'
     '10840a000527f1c81b0bfa92635f47a83001b0ab#egg=pybids',
     'git+https://github.com/nistats/nistats.git@'
