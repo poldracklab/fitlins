@@ -17,7 +17,8 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
 
-from bids import grabbids as gb, analysis as ba
+from bids import BIDSLayout, Analysis
+from bids.analysis import auto_model
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
@@ -168,8 +169,8 @@ def run_fitlins(argv=None):
     except Exception:
         retcode = 1
 
-    layout = gb.BIDSLayout(opts.bids_dir)
-    models = ba.auto_model(layout) if model == 'default' else [model]
+    layout = BIDSLayout(opts.bids_dir)
+    models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
@@ -177,7 +178,7 @@ def run_fitlins(argv=None):
                    }
 
     for model in models:
-        analysis = ba.Analysis(layout, model=model)
+        analysis = Analysis(layout, model=model)
         report_dicts = parse_directory(deriv_dir, work_dir, analysis)
         write_report('unknown', report_dicts, run_context, deriv_dir)
 

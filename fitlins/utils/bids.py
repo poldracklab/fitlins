@@ -17,7 +17,7 @@ Fetch some test data
 import os
 import json
 import warnings
-from bids.grabbids import BIDSLayout
+from bids import BIDSLayout
 
 
 class BIDSError(ValueError):
