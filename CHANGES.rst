@@ -1,3 +1,14 @@
+0.1.0 (August 24, 2018)
+=======================
+
+This release moves FitLins to a Nipype workflow and provides a set of Nipype interfaces for interacting with BIDS Models and the nistats statistical package.
+
+* FIX: Correctly handle missing confounds (https://github.com/poldracklab/fitlins/pull/73)
+* ENH: Set loop_preproc during model loading (https://github.com/poldracklab/fitlins/pull/66)
+* REF: Second-level workflow (https://github.com/poldracklab/fitlins/pull/30)
+* DOC: Example model (https://github.com/poldracklab/fitlins/pull/63)
+* MAINT: Update nipype, grabbit and pybids dependencies (https://github.com/poldracklab/fitlins/pull/70)
+
 0.0.6 (August 06, 2018)
 =======================
 
