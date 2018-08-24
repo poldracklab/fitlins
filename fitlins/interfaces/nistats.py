@@ -97,7 +97,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         events = pd.read_hdf(info['events'], key='events')
 
-        if info['confounds'] is not None:
+        if info['confounds'] is not None and info['confounds'] != 'None':
             confounds = pd.read_hdf(info['confounds'], key='confounds')
             confound_names = confounds.columns.tolist()
             drift_model = None if 'Cosine00' in confound_names else 'cosine'
