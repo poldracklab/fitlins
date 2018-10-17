@@ -1,0 +1,111 @@
+{
+    "name": "ds000030_bart_with_rt",
+    "description": "model for balloon analog risk task",
+    "input": {
+        "task": "bart"
+    },
+    "blocks": [
+        {
+            "level": "run",
+            "transformations": [
+                {
+                    "name": "factor",
+                    "input": [
+                        "trial_type",
+                        "action"
+                    ]
+                },
+                {
+                    "name": "and",
+                    "input": [
+                        "trial_type.BALOON",
+                        "action.ACCEPT"
+                    ],
+                    "output": [
+                        "accept"
+                    ]
+                },
+                {
+                    "name": "and",
+                    "input": [
+                        "trial_type.BALOON",
+                        "action.EXPLODE"
+                    ],
+                    "output": [
+                        "explode"
+                    ]
+                },
+                {
+                    "name": "or",
+                    "input": ["accept", "explode"],
+                    "output": "accept_or_explode"
+                },
+                {
+                     "name": "replace",
+                     "input": [ "accept_or_explode" ],
+                     "replace": { "0": "n/a"}
+                },
+                {
+                    "name": "drop_na",
+                    "input": ["accept_or_explode"]
+                },
+                {
+                    "name": "demean",
+                    "input": "reaction_time"
+                },
+                {
+                    "name": "convolve_HRF",
+                    "input": [ "reaction_time" ]
+                },
+                {
+                    "name": "convolve_HRF",
+                    "input": [ "accept", "explode" ],
+                    "derivative": true
+                }
+            ],
+            "model": {
+                "variables": [
+                    "accept",
+                    "explode",
+                    "reaction_time",
+                    "FramewiseDisplacement",
+                    "X",
+                    "Y",
+                    "Z",
+                    "RotX",
+                    "RotY",
+                    "RotZ"
+                ]
+            },
+            "contrasts": [
+                {
+                    "name": "accept_vs_explode",
+                    "condition_list": [
+                        "accept",
+                        "explode"
+                    ],
+                    "weights": [1, -1],
+                    "type": "T"
+                }
+            ]
+        },
+        {
+            "level": "dataset",
+            "model": {
+                "variables": [
+                    "accept_vs_explode"
+                ]
+            },
+            "contrasts": [
+                {
+                    "name": "group_accept_vs_explode",
+                    "condition_list":[
+                        "accept_vs_explode"
+                    ],
+                    "weights": [1],
+                    "type": "T"
+                }
+            ]
+        }
+    ]
+}
