@@ -51,7 +51,7 @@
                 },
                 {
                     "name": "demean",
-                    "input": "reaction_time"
+                    "input": ["reaction_time"]
                 },
                 {
                     "name": "convolve_HRF",
