@@ -97,6 +97,8 @@ def get_parser():
                          help='maximum number of threads across all processes')
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
+    g_perfm.add_argument('--pdb', action='store_true', default=False,
+                         help='run pdb on failure. Also will use Linear nipype plugin instead of MultiProc')
 
     g_other = parser.add_argument_group('Other options')
     g_other.add_argument('-w', '--work-dir', action='store', type=op.abspath,
@@ -121,13 +123,24 @@ def run_fitlins(argv=None):
         ncpus = cpu_count()
 
     plugin_settings = {
-        'plugin': 'MultiProc',
+        'plugin': 'Linear' if opts.pdb else 'MultiProc',
         'plugin_args': {
-            'n_procs': ncpus,
+            'n_procs': 1 if opts.pdb else ncpus,
             'raise_insufficient': False,
             'maxtasksperchild': 1,
         }
     }
+
+    if opts.pdb:
+        def pdb_excepthook(type, value, tb):
+            import traceback
+            traceback.print_exception(type, value, tb)
+            print()
+
+            import pdb
+            pdb.post_mortem(tb)
+
+        sys.excepthook = pdb_excepthook
 
     # Build main workflow
     logger.log(25, INIT_MSG(
