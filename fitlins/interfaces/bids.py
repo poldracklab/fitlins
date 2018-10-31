@@ -218,7 +218,9 @@ class LoadBIDSModel(SimpleInterface):
             preproc_files = analysis.layout.get(space=space, **kw)
 
             if len(preproc_files) != 1:
-                raise ValueError('Too many BOLD files found')
+                raise ValueError(
+                    'Found %d BOLD files when expected exactly 1: %s'
+                    % (len(preproc_files), preproc_files))
 
             fname = preproc_files[0].filename
 
