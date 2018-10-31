@@ -172,7 +172,20 @@ class LoadBIDSModel(SimpleInterface):
         paths = [(self.inputs.bids_dir, 'bids')]
         if isdefined(self.inputs.preproc_dir):
             paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = bids.BIDSLayout(paths, include=include, exclude=exclude)
+        # TODO: return back consideration of all those preproc_dir, for
+        # now we will just provide bids_dir path
+        #
+        # Adina&Yarik use case -- input dataset is the "derivative"
+        # dataset, so config should list both "bids" and "derivative".
+        # For now just hardcoded but might need to become a part of the
+        # model specification or cmd invocation?
+        layout = bids.BIDSLayout(
+            self.inputs.bids_dir,
+            config=['bids', 'derivatives'],
+            # This would add consideration of derivatives/ as derivatives
+            # but would crash if derivatives/ is N/A
+            # derivatives=True,
+            include=include, exclude=exclude)
 
         selectors = self.inputs.selectors
 
