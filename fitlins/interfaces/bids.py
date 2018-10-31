@@ -299,7 +299,15 @@ class LoadBIDSModel(SimpleInterface):
             info['repetition_time'] = TR
 
             # Transpose so each contrast gets a row of data instead of column
-            contrasts, index, _ = block.get_contrasts(**ents)[0]
+            # TODO: it had [0] on returned value without any checks -- evil!
+            contrasts_rec = block.get_contrasts(**ents)
+            contrasts_weights = contrasts_rec.weights
+            if len(contrasts_weights) != 1:
+                raise ValueError(
+                    "Expected a contrasts DataFrame with 1 row, got: %s"
+                    % str(contrasts_weights)
+                )
+            # contrasts, index, _ = block.get_contrasts(**ents)[0]
 
             contrast_type_map = defaultdict(lambda: 'T')
             contrast_type_map.update({contrast['name']: contrast['type']
