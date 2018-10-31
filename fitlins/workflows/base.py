@@ -54,7 +54,7 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(bids_dir=bids_dir,
-                   selectors={'type': 'preproc', 'space': space}),
+                   selectors={'type': 'bold', 'space': space}),
         name='getter')
 
     if preproc_dir is not None:

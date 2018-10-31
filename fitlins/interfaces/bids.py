@@ -200,12 +200,23 @@ class LoadBIDSModel(SimpleInterface):
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
-            space = analysis.layout.get_spaces(type='preproc',
-                                               extensions=['.nii', '.nii.gz'])[0]
-            preproc_files = analysis.layout.get(type='preproc',
-                                                extensions=['.nii', '.nii.gz'],
-                                                space=space,
-                                                **ents)
+            # In an old BIDS Derivative spec it was _preproc but RC1
+            # has them as _bold.
+            # Ideally the decision should be made based on the
+            kw = dict(
+                datatype='func',
+                suffix='bold',
+                extensions=['.nii', '.nii.gz']
+            )
+            # Problems:
+            #  - chooses first random space (what if there is multiple?)
+            #  - does not reuse **ents for selection of spaces, which
+            #    IMHO (blame yarikoptic) legit to get only the spaces
+            #    specific to the query (e.g. limited to a subject)
+            space = analysis.layout.get_spaces(**kw)[0]
+            kw.update(ents)
+            preproc_files = analysis.layout.get(space=space, **kw)
+
             if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
