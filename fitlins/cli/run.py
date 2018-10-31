@@ -115,6 +115,10 @@ def run_fitlins(argv=None):
 
     subject_list = None
     if opts.participant_label is not None:
+        # Note:  this might not work correctly since no include/exclude etc
+        # options are provided so the BIDSModel created and used within that
+        # function would do different treatment than the one created as a
+        # part of the workflow
         subject_list = bids.collect_participants(
             opts.bids_dir, participant_label=opts.participant_label)
 
