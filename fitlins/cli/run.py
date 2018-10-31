@@ -186,18 +186,23 @@ def run_fitlins(argv=None):
     except Exception:
         retcode = 1
 
-    layout = BIDSLayout(opts.bids_dir)
-    models = auto_model(layout) if model == 'default' else [model]
-
-    run_context = {'version': __version__,
-                   'command': ' '.join(sys.argv),
-                   'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
-                   }
-
-    for model in models:
-        analysis = Analysis(layout, model=model)
-        report_dicts = parse_directory(deriv_dir, work_dir, analysis)
-        write_report('unknown', report_dicts, run_context, deriv_dir)
+    # TODO: reincarnate. Also see above notes about using a new
+    # BIDSLayout again although all the options (include/exclude/etc)
+    # might be pertinent to it as well.  Ideally may be it could use
+    # a single instance of the BIDSLayout?
+    #
+    # layout = BIDSLayout(opts.bids_dir)
+    # models = auto_model(layout) if model == 'default' else [model]
+    #
+    # run_context = {'version': __version__,
+    #                'command': ' '.join(sys.argv),
+    #                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
+    #                }
+    #
+    # for model in models:
+    #     analysis = Analysis(layout, model=model)
+    #     report_dicts = parse_directory(deriv_dir, work_dir, analysis)
+    #     write_report('unknown', report_dicts, run_context, deriv_dir)
 
     return retcode
 

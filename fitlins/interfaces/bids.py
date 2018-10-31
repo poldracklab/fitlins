@@ -161,7 +161,9 @@ class LoadBIDSModel(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        bids.config.set_options(loop_preproc=True)
+        # TODO: return back if needed -- disabled since was crashing
+        # things
+        # bids.config.set_options(loop_preproc=True)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         if not isdefined(include):
