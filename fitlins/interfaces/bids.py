@@ -162,23 +162,23 @@ class LoadBIDSModel(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        bids.config.set_options(loop_preproc=True)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
+        derivatives = self.inputs.preproc_dir
         if not isdefined(include):
             include = None
         if not isdefined(exclude):
             exclude = None
+        if not isdefined(derivatives):
+            exclude = False
 
-        paths = [(self.inputs.bids_dir, 'bids')]
-        if isdefined(self.inputs.preproc_dir):
-            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = bids.BIDSLayout(paths, include=include, exclude=exclude)
+        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include, exclude=exclude,
+                                 derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
         analysis = bids.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, **selectors)
+        analysis.setup(drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
@@ -388,10 +388,12 @@ class BIDSSelect(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        paths = [(self.inputs.bids_dir, 'bids')]
-        if isdefined(self.inputs.preproc_dir):
-            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = bids.BIDSLayout(paths)
+
+        derivatives = self.inputs.preproc_dir
+        if not isdefined(derivatives):
+            exclude = False
+
+        layout = bids.BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
 
         bold_files = []
         mask_files = []
