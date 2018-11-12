@@ -40,15 +40,14 @@ REQUIRES = [
     'nilearn>=0.4.0',
     'pandas>=0.19',
     'tables>=3.2.1',
-    'nistats>=0.0.1a',
-    'grabbit>=0.2.3',
+    'nistats>=0.0.1b0',
     'pybids>=0.6.5',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/nistats/nistats.git@'
-    'ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats',
+    'git+https://github.com/bids-standard/pybids.git@'
+    '54d4810a33be27c8ab340bf40c6bd1261dcb2c42#egg=pybids',
 ]
 
 TESTS_REQUIRES = [
