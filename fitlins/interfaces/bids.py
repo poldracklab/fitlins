@@ -99,10 +99,11 @@ class ModelSpecLoader(SimpleInterface):
         from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
-            layout = bids.BIDSLayout(self.inputs.bids_dir)
+            # model is not yet standardized, so validate=False
+            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
 
             if not isdefined(models):
-                models = layout.get(type='model')
+                models = layout.get(suffix='smdl')
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
@@ -200,9 +201,9 @@ class LoadBIDSModel(SimpleInterface):
                 block.model['HRF_variables'], mode='sparse', force=True):
             info = {}
 
-            space = analysis.layout.get_spaces(type='preproc',
+            space = analysis.layout.get_spaces(suffix='bold',
                                                extensions=['.nii', '.nii.gz'])[0]
-            preproc_files = analysis.layout.get(type='preproc',
+            preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
                                                 **ents)
@@ -212,7 +213,7 @@ class LoadBIDSModel(SimpleInterface):
             fname = preproc_files[0].filename
 
             # Required field in seconds
-            TR = analysis.layout.get_metadata(fname, type='bold',
+            TR = analysis.layout.get_metadata(fname, suffix='bold',
                                               full_search=True)['RepetitionTime']
             dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
 
