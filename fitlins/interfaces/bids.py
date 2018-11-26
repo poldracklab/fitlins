@@ -188,17 +188,16 @@ class LoadBIDSModel(SimpleInterface):
         return runtime
 
     def _load_level1(self, runtime, analysis):
-        block = analysis.blocks[0]
-        block_subdir = Path(runtime.cwd) / block.level
-        block_subdir.mkdir(parents=True, exist_ok=True)
+        step = analysis.steps[0]
+        step_subdir = Path(runtime.cwd) / step.level
+        step_subdir.mkdir(parents=True, exist_ok=True)
 
         entities = []
         session_info = []
         contrast_indices = []
         contrast_info = []
         warnings = []
-        for paradigm, _, ents in block.get_design_matrix(
-                block.model['HRF_variables'], mode='sparse', force=True):
+        for sparse, dense, ents in step.get_design_matrix(mode='sparse', force=True):
             info = {}
 
             space = analysis.layout.get_spaces(suffix='bold',
@@ -215,30 +214,23 @@ class LoadBIDSModel(SimpleInterface):
             # Required field in seconds
             TR = analysis.layout.get_metadata(fname, suffix='bold',
                                               full_search=True)['RepetitionTime']
-            dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
-
-            _, confounds, _ = block.get_design_matrix(dense_vars,
-                                                      mode='dense',
-                                                      force=True,
-                                                      sampling_rate=1/TR,
-                                                      **ents)[0]
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            events_file = block_subdir / '{}_events.h5'.format(ent_string)
-            paradigm.to_hdf(events_file, key='events')
+            sparse_file = step_subdir / '{}_sparse.h5'.format(ent_string)
+            sparse.to_hdf(sparse_file, key='sparse')
 
             imputed = []
-            if confounds is not None:
+            if dense is not None:
                 # Note that FMRIPREP includes CosineXX columns to accompany
                 # t/aCompCor
                 # We may want to add criteria to include HPF columns that are not
                 # explicitly listed in the model
-                names = [col for col in confounds.columns
-                         if col.startswith('NonSteadyStateOutlier') or
-                         col in block.model['variables']]
-                confounds = confounds[names]
+                names = [col for col in dense.columns
+                         if col.startswith('non_steady_state') or
+                         col in step.model['variables']]
+                dense = dense[names]
 
                 # These confounds are defined pairwise with the current volume
                 # and its predecessor, and thus may be undefined (have value
@@ -247,38 +239,37 @@ class LoadBIDSModel(SimpleInterface):
                 # expected NaN only.
                 # Any other NaNs must be handled by an explicit transform in
                 # the BIDS model.
-                for imputable in ('FramewiseDisplacement',
-                                  'stdDVARS', 'non-stdDVARS',
-                                  'vx-wisestdDVARS'):
-                    if imputable in confounds.columns:
-                        vals = confounds[imputable].values
+                for imputable in ('framewise_displacement',
+                                  'std_dvars', 'dvars'):
+                    if imputable in dense.columns:
+                        vals = dense[imputable].values
                         if not np.isnan(vals[0]):
                             continue
 
                         # Impute the mean non-zero, non-NaN value
-                        confounds[imputable][0] = np.nanmean(vals[vals != 0])
+                        dense[imputable][0] = np.nanmean(vals[vals != 0])
                         imputed.append(imputable)
 
-                if np.isnan(confounds.values).any():
-                    iflogger.warning('Unexpected NaNs found in confounds; '
+                if np.isnan(dense.values).any():
+                    iflogger.warning('Unexpected NaNs found in design matrix; '
                                      'regression may fail.')
 
-                confounds_file = block_subdir / '{}_confounds.h5'.format(ent_string)
-                confounds.to_hdf(confounds_file, key='confounds')
+                dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
+                dense.to_hdf(dense_file, key='dense')
 
             else:
-                confounds_file = None
+                dense_file = None
 
-            info['events'] = str(events_file)
-            info['confounds'] = str(confounds_file)
+            info['sparse'] = str(sparse_file)
+            info['dense'] = str(dense_file)
             info['repetition_time'] = TR
 
             # Transpose so each contrast gets a row of data instead of column
-            contrasts, index, _ = block.get_contrasts(**ents)[0]
+            contrasts, index, _ = step.get_contrasts(**ents)[0]
 
             contrast_type_map = defaultdict(lambda: 'T')
             contrast_type_map.update({contrast['name']: contrast['type']
-                                      for contrast in block.contrasts})
+                                      for contrast in step.contrasts})
             contrast_type_list = [contrast_type_map[contrast]
                                   for contrast in contrasts.columns]
 
@@ -286,11 +277,11 @@ class LoadBIDSModel(SimpleInterface):
             # Add test indicator column
             contrasts['type'] = contrast_type_list
 
-            contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
+            contrasts_file = step_subdir / '{}_contrasts.h5'.format(ent_string)
             contrasts_file.parent.mkdir(parents=True, exist_ok=True)
             contrasts.to_hdf(contrasts_file, key='contrasts')
 
-            warning_file = block_subdir / '{}_warning.html'.format(ent_string)
+            warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
                 if imputed:
                     fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
