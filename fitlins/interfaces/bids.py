@@ -109,7 +109,7 @@ class ModelSpecLoader(SimpleInterface):
             elif models == 'default':
                 models = auto_model(layout)
 
-        models = [_ensure_model(m) for m in models]
+        models = [_ensure_model(m.path) for m in models]
 
         if self.inputs.selectors:
             # This is almost certainly incorrect
@@ -197,7 +197,7 @@ class LoadBIDSModel(SimpleInterface):
         contrast_indices = []
         contrast_info = []
         warnings = []
-        for sparse, dense, ents in step.get_design_matrix(mode='sparse', force=True):
+        for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
             space = analysis.layout.get_spaces(suffix='bold',
@@ -209,7 +209,7 @@ class LoadBIDSModel(SimpleInterface):
             if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
-            fname = preproc_files[0].filename
+            fname = preproc_files[0].path
 
             # Required field in seconds
             TR = analysis.layout.get_metadata(fname, suffix='bold',
@@ -218,8 +218,10 @@ class LoadBIDSModel(SimpleInterface):
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            sparse_file = step_subdir / '{}_sparse.h5'.format(ent_string)
-            sparse.to_hdf(sparse_file, key='sparse')
+            sparse_file = None
+            if sparse is not None:
+                sparse_file = step_subdir / '{}_sparse.h5'.format(ent_string)
+                sparse.to_hdf(sparse_file, key='sparse')
 
             imputed = []
             if dense is not None:
@@ -229,7 +231,7 @@ class LoadBIDSModel(SimpleInterface):
                 # explicitly listed in the model
                 names = [col for col in dense.columns
                          if col.startswith('non_steady_state') or
-                         col in step.model['variables']]
+                         col in step.model['x']]
                 dense = dense[names]
 
                 # These confounds are defined pairwise with the current volume
@@ -260,12 +262,14 @@ class LoadBIDSModel(SimpleInterface):
             else:
                 dense_file = None
 
-            info['sparse'] = str(sparse_file)
-            info['dense'] = str(dense_file)
+            if sparse_file is not None:
+                info['sparse'] = str(sparse_file)
+            if dense_file is not None:
+                info['dense'] = str(dense_file)
             info['repetition_time'] = TR
 
             # Transpose so each contrast gets a row of data instead of column
-            contrasts, index, _ = step.get_contrasts(**ents)[0]
+            contrasts = step.get_contrasts(**ents)[0]
 
             contrast_type_map = defaultdict(lambda: 'T')
             contrast_type_map.update({contrast['name']: contrast['type']
@@ -404,19 +408,18 @@ class BIDSSelect(SimpleInterface):
                     "".format(self.inputs.bids_dir, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
-                                      f.filename,
-                                      layout.files[f.filename].entities)
+                                      f.path,
+                                      layout.files[f.path].entities)
                                   for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
-            bold_ents = layout.parse_file_entities(
-                bold_file[0].filename)
+            bold_ents = layout.parse_file_entities(bold_file[0].path)
             bold_ents['type'] = 'brainmask'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
             bold_ents.pop('type')
 
-            bold_files.append(bold_file[0].filename)
-            mask_files.append(mask_file[0].filename if mask_file else None)
+            bold_files.append(bold_file[0].path)
+            mask_files.append(mask_file[0].path if mask_file else None)
             entities.append(bold_ents)
 
         self._results['bold_files'] = bold_files
