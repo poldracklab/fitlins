@@ -155,6 +155,33 @@ class LoadBIDSModelOutputSpec(TraitedSpec):
 
 
 class LoadBIDSModel(SimpleInterface):
+    """
+    Read a BIDS dataset and model and produce configurations that may be
+    adapted to various model-fitting packages.
+
+    Outputs
+    -------
+    session_info : list of dictionaries
+        At the first level, a dictionary per-run containing the following keys:
+            'events'    : HDF5 file containing sparse representation of events
+                       (onset, duration, amplitude)
+            'confounds' : HDF5 file containing dense representation of confound
+                          regressors
+            'repetition_time'   : float (in seconds)
+
+    contrast_info : list of lists of files
+        A list of files for each level of analysis (length depends on model)
+        An HDF5 file per analysis unit (e.g. run, subject, etc.) containing a pandas matrix
+        with a row for each contrast output.
+        The columns correspond to input files, and the entries are weights.
+        A final, additional column is added indicating whether the row is a T or F
+        contrast.
+
+    contrast_indices : list of lists of lists of dictionaries
+        A list of lists of dictionaries for each level of analysis (length depends on model)
+        A list of dictionaries per analysis unit (e.g. run, subject, etc.)
+        Each dictionary contains a set of entities describing
+    """
     input_spec = LoadBIDSModelInputSpec
     output_spec = LoadBIDSModelOutputSpec
 
