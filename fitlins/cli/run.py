@@ -139,7 +139,7 @@ def run_fitlins(argv=None):
     if opts.model in (None, 'default') and not op.exists(model):
         model = 'default'
 
-    derivatives = True if not opts.derivatves else opts.derivatives
+    derivatives = True if not opts.derivatives else opts.derivatives
 
     pipeline_name = 'fitlins'
     if opts.derivative_label:
