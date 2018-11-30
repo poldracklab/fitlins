@@ -9,7 +9,7 @@ from ..interfaces.visualizations import (
 from ..interfaces.utils import MergeAll
 
 
-def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
+def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                     include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
@@ -31,12 +31,10 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
-                      preproc_dir=preproc_dir,
+                      derivatives=derivatives,
                       selectors=selectors),
         name='loader')
 
-    if preproc_dir is not None:
-        loader.inputs.preproc_dir = preproc_dir
     if exclude_pattern is not None:
         loader.inputs.exclude_pattern = exclude_pattern
     if include_pattern is not None:
@@ -53,12 +51,9 @@ def init_fitlins_wf(bids_dir, preproc_dir, out_dir, space, exclude_pattern=None,
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
-        BIDSSelect(bids_dir=bids_dir,
+        BIDSSelect(bids_dir=bids_dir, derivatives=derivatives,
                    selectors={'type': 'preproc', 'space': space}),
         name='getter')
-
-    if preproc_dir is not None:
-        getter.inputs.preproc_dir = preproc_dir
 
     select_l1_contrasts = pe.Node(niu.Select(index=0), name='select_l1_contrasts')
 
