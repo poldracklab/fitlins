@@ -103,13 +103,13 @@ class ModelSpecLoader(SimpleInterface):
             layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
 
             if not isdefined(models):
-                models = layout.get(suffix='smdl')
+                models = layout.get(suffix='smdl', return_type='file')
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
                 models = auto_model(layout)
 
-        models = [_ensure_model(m.path) for m in models]
+        models = [_ensure_model(m) for m in models]
 
         if self.inputs.selectors:
             # This is almost certainly incorrect
