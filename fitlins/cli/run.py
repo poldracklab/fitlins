@@ -79,7 +79,7 @@ def get_parser():
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
                         help='location of BIDS model description (default bids_dir/model.json)')
-    g_bids.add_argument('-d', '--derivatives', action='append',
+    g_bids.add_argument('-d', '--derivatives', action='store', nargs='+',
                         help='location of derivatives (including preprocessed images).'
                         'If none specified, indexes all derivatives under bids_dir/derivatives.')
     g_bids.add_argument('--derivative-label', action='store', type=str,
