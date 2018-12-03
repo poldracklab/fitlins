@@ -103,13 +103,13 @@ class ModelSpecLoader(SimpleInterface):
             layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
 
             if not isdefined(models):
-                models = layout.get(suffix='smdl')
+                models = layout.get(suffix='smdl', return_type='file')
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
                 models = auto_model(layout)
 
-        models = [_ensure_model(m.path) for m in models]
+        models = [_ensure_model(m) for m in models]
 
         if self.inputs.selectors:
             # This is almost certainly incorrect
@@ -136,8 +136,8 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directory')
-    preproc_dir = Directory(exists=True,
-                            desc='Optional preprocessed files directory')
+    derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
+                                desc='Derivative folders')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
@@ -164,7 +164,7 @@ class LoadBIDSModel(SimpleInterface):
         import bids
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
-        derivatives = self.inputs.preproc_dir
+        derivatives = self.inputs.derivatives
         if not isdefined(include):
             include = None
         if not isdefined(exclude):
@@ -172,8 +172,8 @@ class LoadBIDSModel(SimpleInterface):
         if not isdefined(derivatives):
             exclude = False
 
-        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include, exclude=exclude,
-                                 derivatives=derivatives)
+        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include,
+                                 exclude=exclude, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
@@ -364,8 +364,8 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directories')
-    preproc_dir = Directory(exists=True,
-                            desc='Optional preprocessed files directory')
+    derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
+                                desc='Derivative folders')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -384,10 +384,7 @@ class BIDSSelect(SimpleInterface):
     def _run_interface(self, runtime):
         import bids
 
-        derivatives = self.inputs.preproc_dir
-        if not isdefined(derivatives):
-            exclude = False
-
+        derivatives = self.inputs.derivatives
         layout = bids.BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
 
         bold_files = []
