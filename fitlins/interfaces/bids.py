@@ -188,6 +188,8 @@ class LoadBIDSModel(SimpleInterface):
         return runtime
 
     def _load_level1(self, runtime, analysis):
+        import pandas as pd
+
         step = analysis.steps[0]
         step_subdir = Path(runtime.cwd) / step.level
         step_subdir.mkdir(parents=True, exist_ok=True)
@@ -268,22 +270,15 @@ class LoadBIDSModel(SimpleInterface):
                 info['dense'] = str(dense_file)
             info['repetition_time'] = TR
 
-            # Transpose so each contrast gets a row of data instead of column
             contrasts = step.get_contrasts(**ents)[0]
-
-            contrast_type_map = defaultdict(lambda: 'T')
-            contrast_type_map.update({contrast['name']: contrast['type']
-                                      for contrast in step.contrasts})
-            contrast_type_list = [contrast_type_map[contrast]
-                                  for contrast in contrasts.columns]
-
-            contrasts = contrasts.T
-            # Add test indicator column
-            contrasts['type'] = contrast_type_list
+            # Convert NamedTuples to matrix
+            contrast_matrix = pd.concat([c.weights for c in contrasts], sort=False)
+            contrast_matrix.index = [c.name for c in contrasts]
+            contrast_matrix['type'] = [c.type for c in contrasts]
 
             contrasts_file = step_subdir / '{}_contrasts.h5'.format(ent_string)
             contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-            contrasts.to_hdf(contrasts_file, key='contrasts')
+            contrast_matrix.to_hdf(contrasts_file, key='contrasts')
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -292,7 +287,7 @@ class LoadBIDSModel(SimpleInterface):
 
             entities.append(ents)
             session_info.append(info)
-            contrast_indices.append(index.to_dict('records'))
+            contrast_indices.append([c.entities for c in contrasts])
             contrast_info.append(str(contrasts_file))
             warnings.append(str(warning_file))
 
