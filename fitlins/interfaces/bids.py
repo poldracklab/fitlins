@@ -2,12 +2,11 @@ import os
 from functools import reduce
 from pathlib import Path
 from gzip import GzipFile
+import pickle
 import json
 import shutil
 import numpy as np
 import nibabel as nb
-
-from collections import defaultdict
 
 from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
@@ -270,15 +269,9 @@ class LoadBIDSModel(SimpleInterface):
                 info['dense'] = str(dense_file)
             info['repetition_time'] = TR
 
-            contrasts = step.get_contrasts(**ents)[0]
-            # Convert NamedTuples to matrix
-            contrast_matrix = pd.concat([c.weights for c in contrasts], sort=False)
-            contrast_matrix.index = [c.name for c in contrasts]
-            contrast_matrix['type'] = [c.type for c in contrasts]
-
-            contrasts_file = step_subdir / '{}_contrasts.h5'.format(ent_string)
-            contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-            contrast_matrix.to_hdf(contrasts_file, key='contrasts')
+            contrasts = [c._asdict() for c in step.get_contrasts(**ents)[0]]
+            for con in contrasts:
+                con['weights'] = con['weights'].to_dict('records')
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -287,14 +280,12 @@ class LoadBIDSModel(SimpleInterface):
 
             entities.append(ents)
             session_info.append(info)
-            contrast_indices.append([c.entities for c in contrasts])
-            contrast_info.append(str(contrasts_file))
+            contrast_info.append(contrasts)
             warnings.append(str(warning_file))
 
         self._results['session_info'] = session_info
         self._results['warnings'] = warnings
         self._results.setdefault('entities', []).append(entities)
-        self._results.setdefault('contrast_indices', []).append(contrast_indices)
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):

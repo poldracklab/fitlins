@@ -78,14 +78,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                                   name='collate_first_level')
 
     select_l2_entities = pe.Node(niu.Select(index=1), name='select_l2_entities')
-    select_l2_indices = pe.Node(niu.Select(index=1), name='select_l2_indices')
     select_l2_contrasts = pe.Node(niu.Select(index=1), name='select_l2_contrasts')
 
     # Run second-level model
     # TODO: Iterate over all higher levels
     l2_model = pe.MapNode(
         SecondLevelModel(),
-        iterfield=['contrast_info', 'contrast_indices'],
+        iterfield=['contrast_info'],
         name='l2_model')
 
     collate_second_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
@@ -249,12 +248,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
 
         (loader, select_l2_entities, [('entities', 'inlist')]),
-        (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
 
         (l1_model, l2_model, [('contrast_maps', 'stat_files')]),
         (l1_metadata, l2_model, [('out', 'stat_metadata')]),
-        (select_l2_indices, l2_model, [('out', 'contrast_indices')]),
         (select_l2_contrasts, l2_model, [('out', 'contrast_info')]),
 
         (l2_model, collate_second_level, [('contrast_maps', 'contrast_maps'),
