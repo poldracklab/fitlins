@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
@@ -113,20 +114,20 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield=['data', 'explanatory_variables'],
         name='plot_corr')
 
-    plot_l1_contrast_matrix = pe.MapNode(
-        ContrastMatrixPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_l1_contrast_matrix')
+    # plot_l1_contrast_matrix = pe.MapNode(
+    #     ContrastMatrixPlot(image_type='svg'),
+    #     iterfield='data',
+    #     name='plot_l1_contrast_matrix')
 
     plot_l1_contrasts = pe.MapNode(
         GlassBrainPlot(image_type='png'),
         iterfield='data',
         name='plot_l1_contrasts')
 
-    plot_l2_contrast_matrix = pe.MapNode(
-        ContrastMatrixPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_l2_contrast_matrix')
+    # plot_l2_contrast_matrix = pe.MapNode(
+    #     ContrastMatrixPlot(image_type='svg'),
+    #     iterfield='data',
+    #     name='plot_l2_contrast_matrix')
 
     plot_l2_contrasts = pe.MapNode(
         GlassBrainPlot(image_type='png'),
@@ -140,6 +141,16 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
+    with (reportlet_dir / 'dataset_description.json').open('w') as file:
+        json.dump(
+            {
+                'Name': 'Fitlins reportlet',
+                'BIDSVersion': '1.1.0',
+                'PipelineDescription': {
+                    'Name': 'FitLins',
+                    },
+                },
+            file)
 
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
@@ -190,21 +201,21 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_corr')
 
-    ds_l1_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir,
-                     fixed_entities={'type': 'contrasts'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_l1_contrasts')
+    # ds_l1_contrasts = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir,
+    #                  fixed_entities={'type': 'contrasts'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_l1_contrasts')
 
-    ds_l2_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir,
-                     fixed_entities={'type': 'contrasts'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_l2_contrasts')
+    # ds_l2_contrasts = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir,
+    #                  fixed_entities={'type': 'contrasts'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_l2_contrasts')
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
@@ -296,13 +307,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (plot_corr, ds_corr, [('figure', 'in_file')]),
 
 
-        (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
+        # (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
         # (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
 
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
 
-        (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
+        # (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
         # (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
 
         (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
