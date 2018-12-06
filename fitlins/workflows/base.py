@@ -266,11 +266,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (l1_model, plot_corr, [('design_matrix', 'data')]),
         (get_evs, plot_corr, [('out', 'explanatory_variables')]),
 
-        (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
+        # (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_first_level, plot_l1_contrasts, [('contrast_maps', 'data')]),
 
-        (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
+        # (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_second_level, plot_l2_contrasts, [('contrast_maps', 'data')]),
 
@@ -297,16 +297,16 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
 
         (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
-        (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
+        # (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
 
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
 
         (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
-        (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
+        # (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
 
         (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
-        (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
+        # (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
         ])
 
     return wf

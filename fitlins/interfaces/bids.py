@@ -1,8 +1,6 @@
 import os
-from functools import reduce
 from pathlib import Path
 from gzip import GzipFile
-import pickle
 import json
 import shutil
 import numpy as np
@@ -17,7 +15,7 @@ from nipype.interfaces.base import (
     )
 from nipype.interfaces.io import IOBase
 
-from ..utils import dict_intersection, snake_to_camel
+from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -149,8 +147,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.List(File()))
-    contrast_indices = traits.List(traits.List(traits.List(traits.Dict)))
+    contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
     entities = traits.List(traits.List(traits.Dict()))
     warnings = traits.List(File)
 
@@ -181,21 +178,15 @@ class LoadBIDSModel(SimpleInterface):
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
-        # Debug - remove, eventually
-        runtime.analysis = analysis
-
         return runtime
 
     def _load_level1(self, runtime, analysis):
-        import pandas as pd
-
         step = analysis.steps[0]
         step_subdir = Path(runtime.cwd) / step.level
         step_subdir.mkdir(parents=True, exist_ok=True)
 
         entities = []
         session_info = []
-        contrast_indices = []
         contrast_info = []
         warnings = []
         for sparse, dense, ents in step.get_design_matrix():
@@ -269,7 +260,7 @@ class LoadBIDSModel(SimpleInterface):
                 info['dense'] = str(dense_file)
             info['repetition_time'] = TR
 
-            contrasts = [c._asdict() for c in step.get_contrasts(**ents)[0]]
+            contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
             for con in contrasts:
                 con['weights'] = con['weights'].to_dict('records')
 
@@ -289,55 +280,27 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        import pandas as pd
-
-        cwd = Path(runtime.cwd)
+        # cwd = Path(runtime.cwd)
         for block in analysis.steps[1:]:
-            block_subdir = cwd / block.level
-            block_subdir.mkdir(parents=True, exist_ok=True)
+            # block_subdir = cwd / block.level
+            # block_subdir.mkdir(parents=True, exist_ok=True)
 
             entities = []
-            contrast_indices = []
             contrast_info = []
             for contrasts in block.get_contrasts():
                 if all([c.weights.empty for c in contrasts]):
                     continue
 
-                # The contrast index is the name of the input contrasts,
-                # which will very frequently be non-unique
-                # Hence, add the contrast to the index (table of entities)
-                # and switch to a matching numeric index
-                contrasts.entities['contrast'] = contrasts.index
+                entities.append(contrasts[0].entities)  # Should all the same
+                contrasts = [dict(c._asdict()) for c in contrasts]
+                for contrast in contrasts:
+                    contrast['weights'] = contrast['weights'].to_dict('records')
+                    contrast.pop('entities')
 
-                contrast_matrix = pd.concat([c.weights for c in contrasts], sort=False)
-                contrast_matrix.index = [c.name for c in contrasts]
-                contrast_matrix['type'] = [c.type for c in contrasts]
-
-                indices = [c.entities for c in contrasts]
-
-                # Entities for a given contrast matrix include the intersection of
-                # entities of inputs, e.g., if this level is within-subject, the
-                # subject should persist
-                out_ents = reduce(dict_intersection, indices)
-                # Explicit entities take precedence over derived
-                out_ents.update(contrasts.entities)
-                # Input-level contrasts will be overridden by the current level
-                out_ents.pop('contrast', None)
-
-                ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in out_ents.items())
-
-                contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
-                contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-                contrast_matrix.to_hdf(contrasts_file, key='contrasts')
-
-                entities.append(out_ents)
-                contrast_indices.append(indices)
-                contrast_info.append(str(contrasts_file))
+                contrast_info.append(contrasts)
 
             self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
-            self._results['contrast_indices'].append(contrast_indices)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):

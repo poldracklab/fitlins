@@ -40,7 +40,7 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     bold_file = File(exists=True, mandatory=True)
     mask_file = File(exists=True)
     session_info = traits.Dict()
-    contrast_info = File(exists=True)
+    contrast_info = traits.List(traits.List(traits.Dict))
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
@@ -111,7 +111,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
     stat_metadata = traits.List(traits.List(traits.Dict))
-    contrast_info = File(exists=True)
+    contrast_info = traits.List(traits.List(traits.Dict))
     contrast_indices = traits.List(traits.Dict)
 
 
