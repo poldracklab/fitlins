@@ -100,19 +100,20 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_design')
 
-    def _get_evs(info):
-        import pandas as pd
-        events = pd.read_hdf(info['events'], key='events')
-        return len(events['condition'].unique())
+    # TODO: get_evs should be based on contrasts, EVs are any used in contrasts, others are confounds
+    # def _get_evs(info):
+    #     import pandas as pd
+    #     events = pd.read_hdf(info['events'], key='events')
+    #     return len(events['condition'].unique())
 
-    # Number of explanatory variables is used to mark off sections of the
-    # correlation matrix
-    get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
+    # # Number of explanatory variables is used to mark off sections of the
+    # # correlation matrix
+    # get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
 
-    plot_corr = pe.MapNode(
-        DesignCorrelationPlot(image_type='svg'),
-        iterfield=['data', 'explanatory_variables'],
-        name='plot_corr')
+    # plot_corr = pe.MapNode(
+    #     DesignCorrelationPlot(image_type='svg'),
+    #     iterfield=['data', 'explanatory_variables'],
+    #     name='plot_corr')
 
     # plot_l1_contrast_matrix = pe.MapNode(
     #     ContrastMatrixPlot(image_type='svg'),
@@ -194,12 +195,12 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_design')
 
-    ds_corr = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_corr')
+    # ds_corr = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_corr')
 
     # ds_l1_contrasts = pe.MapNode(
     #     BIDSDataSink(base_directory=out_dir,
@@ -273,9 +274,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         #
         (l1_model, plot_design, [('design_matrix', 'data')]),
 
-        (loader, get_evs, [('session_info', 'info')]),
-        (l1_model, plot_corr, [('design_matrix', 'data')]),
-        (get_evs, plot_corr, [('out', 'explanatory_variables')]),
+        # (loader, get_evs, [('session_info', 'info')]),
+        # (l1_model, plot_corr, [('design_matrix', 'data')]),
+        # (get_evs, plot_corr, [('out', 'explanatory_variables')]),
 
         # (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
 
@@ -303,8 +304,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (plot_design, ds_design, [('figure', 'in_file')]),
 
-        (select_l1_entities, ds_corr, [('out', 'entities')]),
-        (plot_corr, ds_corr, [('figure', 'in_file')]),
+        # (select_l1_entities, ds_corr, [('out', 'entities')]),
+        # (plot_corr, ds_corr, [('figure', 'in_file')]),
 
 
         # (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
