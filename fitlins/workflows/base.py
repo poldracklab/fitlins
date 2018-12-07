@@ -142,17 +142,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
-    with (reportlet_dir / 'dataset_description.json').open('w') as file:
-        json.dump(
-            {
-                'Name': 'Fitlins reportlet',
-                'BIDSVersion': '1.1.0',
-                'PipelineDescription': {
-                    'Name': 'FitLins',
-                    },
-                },
-            file)
-
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
     ds_model_warnings = pe.MapNode(

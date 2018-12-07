@@ -427,7 +427,7 @@ class BIDSDataSink(IOBase):
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = bids.BIDSLayout(base_dir)
+        layout = bids.BIDSLayout(base_dir, validate=False)
         path_patterns = self.inputs.path_patterns
         if not isdefined(path_patterns):
             path_patterns = None
