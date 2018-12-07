@@ -53,7 +53,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(bids_dir=bids_dir, derivatives=derivatives,
-                   selectors={'type': 'preproc', 'space': space}),
+                   selectors={'type': 'preproc', 'suffix': 'bold', 'space': space}),
         name='getter')
 
     select_l1_contrasts = pe.Node(niu.Select(index=0), name='select_l1_contrasts')
