@@ -40,7 +40,7 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     bold_file = File(exists=True, mandatory=True)
     mask_file = File(exists=True)
     session_info = traits.Dict()
-    contrast_info = traits.List(traits.List(traits.Dict))
+    contrast_info = traits.List(traits.Dict)
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
@@ -59,23 +59,29 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
 
-        events = pd.read_hdf(info['events'], key='events')
-
-        if info['confounds'] is not None and info['confounds'] != 'None':
-            confounds = pd.read_hdf(info['confounds'], key='confounds')
-            confound_names = confounds.columns.tolist()
-            drift_model = None if 'Cosine00' in confound_names else 'cosine'
+        if info['sparse'] is not None and info['sparse'] != 'None':
+            sparse = pd.read_hdf(info['sparse'], key='sparse')
+            sparse.rename(columns={
+                'condition': 'trial_type',
+                'amplitude': 'modulation'})
         else:
-            confounds = None
-            confound_names = None
+            sparse = None
+
+        # I'm stll assuming dirft model is in sparse events only
+        if info['dense'] is not None and info['dense'] != 'None':
+            dense = pd.read_hdf(info['dense'], key='dense')
+            dense_names = dense.columns.tolist()
+            drift_model = None if 'Cosine00' in dense_names else 'cosine'
+        else:
+            dense = None
+            dense_names = None
             drift_model = 'cosine'
 
         mat = dm.make_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
-            paradigm=events.rename(columns={'condition': 'trial_type',
-                                            'amplitude': 'modulation'}),
-            add_regs=confounds,
-            add_reg_names=confound_names,
+            paradigm=sparse,
+            add_regs=dense,
+            add_reg_names=dense_names,
             drift_model=drift_model,
             )
 
