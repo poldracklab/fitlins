@@ -352,9 +352,11 @@ class BIDSSelect(SimpleInterface):
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_file_entities(bold_file[0].path)
-            bold_ents['type'] = 'brainmask'
+            bold_ents['suffix'] = 'mask'
+            bold_ents['desc'] = 'brain'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
-            bold_ents.pop('type')
+            bold_ents.pop('suffix')
+            bold_ents.pop('desc')
 
             bold_files.append(bold_file[0].path)
             mask_files.append(mask_file[0].path if mask_file else None)
