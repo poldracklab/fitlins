@@ -59,31 +59,29 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
 
-        if info['sparse'] is not None and info['sparse'] != 'None':
-            sparse = pd.read_hdf(info['sparse'], key='sparse')
-            sparse.rename(columns={
-                'condition': 'trial_type',
-                'amplitude': 'modulation'})
-        else:
-            sparse = None
+        sparse = None
+        if info['sparse'] not in (None, 'None'):
+            sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
+                columns={'condition': 'trial_type',
+                         'amplitude': 'modulation'})
 
-        # I'm stll assuming dirft model is in sparse events only
-        if info['dense'] is not None and info['dense'] != 'None':
+        dense = None
+        if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
-            dense_names = dense.columns.tolist()
-            drift_model = None if 'Cosine00' in dense_names else 'cosine'
+            column_names = dense.columns.tolist()
+            drift_model = None if 'cosine_00' in column_names else 'cosine'
         else:
             dense = None
-            dense_names = None
+            column_names = None
             drift_model = 'cosine'
 
-        mat = dm.make_design_matrix(
+        mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
-            paradigm=sparse,
+            events=sparse,
             add_regs=dense,
-            add_reg_names=dense_names,
+            add_reg_names=column_names,
             drift_model=drift_model,
-            )
+        )
 
         mat.to_csv('design.tsv', sep='\t')
         self._results['design_matrix'] = os.path.join(runtime.cwd,

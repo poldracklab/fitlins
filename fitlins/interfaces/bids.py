@@ -254,10 +254,8 @@ class LoadBIDSModel(SimpleInterface):
             else:
                 dense_file = None
 
-            if sparse_file is not None:
-                info['sparse'] = str(sparse_file)
-            if dense_file is not None:
-                info['dense'] = str(dense_file)
+            info['sparse'] = str(sparse_file) if sparse_file else None
+            info['dense'] = str(dense_file) if dense_file else None
             info['repetition_time'] = TR
 
             contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
