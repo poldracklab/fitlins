@@ -19,21 +19,23 @@ class NistatsBaseInterface(LibraryBaseInterface):
     _pkg = 'nistats'
 
 
-def prepare_contrasts(contrasts, design_matrix):
+def prepare_contrasts(contrasts, all_regressors):
     if not isdefined(contrasts):
         contrasts = []
-    all_regressors = design_matrix.columns
     # Prepare contrast
+    out_contrasts = []
     for contrast in contrasts:
         # Fill in zeros
-        contrast['weights'] = [
-            [row[col] if col in row else 0 for col in all_regressors.columns]
+        out = {**contrast}
+        out['weights'] = [
+            [row[col] if col in row else 0 for col in all_regressors]
             for row in contrast['weights']
             ]
         # Lower case T
-        contrast['type'] = {'T': 't', 'F': 'F'}[contrast['type']]
+        out['type'] = {'T': 't', 'F': 'F'}[contrast['type']]
+        out_contrasts.append(out)
 
-    return contrasts
+    return out_contrasts
 
 
 class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
@@ -59,13 +61,14 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
 
-        sparse = None
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
                 columns={'condition': 'trial_type',
                          'amplitude': 'modulation'})
+            sparse = sparse.dropna(subset=['modulation'])  # Drop NAs
+        else:
+            sparse = None
 
-        dense = None
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
             column_names = dense.columns.tolist()
@@ -95,17 +98,19 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         contrast_maps = []
         contrast_metadata = []
-        for contrast in prepare_contrasts(self.inputs_contrast_info):
+        for contrast in prepare_contrasts(
+          self.inputs.contrast_info, mat.columns.tolist()):
             es = flm.compute_contrast(contrast['weights'],
                                       contrast['type'],
                                       output_type='effect_size')
             es_fname = os.path.join(
-                runtime.cwd, '{}.nii.gz').format(contrast)
+                runtime.cwd, '{}.nii.gz').format(contrast['name'])
             es.to_filename(es_fname)
 
             contrast_maps.append(es_fname)
             contrast_metadata.append({'contrast': contrast['weights'],
                                       'type': 'effect'})
+
         self._results['contrast_maps'] = contrast_maps
         self._results['contrast_metadata'] = contrast_metadata
 
