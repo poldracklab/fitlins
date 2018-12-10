@@ -105,7 +105,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             es.to_filename(es_fname)
 
             contrast_maps.append(es_fname)
-            contrast_metadata.append({'contrast': contrast['weights'],
+            contrast_metadata.append({'contrast': contrast['name'],
                                       'type': 'effect'})
 
         self._results['contrast_maps'] = contrast_maps
@@ -117,7 +117,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
     stat_metadata = traits.List(traits.List(traits.Dict))
-    contrast_info = traits.List(traits.List(traits.Dict))
+    contrast_info = traits.List(traits.Dict)
     contrast_indices = traits.List(traits.Dict)
 
 
