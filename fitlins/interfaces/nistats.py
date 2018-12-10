@@ -31,8 +31,8 @@ def prepare_contrasts(contrasts, all_regressors):
             [row[col] if col in row else 0 for col in all_regressors]
             for row in contrast['weights']
             ]
-        # Lower case T
-        out['type'] = {'T': 't', 'F': 'F'}[contrast['type']]
+        # Pybids returns lowercase contrast types, nistats uses capital F
+        out['type'] = {'t': 't', 'f': 'F'}[contrast['type']]
         out_contrasts.append(out)
 
     return out_contrasts
@@ -98,8 +98,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         contrast_maps = []
         contrast_metadata = []
-        for contrast in prepare_contrasts(
-          self.inputs.contrast_info, mat.columns.tolist()):
+        for contrast in prepare_contrasts(self.inputs.contrast_info, mat.columns.tolist()):
             es = flm.compute_contrast(contrast['weights'],
                                       contrast['type'],
                                       output_type='effect_size')
@@ -148,7 +147,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     def _run_interface(self, runtime):
         model = level2.SecondLevelModel()
         files = []
-        contrasts = prepare_contrasts(self.inputs_contrast_info)
+        contrasts = prepare_contrasts(self.inputs.contrast_info)
 
         # Need a way to group appropriate files
         for contrast in contrasts:
