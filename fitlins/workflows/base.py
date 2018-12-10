@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
@@ -52,7 +53,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(bids_dir=bids_dir, derivatives=derivatives,
-                   selectors={'type': 'preproc', 'space': space}),
+                   selectors={'type': 'preproc', 'suffix': 'bold', 'space': space}),
         name='getter')
 
     select_l1_contrasts = pe.Node(niu.Select(index=0), name='select_l1_contrasts')
@@ -78,14 +79,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                                   name='collate_first_level')
 
     select_l2_entities = pe.Node(niu.Select(index=1), name='select_l2_entities')
-    select_l2_indices = pe.Node(niu.Select(index=1), name='select_l2_indices')
     select_l2_contrasts = pe.Node(niu.Select(index=1), name='select_l2_contrasts')
 
     # Run second-level model
     # TODO: Iterate over all higher levels
     l2_model = pe.MapNode(
         SecondLevelModel(),
-        iterfield=['contrast_info', 'contrast_indices'],
+        iterfield=['contrast_info'],
         name='l2_model')
 
     collate_second_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
@@ -100,34 +100,35 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_design')
 
-    def _get_evs(info):
-        import pandas as pd
-        events = pd.read_hdf(info['events'], key='events')
-        return len(events['condition'].unique())
+    # TODO: get_evs should be based on contrasts, EVs are any used in contrasts, others are confounds
+    # def _get_evs(info):
+    #     import pandas as pd
+    #     events = pd.read_hdf(info['events'], key='events')
+    #     return len(events['condition'].unique())
 
-    # Number of explanatory variables is used to mark off sections of the
-    # correlation matrix
-    get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
+    # # Number of explanatory variables is used to mark off sections of the
+    # # correlation matrix
+    # get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
 
-    plot_corr = pe.MapNode(
-        DesignCorrelationPlot(image_type='svg'),
-        iterfield=['data', 'explanatory_variables'],
-        name='plot_corr')
+    # plot_corr = pe.MapNode(
+    #     DesignCorrelationPlot(image_type='svg'),
+    #     iterfield=['data', 'explanatory_variables'],
+    #     name='plot_corr')
 
-    plot_l1_contrast_matrix = pe.MapNode(
-        ContrastMatrixPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_l1_contrast_matrix')
+    # plot_l1_contrast_matrix = pe.MapNode(
+    #     ContrastMatrixPlot(image_type='svg'),
+    #     iterfield='data',
+    #     name='plot_l1_contrast_matrix')
 
     plot_l1_contrasts = pe.MapNode(
         GlassBrainPlot(image_type='png'),
         iterfield='data',
         name='plot_l1_contrasts')
 
-    plot_l2_contrast_matrix = pe.MapNode(
-        ContrastMatrixPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_l2_contrast_matrix')
+    # plot_l2_contrast_matrix = pe.MapNode(
+    #     ContrastMatrixPlot(image_type='svg'),
+    #     iterfield='data',
+    #     name='plot_l2_contrast_matrix')
 
     plot_l2_contrasts = pe.MapNode(
         GlassBrainPlot(image_type='png'),
@@ -141,7 +142,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
-
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_]task-{task}_[run-{run}_]snippet.html'
     ds_model_warnings = pe.MapNode(
@@ -184,28 +184,28 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_design')
 
-    ds_corr = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_corr')
+    # ds_corr = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_corr')
 
-    ds_l1_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir,
-                     fixed_entities={'type': 'contrasts'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_l1_contrasts')
+    # ds_l1_contrasts = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir,
+    #                  fixed_entities={'type': 'contrasts'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_l1_contrasts')
 
-    ds_l2_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir,
-                     fixed_entities={'type': 'contrasts'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_l2_contrasts')
+    # ds_l2_contrasts = pe.MapNode(
+    #     BIDSDataSink(base_directory=out_dir,
+    #                  fixed_entities={'type': 'contrasts'},
+    #                  path_patterns=image_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_l2_contrasts')
 
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
@@ -249,12 +249,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
 
         (loader, select_l2_entities, [('entities', 'inlist')]),
-        (loader, select_l2_indices, [('contrast_indices', 'inlist')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
 
         (l1_model, l2_model, [('contrast_maps', 'stat_files')]),
         (l1_metadata, l2_model, [('out', 'stat_metadata')]),
-        (select_l2_indices, l2_model, [('out', 'contrast_indices')]),
         (select_l2_contrasts, l2_model, [('out', 'contrast_info')]),
 
         (l2_model, collate_second_level, [('contrast_maps', 'contrast_maps'),
@@ -265,15 +263,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         #
         (l1_model, plot_design, [('design_matrix', 'data')]),
 
-        (loader, get_evs, [('session_info', 'info')]),
-        (l1_model, plot_corr, [('design_matrix', 'data')]),
-        (get_evs, plot_corr, [('out', 'explanatory_variables')]),
+        # (loader, get_evs, [('session_info', 'info')]),
+        # (l1_model, plot_corr, [('design_matrix', 'data')]),
+        # (get_evs, plot_corr, [('out', 'explanatory_variables')]),
 
-        (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
+        # (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_first_level, plot_l1_contrasts, [('contrast_maps', 'data')]),
 
-        (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
+        # (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
 
         (collate_second_level, plot_l2_contrasts, [('contrast_maps', 'data')]),
 
@@ -295,21 +293,21 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (select_l1_entities, ds_design, [('out', 'entities')]),
         (plot_design, ds_design, [('figure', 'in_file')]),
 
-        (select_l1_entities, ds_corr, [('out', 'entities')]),
-        (plot_corr, ds_corr, [('figure', 'in_file')]),
+        # (select_l1_entities, ds_corr, [('out', 'entities')]),
+        # (plot_corr, ds_corr, [('figure', 'in_file')]),
 
 
-        (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
-        (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
+        # (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
+        # (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
 
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
 
-        (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
-        (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
+        # (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
+        # (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
 
         (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
-        (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
+        # (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
         ])
 
     return wf

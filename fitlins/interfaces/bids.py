@@ -1,13 +1,10 @@
 import os
-from functools import reduce
 from pathlib import Path
 from gzip import GzipFile
 import json
 import shutil
 import numpy as np
 import nibabel as nb
-
-from collections import defaultdict
 
 from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
@@ -18,7 +15,7 @@ from nipype.interfaces.base import (
     )
 from nipype.interfaces.io import IOBase
 
-from ..utils import dict_intersection, snake_to_camel
+from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -150,8 +147,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.List(File()))
-    contrast_indices = traits.List(traits.List(traits.List(traits.Dict)))
+    contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
     entities = traits.List(traits.List(traits.Dict()))
     warnings = traits.List(File)
 
@@ -182,9 +178,6 @@ class LoadBIDSModel(SimpleInterface):
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
-        # Debug - remove, eventually
-        runtime.analysis = analysis
-
         return runtime
 
     def _load_level1(self, runtime, analysis):
@@ -194,7 +187,6 @@ class LoadBIDSModel(SimpleInterface):
 
         entities = []
         session_info = []
-        contrast_indices = []
         contrast_info = []
         warnings = []
         for sparse, dense, ents in step.get_design_matrix():
@@ -262,28 +254,13 @@ class LoadBIDSModel(SimpleInterface):
             else:
                 dense_file = None
 
-            if sparse_file is not None:
-                info['sparse'] = str(sparse_file)
-            if dense_file is not None:
-                info['dense'] = str(dense_file)
+            info['sparse'] = str(sparse_file) if sparse_file else None
+            info['dense'] = str(dense_file) if dense_file else None
             info['repetition_time'] = TR
 
-            # Transpose so each contrast gets a row of data instead of column
-            contrasts = step.get_contrasts(**ents)[0]
-
-            contrast_type_map = defaultdict(lambda: 'T')
-            contrast_type_map.update({contrast['name']: contrast['type']
-                                      for contrast in step.contrasts})
-            contrast_type_list = [contrast_type_map[contrast]
-                                  for contrast in contrasts.columns]
-
-            contrasts = contrasts.T
-            # Add test indicator column
-            contrasts['type'] = contrast_type_list
-
-            contrasts_file = step_subdir / '{}_contrasts.h5'.format(ent_string)
-            contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-            contrasts.to_hdf(contrasts_file, key='contrasts')
+            contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
+            for con in contrasts:
+                con['weights'] = con['weights'].to_dict('records')
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -292,72 +269,36 @@ class LoadBIDSModel(SimpleInterface):
 
             entities.append(ents)
             session_info.append(info)
-            contrast_indices.append(index.to_dict('records'))
-            contrast_info.append(str(contrasts_file))
+            contrast_info.append(contrasts)
             warnings.append(str(warning_file))
 
         self._results['session_info'] = session_info
         self._results['warnings'] = warnings
         self._results.setdefault('entities', []).append(entities)
-        self._results.setdefault('contrast_indices', []).append(contrast_indices)
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        cwd = Path(runtime.cwd)
-        for block in analysis.blocks[1:]:
-            block_subdir = cwd / block.level
-            block_subdir.mkdir(parents=True, exist_ok=True)
+        # cwd = Path(runtime.cwd)
+        for block in analysis.steps[1:]:
+            # block_subdir = cwd / block.level
+            # block_subdir.mkdir(parents=True, exist_ok=True)
 
             entities = []
-            contrast_indices = []
             contrast_info = []
-            for contrasts, index, ents in block.get_contrasts():
-                if contrasts.empty:
+            for contrasts in block.get_contrasts():
+                if all([c.weights.empty for c in contrasts]):
                     continue
 
-                # The contrast index is the name of the input contrasts,
-                # which will very frequently be non-unique
-                # Hence, add the contrast to the index (table of entities)
-                # and switch to a matching numeric index
-                index['contrast'] = contrasts.index
-                contrasts.index = index.index
+                entities.append(contrasts[0].entities)  # Should all the same
+                contrasts = [dict(c._asdict()) for c in contrasts]
+                for contrast in contrasts:
+                    contrast['weights'] = contrast['weights'].to_dict('records')
+                    contrast.pop('entities')
 
-                contrast_type_map = defaultdict(lambda: 'T')
-                contrast_type_map.update({contrast['name']: contrast['type']
-                                          for contrast in block.contrasts})
-                contrast_type_list = [contrast_type_map[contrast]
-                                      for contrast in contrasts.columns]
-
-                indices = index.to_dict('records')
-
-                # Entities for a given contrast matrix include the intersection of
-                # entities of inputs, e.g., if this level is within-subject, the
-                # subject should persist
-                out_ents = reduce(dict_intersection, indices)
-                # Explicit entities take precedence over derived
-                out_ents.update(ents)
-                # Input-level contrasts will be overridden by the current level
-                out_ents.pop('contrast', None)
-
-                ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in out_ents.items())
-
-                # Transpose so each contrast gets a row of data instead of column
-                contrasts = contrasts.T
-                # Add test indicator column
-                contrasts['type'] = contrast_type_list
-
-                contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
-                contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-                contrasts.to_hdf(contrasts_file, key='contrasts')
-
-                entities.append(out_ents)
-                contrast_indices.append(indices)
-                contrast_info.append(str(contrasts_file))
+                contrast_info.append(contrasts)
 
             self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
-            self._results['contrast_indices'].append(contrast_indices)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
@@ -411,9 +352,11 @@ class BIDSSelect(SimpleInterface):
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_file_entities(bold_file[0].path)
-            bold_ents['type'] = 'brainmask'
+            bold_ents['suffix'] = 'mask'
+            bold_ents['desc'] = 'brain'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
-            bold_ents.pop('type')
+            bold_ents.pop('suffix')
+            bold_ents.pop('desc')
 
             bold_files.append(bold_file[0].path)
             mask_files.append(mask_file[0].path if mask_file else None)
@@ -484,7 +427,7 @@ class BIDSDataSink(IOBase):
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = bids.BIDSLayout(base_dir)
+        layout = bids.BIDSLayout(base_dir, validate=False)
         path_patterns = self.inputs.path_patterns
         if not isdefined(path_patterns):
             path_patterns = None

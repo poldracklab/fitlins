@@ -11,6 +11,11 @@ PATH_PATTERNS = [
     'model-{model}.html'
 ]
 
+bids.config.set_option(
+    'config_paths',
+    {'fitlins': pkgr.resource_filename('fitlins', 'data/fitlins.json'),
+     **bids.config.get_option('config_paths')})
+
 
 def deroot(val, root):
     if isinstance(val, str):
@@ -29,9 +34,10 @@ def deroot(val, root):
 
 def parse_directory(deriv_dir, work_dir, analysis):
     fl_layout = bids.BIDSLayout(
-        (deriv_dir, ['bids', 'derivatives',
-                     pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
-    wd_layout = bids.BIDSLayout(str(Path(work_dir) / 'reportlets' / 'fitlins'))
+        deriv_dir,
+        config=['bids', 'derivatives', 'fitlins'])
+    wd_layout = bids.BIDSLayout(str(Path(work_dir) / 'reportlets' / 'fitlins'),
+                                validate=False)
     contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
 
     analyses = []
@@ -74,8 +80,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
 
 def write_report(level, report_dicts, run_context, deriv_dir):
     fl_layout = bids.BIDSLayout(
-        (deriv_dir, ['bids', 'derivatives',
-                     pkgr.resource_filename('fitlins', 'data/fitlins.json')]))
+        deriv_dir, config=['bids', 'derivatives', 'fitlins'])
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(
