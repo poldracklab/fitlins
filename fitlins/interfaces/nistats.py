@@ -31,8 +31,6 @@ def prepare_contrasts(contrasts, all_regressors):
             [row[col] if col in row else 0 for col in all_regressors]
             for row in contrast['weights']
             ]
-        # Pybids returns lowercase contrast types, nistats uses capital F
-        out['type'] = {'t': 't', 'f': 'F'}[contrast['type']]
         out_contrasts.append(out)
 
     return out_contrasts
