@@ -34,7 +34,7 @@ SETUP_REQUIRES = [
 
 REQUIRES = [
     'nibabel>=2.0',
-    'nipype>=1.1.2',
+    'nipype>=1.1.6',
     'seaborn>=0.7.1',
     'numpy>=1.11',
     'nilearn>=0.4.0',
@@ -47,7 +47,7 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/bids-standard/pybids.git@'
-    '54d4810a33be27c8ab340bf40c6bd1261dcb2c42#egg=pybids',
+    'dd8c9bc6478bb63e09f6c95566a11677ce12ded7#egg=pybids',
 ]
 
 TESTS_REQUIRES = [
