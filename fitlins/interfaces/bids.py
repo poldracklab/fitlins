@@ -278,26 +278,17 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        # cwd = Path(runtime.cwd)
         for block in analysis.steps[1:]:
-            # block_subdir = cwd / block.level
-            # block_subdir.mkdir(parents=True, exist_ok=True)
-
-            entities = []
             contrast_info = []
             for contrasts in block.get_contrasts():
                 if all([c.weights.empty for c in contrasts]):
                     continue
 
-                entities.append(contrasts[0].entities)  # Should all the same
                 contrasts = [dict(c._asdict()) for c in contrasts]
                 for contrast in contrasts:
                     contrast['weights'] = contrast['weights'].to_dict('records')
-                    contrast.pop('entities')
-
                 contrast_info.append(contrasts)
 
-            self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
 
 
