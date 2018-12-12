@@ -78,7 +78,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     collate_first_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
                                   name='collate_first_level')
 
-    select_l2_entities = pe.Node(niu.Select(index=1), name='select_l2_entities')
     select_l2_contrasts = pe.Node(niu.Select(index=1), name='select_l2_contrasts')
 
     # Run second-level model
@@ -100,7 +99,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_design')
 
-    # TODO: get_evs should be based on contrasts, EVs are any used in contrasts, others are confounds
+    # TODO: get_evs should be based on contrasts, EVs are any used in contrasts,
+    # others are confounds
     # def _get_evs(info):
     #     import pandas as pd
     #     events = pd.read_hdf(info['events'], key='events')
@@ -248,7 +248,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (l1_model, collate_first_level, [('contrast_maps', 'contrast_maps')]),
         (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
 
-        (loader, select_l2_entities, [('entities', 'inlist')]),
         (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
 
         (l1_model, l2_model, [('contrast_maps', 'stat_files')]),
@@ -303,11 +302,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
         (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
 
-        # (select_l2_entities, ds_l2_contrasts, [('out', 'entities')]),
         # (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
 
         (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
-        # (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
+        (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
         ])
 
     return wf
