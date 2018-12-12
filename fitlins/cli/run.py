@@ -79,9 +79,9 @@ def get_parser():
                              'removed)')
     g_bids.add_argument('-m', '--model', action='store', default='model.json',
                         help='location of BIDS model description (default bids_dir/model.json)')
-    g_bids.add_argument('-p', '--preproc-dir', action='store', default='fmriprep',
-                        help='location of preprocessed data (if relative path, search '
-                             'bids_dir/derivatives, followed by output_dir)')
+    g_bids.add_argument('-d', '--derivatives', action='store', nargs='+',
+                        help='location of derivatives (including preprocessed images).'
+                        'If none specified, indexes all derivatives under bids_dir/derivatives.')
     g_bids.add_argument('--derivative-label', action='store', type=str,
                         help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
@@ -139,13 +139,7 @@ def run_fitlins(argv=None):
     if opts.model in (None, 'default') and not op.exists(model):
         model = 'default'
 
-    preproc_dir = default_path(opts.preproc_dir,
-                               op.join(opts.bids_dir, 'derivatives'),
-                               'fmriprep')
-    if not op.exists(preproc_dir):
-        preproc_dir = default_path(opts.preproc_dir, opts.output_dir, 'fmriprep')
-        if not op.exists(preproc_dir):
-            raise RuntimeError("Preprocessed data could not be found")
+    derivatives = True if not opts.derivatives else opts.derivatives
 
     pipeline_name = 'fitlins'
     if opts.derivative_label:
@@ -158,7 +152,7 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, preproc_dir, deriv_dir, opts.space, model=model,
+        opts.bids_dir, derivatives, deriv_dir, opts.space, model=model,
         participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )

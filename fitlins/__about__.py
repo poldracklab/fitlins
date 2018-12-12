@@ -34,21 +34,20 @@ SETUP_REQUIRES = [
 
 REQUIRES = [
     'nibabel>=2.0',
-    'nipype>=1.1.2',
+    'nipype>=1.1.6',
     'seaborn>=0.7.1',
     'numpy>=1.11',
     'nilearn>=0.4.0',
     'pandas>=0.19',
     'tables>=3.2.1',
-    'nistats>=0.0.1a',
-    'grabbit>=0.2.3',
+    'nistats>=0.0.1b0',
     'pybids>=0.6.5',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/nistats/nistats.git@'
-    'ce3695e8f34c6f34323766dc96a60a53b69d2729#egg=nistats',
+    'git+https://github.com/bids-standard/pybids.git@'
+    'dd8c9bc6478bb63e09f6c95566a11677ce12ded7#egg=pybids',
 ]
 
 TESTS_REQUIRES = [

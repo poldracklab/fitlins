@@ -1,13 +1,10 @@
 import os
-from functools import reduce
 from pathlib import Path
 from gzip import GzipFile
 import json
 import shutil
 import numpy as np
 import nibabel as nb
-
-from collections import defaultdict
 
 from nipype import logging
 from nipype.utils.filemanip import makedirs, copyfile
@@ -18,7 +15,7 @@ from nipype.interfaces.base import (
     )
 from nipype.interfaces.io import IOBase
 
-from ..utils import dict_intersection, snake_to_camel
+from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -99,10 +96,11 @@ class ModelSpecLoader(SimpleInterface):
         from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
-            layout = bids.BIDSLayout(self.inputs.bids_dir)
+            # model is not yet standardized, so validate=False
+            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
 
             if not isdefined(models):
-                models = layout.get(type='model')
+                models = layout.get(suffix='smdl', return_type='file')
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
@@ -135,8 +133,8 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directory')
-    preproc_dir = Directory(exists=True,
-                            desc='Optional preprocessed files directory')
+    derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
+                                desc='Derivative folders')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     include_pattern = InputMultiPath(
@@ -149,8 +147,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
     session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.List(File()))
-    contrast_indices = traits.List(traits.List(traits.List(traits.Dict)))
+    contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
     entities = traits.List(traits.List(traits.Dict()))
     warnings = traits.List(File)
 
@@ -161,83 +158,73 @@ class LoadBIDSModel(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        bids.config.set_options(loop_preproc=True)
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
+        derivatives = self.inputs.derivatives
         if not isdefined(include):
             include = None
         if not isdefined(exclude):
             exclude = None
+        if not isdefined(derivatives):
+            exclude = False
 
-        paths = [(self.inputs.bids_dir, 'bids')]
-        if isdefined(self.inputs.preproc_dir):
-            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = bids.BIDSLayout(paths, include=include, exclude=exclude)
+        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include,
+                                 exclude=exclude, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
         analysis = bids.Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, **selectors)
+        analysis.setup(drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
-
-        # Debug - remove, eventually
-        runtime.analysis = analysis
 
         return runtime
 
     def _load_level1(self, runtime, analysis):
-        block = analysis.blocks[0]
-        block_subdir = Path(runtime.cwd) / block.level
-        block_subdir.mkdir(parents=True, exist_ok=True)
+        step = analysis.steps[0]
+        step_subdir = Path(runtime.cwd) / step.level
+        step_subdir.mkdir(parents=True, exist_ok=True)
 
         entities = []
         session_info = []
-        contrast_indices = []
         contrast_info = []
         warnings = []
-        for paradigm, _, ents in block.get_design_matrix(
-                block.model['HRF_variables'], mode='sparse', force=True):
+        for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
-            space = analysis.layout.get_spaces(type='preproc',
+            space = analysis.layout.get_spaces(suffix='bold',
                                                extensions=['.nii', '.nii.gz'])[0]
-            preproc_files = analysis.layout.get(type='preproc',
+            preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
                                                 **ents)
             if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
 
-            fname = preproc_files[0].filename
+            fname = preproc_files[0].path
 
             # Required field in seconds
-            TR = analysis.layout.get_metadata(fname, type='bold',
+            TR = analysis.layout.get_metadata(fname, suffix='bold',
                                               full_search=True)['RepetitionTime']
-            dense_vars = set(block.model['variables']) - set(block.model['HRF_variables'])
-
-            _, confounds, _ = block.get_design_matrix(dense_vars,
-                                                      mode='dense',
-                                                      force=True,
-                                                      sampling_rate=1/TR,
-                                                      **ents)[0]
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
 
-            events_file = block_subdir / '{}_events.h5'.format(ent_string)
-            paradigm.to_hdf(events_file, key='events')
+            sparse_file = None
+            if sparse is not None:
+                sparse_file = step_subdir / '{}_sparse.h5'.format(ent_string)
+                sparse.to_hdf(sparse_file, key='sparse')
 
             imputed = []
-            if confounds is not None:
+            if dense is not None:
                 # Note that FMRIPREP includes CosineXX columns to accompany
                 # t/aCompCor
                 # We may want to add criteria to include HPF columns that are not
                 # explicitly listed in the model
-                names = [col for col in confounds.columns
-                         if col.startswith('NonSteadyStateOutlier') or
-                         col in block.model['variables']]
-                confounds = confounds[names]
+                names = [col for col in dense.columns
+                         if col.startswith('non_steady_state') or
+                         col in step.model['x']]
+                dense = dense[names]
 
                 # These confounds are defined pairwise with the current volume
                 # and its predecessor, and thus may be undefined (have value
@@ -246,130 +233,71 @@ class LoadBIDSModel(SimpleInterface):
                 # expected NaN only.
                 # Any other NaNs must be handled by an explicit transform in
                 # the BIDS model.
-                for imputable in ('FramewiseDisplacement',
-                                  'stdDVARS', 'non-stdDVARS',
-                                  'vx-wisestdDVARS'):
-                    if imputable in confounds.columns:
-                        vals = confounds[imputable].values
+                for imputable in ('framewise_displacement',
+                                  'std_dvars', 'dvars'):
+                    if imputable in dense.columns:
+                        vals = dense[imputable].values
                         if not np.isnan(vals[0]):
                             continue
 
                         # Impute the mean non-zero, non-NaN value
-                        confounds[imputable][0] = np.nanmean(vals[vals != 0])
+                        dense[imputable][0] = np.nanmean(vals[vals != 0])
                         imputed.append(imputable)
 
-                if np.isnan(confounds.values).any():
-                    iflogger.warning('Unexpected NaNs found in confounds; '
+                if np.isnan(dense.values).any():
+                    iflogger.warning('Unexpected NaNs found in design matrix; '
                                      'regression may fail.')
 
-                confounds_file = block_subdir / '{}_confounds.h5'.format(ent_string)
-                confounds.to_hdf(confounds_file, key='confounds')
+                dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
+                dense.to_hdf(dense_file, key='dense')
 
             else:
-                confounds_file = None
+                dense_file = None
 
-            info['events'] = str(events_file)
-            info['confounds'] = str(confounds_file)
+            info['sparse'] = str(sparse_file) if sparse_file else None
+            info['dense'] = str(dense_file) if dense_file else None
             info['repetition_time'] = TR
 
-            # Transpose so each contrast gets a row of data instead of column
-            contrasts, index, _ = block.get_contrasts(**ents)[0]
+            contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
+            for con in contrasts:
+                con['weights'] = con['weights'].to_dict('records')
 
-            contrast_type_map = defaultdict(lambda: 'T')
-            contrast_type_map.update({contrast['name']: contrast['type']
-                                      for contrast in block.contrasts})
-            contrast_type_list = [contrast_type_map[contrast]
-                                  for contrast in contrasts.columns]
-
-            contrasts = contrasts.T
-            # Add test indicator column
-            contrasts['type'] = contrast_type_list
-
-            contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
-            contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-            contrasts.to_hdf(contrasts_file, key='contrasts')
-
-            warning_file = block_subdir / '{}_warning.html'.format(ent_string)
+            warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
                 if imputed:
                     fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
 
             entities.append(ents)
             session_info.append(info)
-            contrast_indices.append(index.to_dict('records'))
-            contrast_info.append(str(contrasts_file))
+            contrast_info.append(contrasts)
             warnings.append(str(warning_file))
 
         self._results['session_info'] = session_info
         self._results['warnings'] = warnings
         self._results.setdefault('entities', []).append(entities)
-        self._results.setdefault('contrast_indices', []).append(contrast_indices)
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        cwd = Path(runtime.cwd)
-        for block in analysis.blocks[1:]:
-            block_subdir = cwd / block.level
-            block_subdir.mkdir(parents=True, exist_ok=True)
-
-            entities = []
-            contrast_indices = []
+        for block in analysis.steps[1:]:
             contrast_info = []
-            for contrasts, index, ents in block.get_contrasts():
-                if contrasts.empty:
+            for contrasts in block.get_contrasts():
+                if all([c.weights.empty for c in contrasts]):
                     continue
 
-                # The contrast index is the name of the input contrasts,
-                # which will very frequently be non-unique
-                # Hence, add the contrast to the index (table of entities)
-                # and switch to a matching numeric index
-                index['contrast'] = contrasts.index
-                contrasts.index = index.index
+                contrasts = [dict(c._asdict()) for c in contrasts]
+                for contrast in contrasts:
+                    contrast['weights'] = contrast['weights'].to_dict('records')
+                contrast_info.append(contrasts)
 
-                contrast_type_map = defaultdict(lambda: 'T')
-                contrast_type_map.update({contrast['name']: contrast['type']
-                                          for contrast in block.contrasts})
-                contrast_type_list = [contrast_type_map[contrast]
-                                      for contrast in contrasts.columns]
-
-                indices = index.to_dict('records')
-
-                # Entities for a given contrast matrix include the intersection of
-                # entities of inputs, e.g., if this level is within-subject, the
-                # subject should persist
-                out_ents = reduce(dict_intersection, indices)
-                # Explicit entities take precedence over derived
-                out_ents.update(ents)
-                # Input-level contrasts will be overridden by the current level
-                out_ents.pop('contrast', None)
-
-                ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in out_ents.items())
-
-                # Transpose so each contrast gets a row of data instead of column
-                contrasts = contrasts.T
-                # Add test indicator column
-                contrasts['type'] = contrast_type_list
-
-                contrasts_file = block_subdir / '{}_contrasts.h5'.format(ent_string)
-                contrasts_file.parent.mkdir(parents=True, exist_ok=True)
-                contrasts.to_hdf(contrasts_file, key='contrasts')
-
-                entities.append(out_ents)
-                contrast_indices.append(indices)
-                contrast_info.append(str(contrasts_file))
-
-            self._results['entities'].append(entities)
             self._results['contrast_info'].append(contrast_info)
-            self._results['contrast_indices'].append(contrast_indices)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directories')
-    preproc_dir = Directory(exists=True,
-                            desc='Optional preprocessed files directory')
+    derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
+                                desc='Derivative folders')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -387,10 +315,9 @@ class BIDSSelect(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        paths = [(self.inputs.bids_dir, 'bids')]
-        if isdefined(self.inputs.preproc_dir):
-            paths.append((self.inputs.preproc_dir, ['bids', 'derivatives']))
-        layout = bids.BIDSLayout(paths)
+
+        derivatives = self.inputs.derivatives
+        layout = bids.BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
 
         bold_files = []
         mask_files = []
@@ -410,19 +337,20 @@ class BIDSSelect(SimpleInterface):
                     "".format(self.inputs.bids_dir, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
-                                      f.filename,
-                                      layout.files[f.filename].entities)
+                                      f.path,
+                                      layout.files[f.path].entities)
                                   for f in bold_file)))
 
             # Select exactly matching mask file (may be over-cautious)
-            bold_ents = layout.parse_file_entities(
-                bold_file[0].filename)
-            bold_ents['type'] = 'brainmask'
+            bold_ents = layout.parse_file_entities(bold_file[0].path)
+            bold_ents['suffix'] = 'mask'
+            bold_ents['desc'] = 'brain'
             mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
-            bold_ents.pop('type')
+            bold_ents.pop('suffix')
+            bold_ents.pop('desc')
 
-            bold_files.append(bold_file[0].filename)
-            mask_files.append(mask_file[0].filename if mask_file else None)
+            bold_files.append(bold_file[0].path)
+            mask_files.append(mask_file[0].path if mask_file else None)
             entities.append(bold_ents)
 
         self._results['bold_files'] = bold_files
@@ -490,7 +418,7 @@ class BIDSDataSink(IOBase):
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = bids.BIDSLayout(base_dir)
+        layout = bids.BIDSLayout(base_dir, validate=False)
         path_patterns = self.inputs.path_patterns
         if not isdefined(path_patterns):
             path_patterns = None
