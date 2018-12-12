@@ -22,18 +22,18 @@ def prepare_contrasts(contrasts, all_regressors):
     """
     if not isdefined(contrasts):
         return []
-    else:
-        out_contrasts = []
-        for contrast in contrasts:
-            # Fill in zeros
-            weights = np.array([
-                [row[col] if col in row else 0 for col in all_regressors]
-                for row in contrast['weights']
-                ])
-            out_contrasts.append(
-                (contrast['name'], weights, contrast['type']))
 
-        return out_contrasts
+    out_contrasts = []
+    for contrast in contrasts:
+        # Fill in zeros
+        weights = np.array([
+            [row[col] if col in row else 0 for col in all_regressors]
+            for row in contrast['weights']
+            ])
+        out_contrasts.append(
+            (contrast['name'], weights, contrast['type']))
+
+    return out_contrasts
 
 
 class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
@@ -162,8 +162,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                 filtered_files.append(f)
                 names.append(m['contrast'])
 
-        for name, weights, type in prepare_contrasts(
-          self.inputs.contrast_info, names):
+        for name, weights, type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
