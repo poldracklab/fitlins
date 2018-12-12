@@ -1,5 +1,4 @@
 from pathlib import Path
-import json
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 from ..interfaces.bids import (
@@ -23,6 +22,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     all_models = specs.run().outputs.model_spec
     if not all_models:
         raise RuntimeError("Unable to find or construct models")
+    if isinstance(all_models, list):
+        raise RuntimeError("Currently unable to run multiple models in parallel - "
+                           "please specify model")
 
     #
     # Load and run the model
@@ -33,18 +35,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      selectors=selectors),
+                      selectors=selectors,
+                      model=all_models),
         name='loader')
 
     if exclude_pattern is not None:
         loader.inputs.exclude_pattern = exclude_pattern
     if include_pattern is not None:
         loader.inputs.include_pattern = include_pattern
-
-    if isinstance(all_models, list):
-        loader.iterables = ('model', all_models)
-    else:
-        loader.inputs.model = all_models
 
     # Because pybids generates the entire model in one go, we will need
     # various helper nodes to select the correct portions of the model
