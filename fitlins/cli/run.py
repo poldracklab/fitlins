@@ -140,6 +140,9 @@ def run_fitlins(argv=None):
         model = 'default'
 
     derivatives = True if not opts.derivatives else opts.derivatives
+    # Need this when specifying args directly (i.e. neuroscout)
+    if len(derivatives) == 1:
+        derivatives = derivatives[0].split(" ")
 
     pipeline_name = 'fitlins'
     if opts.derivative_label:

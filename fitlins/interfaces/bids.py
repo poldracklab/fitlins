@@ -150,6 +150,7 @@ class LoadBIDSModelOutputSpec(TraitedSpec):
     contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
     entities = traits.List(traits.List(traits.Dict()))
     warnings = traits.List(File)
+    steps = traits.List(traits.Str)
 
 
 class LoadBIDSModel(SimpleInterface):
@@ -290,6 +291,8 @@ class LoadBIDSModel(SimpleInterface):
                 contrast_info.append(contrasts)
 
             self._results['contrast_info'].append(contrast_info)
+
+        self._results['steps'] = [a.level for a in analysis.steps]
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):

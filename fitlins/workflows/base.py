@@ -12,6 +12,7 @@ from ..interfaces.utils import MergeAll
 def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                     include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
+    print(derivatives)
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
@@ -30,12 +31,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     # Load and run the model
     #
 
-    selectors = {'subject': participants} if participants is not None else {}
-
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      selectors=selectors,
                       model=all_models),
         name='loader')
 
@@ -43,96 +41,24 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         loader.inputs.exclude_pattern = exclude_pattern
     if include_pattern is not None:
         loader.inputs.include_pattern = include_pattern
+    if participants is not None:
+        loader.inputs.selectors = {'subject': participants}
 
-    # Because pybids generates the entire model in one go, we will need
-    # various helper nodes to select the correct portions of the model
-    select_l1_entities = pe.Node(niu.Select(index=0), name='select_l1_entities')
+    # Set up common patterns
+    image_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
+        '{type<design|corr|contrasts>}.svg'
+    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
+        '[_space-{space}]_contrast-{contrast}_ortho.png'
+    contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
+        '[_space-{space}]_contrast-{contrast}_{type<effect|stat>}.nii.gz'
 
-    # Select preprocessed BOLD series to analyze
-    getter = pe.Node(
-        BIDSSelect(bids_dir=bids_dir, derivatives=derivatives,
-                   selectors={'type': 'preproc', 'suffix': 'bold', 'space': space}),
-        name='getter')
-
-    select_l1_contrasts = pe.Node(niu.Select(index=0), name='select_l1_contrasts')
-
-    # Run first level model
-    l1_model = pe.MapNode(
-        FirstLevelModel(),
-        iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-        name='l1_model')
-
-    def join_dict(base_dict, dict_list):
-        return [{**base_dict, **iter_dict} for iter_dict in dict_list]
-
-    # Accumulate metadata
-    l1_metadata = pe.MapNode(niu.Function(function=join_dict),
-                             iterfield=['base_dict', 'dict_list'],
-                             name='l1_metadata')
-
-    # Squash the results of MapNodes that may have generated multiple maps
-    # into single lists.
-    # Do the same with corresponding metadata - interface will complain if shapes mismatch
-    collate_first_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
-                                  name='collate_first_level')
-
-    select_l2_contrasts = pe.Node(niu.Select(index=1), name='select_l2_contrasts')
-
-    # Run second-level model
-    # TODO: Iterate over all higher levels
-    l2_model = pe.MapNode(
-        SecondLevelModel(),
-        iterfield=['contrast_info'],
-        name='l2_model')
-
-    collate_second_level = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
-                                   name='collate_second_level')
-
-    #
-    # Plotting
-    #
-
-    plot_design = pe.MapNode(
-        DesignPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_design')
-
-    # TODO: get_evs should be based on contrasts, EVs are any used in contrasts,
-    # others are confounds
-    # def _get_evs(info):
-    #     import pandas as pd
-    #     events = pd.read_hdf(info['events'], key='events')
-    #     return len(events['condition'].unique())
-
-    # # Number of explanatory variables is used to mark off sections of the
-    # # correlation matrix
-    # get_evs = pe.MapNode(niu.Function(function=_get_evs), iterfield='info', name='get_evs')
-
-    # plot_corr = pe.MapNode(
-    #     DesignCorrelationPlot(image_type='svg'),
-    #     iterfield=['data', 'explanatory_variables'],
-    #     name='plot_corr')
-
-    # plot_l1_contrast_matrix = pe.MapNode(
-    #     ContrastMatrixPlot(image_type='svg'),
-    #     iterfield='data',
-    #     name='plot_l1_contrast_matrix')
-
-    plot_l1_contrasts = pe.MapNode(
-        GlassBrainPlot(image_type='png'),
-        iterfield='data',
-        name='plot_l1_contrasts')
-
-    # plot_l2_contrast_matrix = pe.MapNode(
-    #     ContrastMatrixPlot(image_type='svg'),
-    #     iterfield='data',
-    #     name='plot_l2_contrast_matrix')
-
-    plot_l2_contrasts = pe.MapNode(
-        GlassBrainPlot(image_type='png'),
-        iterfield='data',
-        name='plot_l2_contrasts')
-
+    # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
     # saved as individual derivative files
@@ -150,160 +76,134 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         name='ds_model_warning')
 
     #
-    # Derivatives
+    # General Connections
     #
-
-    # NIfTIs
-    contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_{type<effect|stat>}.nii.gz'
-    ds_l1_contrast_maps = pe.Node(
-        BIDSDataSink(base_directory=out_dir,
-                     path_patterns=contrast_pattern),
-        run_without_submitting=True,
-        name='ds_l1_contrast_maps')
-
-    ds_l2_contrast_maps = pe.Node(
-        BIDSDataSink(base_directory=out_dir,
-                     path_patterns=contrast_pattern),
-        run_without_submitting=True,
-        name='ds_l2_contrast_maps')
-
-    # Images
-    image_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
-        '{type<design|corr|contrasts>}.svg'
-    ds_design = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_design')
-
-    # ds_corr = pe.MapNode(
-    #     BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'corr'},
-    #                  path_patterns=image_pattern),
-    #     iterfield=['entities', 'in_file'],
-    #     run_without_submitting=True,
-    #     name='ds_corr')
-
-    # ds_l1_contrasts = pe.MapNode(
-    #     BIDSDataSink(base_directory=out_dir,
-    #                  fixed_entities={'type': 'contrasts'},
-    #                  path_patterns=image_pattern),
-    #     iterfield=['entities', 'in_file'],
-    #     run_without_submitting=True,
-    #     name='ds_l1_contrasts')
-
-    # ds_l2_contrasts = pe.MapNode(
-    #     BIDSDataSink(base_directory=out_dir,
-    #                  fixed_entities={'type': 'contrasts'},
-    #                  path_patterns=image_pattern),
-    #     iterfield=['entities', 'in_file'],
-    #     run_without_submitting=True,
-    #     name='ds_l2_contrasts')
-
-    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_ortho.png'
-    ds_l1_contrast_plots = pe.Node(
-        BIDSDataSink(base_directory=out_dir,
-                     path_patterns=contrast_plot_pattern),
-        run_without_submitting=True,
-        name='ds_l1_contrast_plots')
-
-    ds_l2_contrast_plots = pe.Node(
-        BIDSDataSink(base_directory=out_dir,
-                     path_patterns=contrast_plot_pattern),
-        run_without_submitting=True,
-        name='ds_l2_contrast_plots')
-
-    #
-    # Connections
-    #
-
     wf.connect([
+        (loader, ds_model_warnings, [('warnings', 'in_file')]),
+        ])
+
+    models = []
+    for ix, step in enumerate(loader.run().outputs.steps):
+        # Set up elements common across levels
+
         #
-        # Modeling
+        # Because pybids generates the entire model in one go, we will need
+        # various helper nodes to select the correct portions of the model
         #
-        (loader, select_l1_entities, [('entities', 'inlist')]),
 
-        (select_l1_entities, getter,  [('out', 'entities')]),
+        select_entities = pe.Node(
+            niu.Select(index=ix), name='select_{}_entities'.format(step))
 
-        (loader, select_l1_contrasts, [('contrast_info', 'inlist')]),
+        select_contrasts = pe.Node(
+            niu.Select(index=ix), name='select_{}_contrasts'.format(step))
 
-        (loader, l1_model, [('session_info', 'session_info')]),
-        (getter, l1_model, [('bold_files', 'bold_file'),
-                            ('mask_files', 'mask_file')]),
-        (select_l1_contrasts, l1_model,  [('out', 'contrast_info')]),
-
-        (getter, l1_metadata, [('entities', 'base_dict')]),
-        (l1_model, l1_metadata, [('contrast_metadata', 'dict_list')]),
-
-        (l1_model, collate_first_level, [('contrast_maps', 'contrast_maps')]),
-        (l1_metadata, collate_first_level, [('out', 'contrast_metadata')]),
-
-        (loader, select_l2_contrasts, [('contrast_info', 'inlist')]),
-
-        (l1_model, l2_model, [('contrast_maps', 'stat_files')]),
-        (l1_metadata, l2_model, [('out', 'stat_metadata')]),
-        (select_l2_contrasts, l2_model, [('out', 'contrast_info')]),
-
-        (l2_model, collate_second_level, [('contrast_maps', 'contrast_maps'),
-                                          ('contrast_metadata', 'contrast_metadata')]),
+        # Squash the results of MapNodes that may have generated multiple maps
+        # into single lists.
+        # Do the same with corresponding metadata - interface will complain if shapes mismatch
+        collate = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
+                          name='collate_{}'.format(step))
 
         #
         # Plotting
         #
-        (l1_model, plot_design, [('design_matrix', 'data')]),
 
-        # (loader, get_evs, [('session_info', 'info')]),
-        # (l1_model, plot_corr, [('design_matrix', 'data')]),
-        # (get_evs, plot_corr, [('out', 'explanatory_variables')]),
-
-        # (l1_model, plot_l1_contrast_matrix, [('contrast_matrix', 'data')]),
-
-        (collate_first_level, plot_l1_contrasts, [('contrast_maps', 'data')]),
-
-        # (l2_model, plot_l2_contrast_matrix, [('contrast_matrix', 'data')]),
-
-        (collate_second_level, plot_l2_contrasts, [('contrast_maps', 'data')]),
-
-        #
-        # HTML snippets
-        #
-        (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (select_l1_entities, ds_model_warnings,  [('out', 'entities')]),
+        plot_contrasts = pe.MapNode(
+            GlassBrainPlot(image_type='png'),
+            iterfield='data',
+            name='plot_{}_contrasts'.format(step))
 
         #
         # Derivatives
         #
-        (collate_first_level, ds_l1_contrast_maps, [('contrast_maps', 'in_file'),
-                                                    ('contrast_metadata', 'entities')]),
 
-        (collate_second_level, ds_l2_contrast_maps, [('contrast_maps', 'in_file'),
-                                                     ('contrast_metadata', 'entities')]),
+        ds_contrast_maps = pe.Node(
+            BIDSDataSink(base_directory=out_dir,
+                         path_patterns=contrast_pattern),
+            run_without_submitting=True,
+            name='ds_{}_contrast_maps'.format(step))
 
-        (select_l1_entities, ds_design, [('out', 'entities')]),
-        (plot_design, ds_design, [('figure', 'in_file')]),
+        ds_contrast_plots = pe.Node(
+            BIDSDataSink(base_directory=out_dir,
+                         path_patterns=contrast_plot_pattern),
+            run_without_submitting=True,
+            name='ds_{}_contrast_plots'.format(step))
 
-        # (select_l1_entities, ds_corr, [('out', 'entities')]),
-        # (plot_corr, ds_corr, [('figure', 'in_file')]),
+        if step == 'run':
+            # Select preprocessed BOLD series to analyze
+            getter = pe.Node(
+                BIDSSelect(
+                    bids_dir=bids_dir, derivatives=derivatives,
+                    selectors={
+                        'type': 'preproc', 'suffix': 'bold', 'space': space}),
+                name='getter')
 
+            # Run first level model
+            model = pe.MapNode(
+                FirstLevelModel(),
+                iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
+                name='{}_model'.format(step))
+            models.append(model)
 
-        # (select_l1_entities, ds_l1_contrasts, [('out', 'entities')]),
-        # (plot_l1_contrast_matrix, ds_l1_contrasts, [('figure', 'in_file')]),
+            def join_dict(base_dict, dict_list):
+                return [{**base_dict, **iter_dict} for iter_dict in dict_list]
 
-        (collate_first_level, ds_l1_contrast_plots, [('contrast_metadata', 'entities')]),
-        (plot_l1_contrasts, ds_l1_contrast_plots, [('figure', 'in_file')]),
+            # Accumulate metadata
+            l1_metadata = pe.MapNode(
+                niu.Function(function=join_dict),
+                iterfield=['base_dict', 'dict_list'],
+                name='l1_metadata')
 
-        # (plot_l2_contrast_matrix, ds_l2_contrasts, [('figure', 'in_file')]),
+            plot_design = pe.MapNode(
+                DesignPlot(image_type='svg'),
+                iterfield='data',
+                name='plot_design')
 
-        (collate_second_level, ds_l2_contrast_plots, [('contrast_metadata', 'entities')]),
-        (plot_l2_contrasts, ds_l2_contrast_plots, [('figure', 'in_file')]),
-        ])
+            # Images
+            ds_design = pe.MapNode(
+                BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
+                             path_patterns=image_pattern),
+                iterfield=['entities', 'in_file'],
+                run_without_submitting=True,
+                name='ds_design')
+
+            wf.connect([
+                (loader, select_entities, [('entities', 'inlist')]),
+                (select_entities, getter,  [('out', 'entities')]),
+                (getter, model, [('bold_files', 'bold_file'),
+                                 ('mask_files', 'mask_file')]),
+                (getter, l1_metadata, [('entities', 'base_dict')]),
+                (model, l1_metadata, [('contrast_metadata', 'dict_list')]),
+                (model, plot_design, [('design_matrix', 'data')]),
+                (l1_metadata, collate, [('out', 'contrast_metadata')]),
+                (select_entities, ds_design, [('out', 'entities')]),
+                (plot_design, ds_design, [('figure', 'in_file')]),
+                (select_entities, ds_model_warnings,  [('out', 'entities')]),
+            ])
+
+        #  Set up higher levels
+        else:
+            model = pe.MapNode(
+                SecondLevelModel(),
+                iterfield=['contrast_info'],
+                name='{}_model'.format(step))
+
+            wf.connect([
+                (models[-1], model, [('contrast_maps', 'stat_files')]),
+                (l1_metadata, model, [('out', 'stat_metadata')]),
+                (model, collate, [('contrast_metadata', 'contrast_metadata')]),
+            ])
+
+        wf.connect([
+            (loader, select_contrasts, [('contrast_info', 'inlist')]),
+            (loader, model, [('session_info', 'session_info')]),
+            (select_contrasts, model,  [('out', 'contrast_info')]),
+            (model, collate, [('contrast_maps', 'contrast_maps')]),
+            (collate, plot_contrasts, [('contrast_maps', 'data')]),
+            (collate, ds_contrast_maps, [('contrast_maps', 'in_file'),
+                                         ('contrast_metadata', 'entities')]),
+            (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
+            (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
+
+            ])
 
     return wf
