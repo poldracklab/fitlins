@@ -168,6 +168,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
+                (loader, model, [('session_info', 'session_info')]),
                 (select_entities, getter,  [('out', 'entities')]),
                 (getter, model, [('bold_files', 'bold_file'),
                                  ('mask_files', 'mask_file')]),
@@ -195,7 +196,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
-            (loader, model, [('session_info', 'session_info')]),
             (select_contrasts, model,  [('out', 'contrast_info')]),
             (model, collate, [('contrast_maps', 'contrast_maps')]),
             (collate, plot_contrasts, [('contrast_maps', 'data')]),
