@@ -143,46 +143,38 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
     def _run_interface(self, runtime):
         model = level2.SecondLevelModel()
-
-        # Flatten and join files and metadata into single list of tuples
-        inputs = [(self.inputs.stat_files[i][j], item)
-                  for i, sublist in enumerate(self.inputs.stat_metadata)
-                  for j, item in enumerate(sublist)]
         contrast_maps = []
         contrast_metadata = []
 
-        ents = self.inputs.contrast_info[0]['entities']
+        entities = self.inputs.contrast_info[0]['entities']  # Same for all
+        out_ents = {'type': 'stat',
+                    **entities}
+
         files = []
         names = []
-        for file, md in inputs:
-            # If file matches all contrast entities
-            if not sum([1 for e, v in ents.items() if md[e] != v]):
-                files.append(file)
-                names.append(md['contrast'])
-        files = np.array(files)
+        # Flatten list of lists, only keeping files that match entities
+        for i, sublist in enumerate(self.inputs.stat_metadata):
+            for j, metadata in enumerate(sublist):
+                if not sum([1 for e, v in entities.items() if metadata[e] != v]):
+                    files.append(self.inputs.stat_files[i][j])
+                    names.append(metadata['contrast'])
 
         for name, weights, type in prepare_contrasts(
           self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
-            dm = weights[0]
+            weights = weights[0]
+            data = (np.array(files)[weights != 0]).tolist()
+            design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            # Filter input files [intercept != 0]
-            model.fit(files[dm != 0].tolist(),
-                      design_matrix=pd.DataFrame({'intercept': dm[dm != 0]}))
+            model.fit(data, design_matrix=design_matrix)
 
-            stat = model.compute_contrast(
-                second_level_stat_type=type)
+            stat = model.compute_contrast(second_level_stat_type=type)
             stat_fname = os.path.join(
                 runtime.cwd, '{}.nii.gz').format(name)
             stat.to_filename(stat_fname)
             contrast_maps.append(stat_fname)
-
-            metadata = {
-                'type': 'stat',
-                'contrast': name
-                }
-            contrast_metadata.append(metadata)
+            contrast_metadata.append({'contrast': name, **out_ents})
 
         self._results['contrast_maps'] = contrast_maps
         self._results['contrast_metadata'] = contrast_metadata
