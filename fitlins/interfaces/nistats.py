@@ -17,8 +17,8 @@ class NistatsBaseInterface(LibraryBaseInterface):
 
 
 def prepare_contrasts(contrasts, all_regressors):
-    """ Make mutable copy of contrast list, and generate contrast design_matrix
-    from dictionary weight mapping
+    """ Make mutable copy of contrast list, and
+    generate contrast design_matrix from dictionary weight mapping
     """
     if not isdefined(contrasts):
         return []
@@ -95,18 +95,21 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         contrast_maps = []
         contrast_metadata = []
+        out_ents = self.inputs.contrast_info[0]['entities']
         for name, weights, type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            es = flm.compute_contrast(weights,
-                                      type,
-                                      output_type='effect_size')
+            es = flm.compute_contrast(
+                weights, type, output_type='effect_size')
             es_fname = os.path.join(
                 runtime.cwd, '{}.nii.gz').format(name)
             es.to_filename(es_fname)
 
             contrast_maps.append(es_fname)
-            contrast_metadata.append({'contrast': name,
-                                      'type': 'effect'})
+            contrast_metadata.append(
+                {'contrast': name,
+                 'type': 'effect',
+                 **out_ents}
+                )
 
         self._results['contrast_maps'] = contrast_maps
         self._results['contrast_metadata'] = contrast_metadata
@@ -147,32 +150,32 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         contrast_metadata = []
 
         entities = self.inputs.contrast_info[0]['entities']  # Same for all
-        out_ents = {'type': 'stat',
-                    **entities}
+        out_ents = {'type': 'stat', **entities}
 
-        files = []
+        # Only keep files which match all entities for contrast
+        stat_metadata = _flatten(self.inputs.stat_metadata)
+        stat_files = _flatten(self.inputs.stat_files)
+        filtered_files = []
         names = []
-        # Flatten list of lists, only keeping files that match entities
-        for i, sublist in enumerate(self.inputs.stat_metadata):
-            for j, metadata in enumerate(sublist):
-                if not sum([1 for e, v in entities.items() if metadata[e] != v]):
-                    files.append(self.inputs.stat_files[i][j])
-                    names.append(metadata['contrast'])
+        for m, f in zip(stat_metadata, stat_files):
+            if _match(entities, m):
+                filtered_files.append(f)
+                names.append(m['contrast'])
 
         for name, weights, type in prepare_contrasts(
           self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
-            data = (np.array(files)[weights != 0]).tolist()
+            input = (np.array(filtered_files)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(data, design_matrix=design_matrix)
+            model.fit(input, design_matrix=design_matrix)
 
             stat = model.compute_contrast(second_level_stat_type=type)
-            stat_fname = os.path.join(
-                runtime.cwd, '{}.nii.gz').format(name)
+            stat_fname = os.path.join(runtime.cwd, '{}.nii.gz').format(name)
             stat.to_filename(stat_fname)
+
             contrast_maps.append(stat_fname)
             contrast_metadata.append({'contrast': name, **out_ents})
 
