@@ -32,7 +32,8 @@ def deroot(val, root):
 def parse_directory(deriv_dir, work_dir, analysis):
     fl_layout = BIDSLayout(
         deriv_dir,
-        config=['bids', 'derivatives', 'fitlins'])
+        config=['bids', 'derivatives', 'fitlins'],
+        validate=False)
     wd_layout = BIDSLayout(
         str(Path(work_dir) / 'reportlets' / 'fitlins'),
         validate=False)

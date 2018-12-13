@@ -16,7 +16,6 @@ def join_dict(base_dict, dict_list):
 def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                     include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
-    print(derivatives)
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
