@@ -193,8 +193,8 @@ class LoadBIDSModel(SimpleInterface):
             info = {}
 
             # ents is now pretty populous
-            ents.pop('suffix')
-            ents.pop('datatype')
+            ents.pop('suffix', None)
+            ents.pop('datatype', None)
             if 'space' in ents:
                 # Guaranteed to be valid
                 space = ents.pop('space')
