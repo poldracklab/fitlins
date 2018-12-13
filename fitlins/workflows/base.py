@@ -91,17 +91,25 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         # various helper nodes to select the correct portions of the model
         #
 
+        level = 'l{:d}'.format(ix + 1)
+
         select_entities = pe.Node(
-            niu.Select(index=ix), name='select_{}_entities'.format(step))
+            niu.Select(index=ix),
+            name='select_{}_entities'.format(level),
+            run_without_submitting=True)
 
         select_contrasts = pe.Node(
-            niu.Select(index=ix), name='select_{}_contrasts'.format(step))
+            niu.Select(index=ix),
+            name='select_{}_contrasts'.format(level),
+            run_without_submitting=True)
 
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
-        collate = pe.Node(MergeAll(['contrast_maps', 'contrast_metadata']),
-                          name='collate_{}'.format(step))
+        collate = pe.Node(
+            MergeAll(['contrast_maps', 'contrast_metadata']),
+            name='collate_{}'.format(level),
+            run_without_submitting=True)
 
         #
         # Plotting
@@ -110,7 +118,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         plot_contrasts = pe.MapNode(
             GlassBrainPlot(image_type='png'),
             iterfield='data',
-            name='plot_{}_contrasts'.format(step))
+            name='plot_{}_contrasts'.format(level))
 
         #
         # Derivatives
@@ -120,13 +128,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_pattern),
             run_without_submitting=True,
-            name='ds_{}_contrast_maps'.format(step))
+            name='ds_{}_contrast_maps'.format(level))
 
         ds_contrast_plots = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_plot_pattern),
             run_without_submitting=True,
-            name='ds_{}_contrast_plots'.format(step))
+            name='ds_{}_contrast_plots'.format(level))
 
         if step == 'run':
             # Select preprocessed BOLD series to analyze
@@ -141,7 +149,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             model = pe.MapNode(
                 FirstLevelModel(),
                 iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-                name='{}_model'.format(step))
+                name='{}_model'.format(level))
             models.append(model)
 
             def join_dict(base_dict, dict_list):
@@ -186,7 +194,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             model = pe.MapNode(
                 SecondLevelModel(),
                 iterfield=['contrast_info'],
-                name='{}_model'.format(step))
+                name='{}_model'.format(level))
 
             wf.connect([
                 (models[-1], model, [('contrast_maps', 'stat_files')]),
