@@ -9,6 +9,10 @@ from ..interfaces.visualizations import (
 from ..interfaces.utils import MergeAll
 
 
+def join_dict(base_dict, dict_list):
+    return [{**base_dict, **iter_dict} for iter_dict in dict_list]
+
+
 def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                     include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
@@ -44,6 +48,26 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     if participants is not None:
         loader.inputs.selectors = {'subject': participants}
 
+    # Select preprocessed BOLD series to analyze
+    getter = pe.Node(
+        BIDSSelect(
+            bids_dir=bids_dir, derivatives=derivatives,
+            selectors={
+                'type': 'preproc', 'suffix': 'bold', 'space': space}),
+        name='getter')
+
+    # Accumulate metadata
+    l1_metadata = pe.MapNode(
+        niu.Function(function=join_dict),
+        iterfield=['base_dict', 'dict_list'],
+        name='l1_metadata',
+        run_without_submitting=True)
+
+    l1_model = pe.MapNode(
+        FirstLevelModel(),
+        iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
+        name='l1_model')
+
     # Set up common patterns
     image_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
@@ -75,11 +99,29 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         run_without_submitting=True,
         name='ds_model_warning')
 
+    plot_design = pe.MapNode(
+        DesignPlot(image_type='svg'),
+        iterfield='data',
+        name='plot_design')
+
+    ds_design = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
+                     path_patterns=image_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_design')
+
     #
     # General Connections
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
+        (loader, l1_model, [('session_info', 'session_info')]),
+        (getter, l1_model, [('bold_files', 'bold_file'),
+                            ('mask_files', 'mask_file')]),
+        (getter, l1_metadata, [('entities', 'base_dict')]),
+        (l1_model, l1_metadata, [('contrast_metadata', 'dict_list')]),
+        (l1_model, plot_design, [('design_matrix', 'data')]),
         ])
 
     models = []
@@ -136,57 +178,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             run_without_submitting=True,
             name='ds_{}_contrast_plots'.format(level))
 
-        if step == 'run':
-            # Select preprocessed BOLD series to analyze
-            getter = pe.Node(
-                BIDSSelect(
-                    bids_dir=bids_dir, derivatives=derivatives,
-                    selectors={
-                        'type': 'preproc', 'suffix': 'bold', 'space': space}),
-                name='getter')
-
-            # Run first level model
-            model = pe.MapNode(
-                FirstLevelModel(),
-                iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-                name='{}_model'.format(level))
-            models.append(model)
-
-            def join_dict(base_dict, dict_list):
-                return [{**base_dict, **iter_dict} for iter_dict in dict_list]
-
-            # Accumulate metadata
-            l1_metadata = pe.MapNode(
-                niu.Function(function=join_dict),
-                iterfield=['base_dict', 'dict_list'],
-                name='l1_metadata')
-
-            plot_design = pe.MapNode(
-                DesignPlot(image_type='svg'),
-                iterfield='data',
-                name='plot_design')
-
-            # Images
-            ds_design = pe.MapNode(
-                BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
-                             path_patterns=image_pattern),
-                iterfield=['entities', 'in_file'],
-                run_without_submitting=True,
-                name='ds_design')
-
+        if ix == 0:
+            model = l1_model
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
-                (loader, model, [('session_info', 'session_info')]),
                 (select_entities, getter,  [('out', 'entities')]),
-                (getter, model, [('bold_files', 'bold_file'),
-                                 ('mask_files', 'mask_file')]),
-                (getter, l1_metadata, [('entities', 'base_dict')]),
-                (model, l1_metadata, [('contrast_metadata', 'dict_list')]),
-                (model, plot_design, [('design_matrix', 'data')]),
+                (select_entities, ds_model_warnings,  [('out', 'entities')]),
                 (l1_metadata, collate, [('out', 'contrast_metadata')]),
                 (select_entities, ds_design, [('out', 'entities')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
-                (select_entities, ds_model_warnings,  [('out', 'entities')]),
             ])
 
         #  Set up higher levels
@@ -213,5 +213,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
 
             ])
+
+        models.append(model)
 
     return wf
