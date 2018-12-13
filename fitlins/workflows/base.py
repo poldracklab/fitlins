@@ -20,10 +20,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     if model is not None:
         specs.inputs.model = model
 
-    all_models = specs.run().outputs.model_spec
-    if not all_models:
+    model_dict = specs.run().outputs.model_spec
+    if not model_dict:
         raise RuntimeError("Unable to find or construct models")
-    if isinstance(all_models, list):
+    if isinstance(model_dict, list):
         raise RuntimeError("Currently unable to run multiple models in parallel - "
                            "please specify model")
 
@@ -34,7 +34,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      model=all_models),
+                      model=model_dict),
         name='loader')
 
     if exclude_pattern is not None:
@@ -83,7 +83,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         ])
 
     models = []
-    for ix, step in enumerate(loader.run().outputs.steps):
+    for ix, step in enumerate(step['Level'] for step in model_dict['Steps']):
         # Set up elements common across levels
 
         #

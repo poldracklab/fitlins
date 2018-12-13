@@ -193,8 +193,16 @@ class LoadBIDSModel(SimpleInterface):
         for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
-            space = analysis.layout.get_spaces(suffix='bold',
-                                               extensions=['.nii', '.nii.gz'])[0]
+            # ents is now pretty populous
+            ents.pop('suffix')
+            ents.pop('datatype')
+            if 'space' in ents:
+                # Guaranteed to be valid
+                space = ents.pop('space')
+            else:
+                # Picks first match
+                space = analysis.layout.get_spaces(suffix='bold',
+                                                   extensions=['.nii', '.nii.gz'])[0]
             preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
@@ -279,9 +287,9 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        for block in analysis.steps[1:]:
+        for step in analysis.steps[1:]:
             contrast_info = []
-            for contrasts in block.get_contrasts():
+            for contrasts in step.get_contrasts():
                 if all([c.weights.empty for c in contrasts]):
                     continue
 
