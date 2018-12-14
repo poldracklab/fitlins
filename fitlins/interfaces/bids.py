@@ -19,6 +19,8 @@ from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
+ENTITY_WHITELIST = {'task', 'run', 'session', 'subject'}
+
 
 def bids_split_filename(fname):
     """Split a filename into parts: path, base filename, and extension
@@ -270,6 +272,9 @@ class LoadBIDSModel(SimpleInterface):
             contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
             for con in contrasts:
                 con['weights'] = con['weights'].to_dict('records')
+                # Ugly hack. This should be taken care of on the pybids side.
+                con['entities'] = {k: v for k, v in con['entities'].items()
+                                   if k in ENTITY_WHITELIST}
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -296,6 +301,10 @@ class LoadBIDSModel(SimpleInterface):
                 contrasts = [dict(c._asdict()) for c in contrasts]
                 for contrast in contrasts:
                     contrast['weights'] = contrast['weights'].to_dict('records')
+                    # Ugly hack. This should be taken care of on the pybids side.
+                    contrast['entities'] = {k: v
+                                            for k, v in contrast['entities'].items()
+                                            if k in ENTITY_WHITELIST}
                 contrast_info.append(contrasts)
 
             self._results['contrast_info'].append(contrast_info)
