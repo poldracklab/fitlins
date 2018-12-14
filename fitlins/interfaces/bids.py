@@ -157,7 +157,8 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        import bids
+        from bids.analysis import Analysis
+        from bids.layout import BIDSLayout
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         derivatives = self.inputs.derivatives
@@ -168,12 +169,12 @@ class LoadBIDSModel(SimpleInterface):
         if not isdefined(derivatives):
             exclude = False
 
-        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include,
-                                 exclude=exclude, derivatives=derivatives)
+        layout = BIDSLayout(self.inputs.bids_dir, include=include,
+                            exclude=exclude, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
-        analysis = bids.Analysis(model=self.inputs.model, layout=layout)
+        analysis = Analysis(model=self.inputs.model, layout=layout)
         analysis.setup(drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
@@ -322,10 +323,10 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
-        import bids
+        from bids.layout import BIDSLayout
 
         derivatives = self.inputs.derivatives
-        layout = bids.BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
+        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
 
         bold_files = []
         mask_files = []
@@ -421,12 +422,12 @@ class BIDSDataSink(IOBase):
     _always_run = True
 
     def _list_outputs(self):
-        import bids
+        from bids.layout import BIDSLayout
         base_dir = self.inputs.base_directory
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = bids.BIDSLayout(base_dir, validate=False)
+        layout = BIDSLayout(base_dir, validate=False)
         path_patterns = self.inputs.path_patterns
         if not isdefined(path_patterns):
             path_patterns = None

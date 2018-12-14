@@ -17,8 +17,8 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
 
-from bids import BIDSLayout, Analysis
-from bids.analysis import auto_model
+from bids.layout import BIDSLayout
+from bids.analysis import auto_model, Analysis
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
