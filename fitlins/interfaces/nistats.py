@@ -107,7 +107,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             contrast_maps.append(es_fname)
             contrast_metadata.append(
                 {'contrast': name,
-                 'type': 'effect',
+                 'suffix': 'effect',
                  **out_ents}
                 )
 
@@ -150,7 +150,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         contrast_metadata = []
 
         entities = self.inputs.contrast_info[0]['entities']  # Same for all
-        out_ents = {'type': 'stat', **entities}
+        out_ents = {'suffix': 'stat', **entities}
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)

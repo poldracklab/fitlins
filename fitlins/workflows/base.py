@@ -71,7 +71,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     image_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
-        '{type<design|corr|contrasts>}.svg'
+        '{suffix<design|corr|contrasts>}.svg'
     contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
@@ -79,7 +79,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_{type<effect|stat>}.nii.gz'
+        '[_space-{space}]_contrast-{contrast}_{suffix<effect|stat>}.nii.gz'
 
     # Set up general interfaces
     #
@@ -104,7 +104,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         name='plot_design')
 
     ds_design = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'type': 'design'},
+        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'design'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
