@@ -232,9 +232,8 @@ class LoadBIDSModel(SimpleInterface):
                 # t/aCompCor
                 # We may want to add criteria to include HPF columns that are not
                 # explicitly listed in the model
-                names = [col for col in dense.columns
-                         if col.startswith('non_steady_state') or
-                         col in step.model['x']]
+                names = step.model['x'].copy()
+                names.extend(col for col in dense.columns if col.startswith('non_steady_state'))
                 dense = dense[names]
 
                 # These confounds are defined pairwise with the current volume
