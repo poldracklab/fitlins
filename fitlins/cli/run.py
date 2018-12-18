@@ -77,8 +77,8 @@ def get_parser():
     g_bids.add_argument('--participant-label', action='store', nargs='+', default=None,
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
-    g_bids.add_argument('-m', '--model', action='store', default='model.json',
-                        help='location of BIDS model description (default bids_dir/model.json)')
+    g_bids.add_argument('-m', '--model', action='store',
+                        help='location of BIDS model description')
     g_bids.add_argument('-d', '--derivatives', action='store', nargs='+',
                         help='location of derivatives (including preprocessed images).'
                         'If none specified, indexes all derivatives under bids_dir/derivatives.')
@@ -135,7 +135,7 @@ def run_fitlins(argv=None):
         subject_list=subject_list)
     )
 
-    model = default_path(opts.model, opts.bids_dir, 'model.json')
+    model = default_path(opts.model, opts.bids_dir, 'model-default_smdl.json')
     if opts.model in (None, 'default') and not op.exists(model):
         model = 'default'
 
