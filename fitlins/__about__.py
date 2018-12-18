@@ -47,7 +47,7 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/bids-standard/pybids.git@'
-    'dd8c9bc6478bb63e09f6c95566a11677ce12ded7#egg=pybids',
+    '36853b0bf222d3174ae7d9d1d9c7a7ecf5049cdd#egg=pybids',
 ]
 
 TESTS_REQUIRES = [
