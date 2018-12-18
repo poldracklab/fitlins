@@ -37,7 +37,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
     wd_layout = BIDSLayout(
         str(Path(work_dir) / 'reportlets' / 'fitlins'),
         validate=False)
-    contrast_svgs = fl_layout.get(extensions='.svg', type='contrasts')
+    contrast_svgs = fl_layout.get(extensions='.svg', suffix='contrasts')
 
     analyses = []
     for contrast_svg in contrast_svgs:

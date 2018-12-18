@@ -75,6 +75,7 @@ class DesignCorrelationPlot(Visualization):
 
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
+    contrast_info = traits.List(traits.Dict)
     orientation = traits.Enum('horizontal', 'vertical', usedefault=True,
                               desc='Display orientation of contrast matrix')
 
@@ -83,9 +84,12 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        if 'constant' in data.index:
-            data = data.drop(index='constant')
-        plot_and_save(out_name, plot_contrast_matrix, data,
+        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
+                                        for c in self.inputs.contrast_info},
+                                       index=data.columns)
+        if 'constant' in contrast_matrix.index:
+            contrast_matrix = contrast_matrix.drop(index='constant')
+        plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,
                       ornt=self.inputs.orientation)
 
 
