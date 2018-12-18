@@ -19,6 +19,8 @@ from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
+ENTITY_WHITELIST = {'task', 'run', 'session', 'subject'}
+
 
 def bids_split_filename(fname):
     """Split a filename into parts: path, base filename, and extension
@@ -157,7 +159,8 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        import bids
+        from bids.analysis import Analysis
+        from bids.layout import BIDSLayout
         include = self.inputs.include_pattern
         exclude = self.inputs.exclude_pattern
         derivatives = self.inputs.derivatives
@@ -168,12 +171,12 @@ class LoadBIDSModel(SimpleInterface):
         if not isdefined(derivatives):
             exclude = False
 
-        layout = bids.BIDSLayout(self.inputs.bids_dir, include=include,
-                                 exclude=exclude, derivatives=derivatives)
+        layout = BIDSLayout(self.inputs.bids_dir, include=include,
+                            exclude=exclude, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
-        analysis = bids.Analysis(model=self.inputs.model, layout=layout)
+        analysis = Analysis(model=self.inputs.model, layout=layout)
         analysis.setup(drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
@@ -192,8 +195,16 @@ class LoadBIDSModel(SimpleInterface):
         for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
-            space = analysis.layout.get_spaces(suffix='bold',
-                                               extensions=['.nii', '.nii.gz'])[0]
+            # ents is now pretty populous
+            ents.pop('suffix', None)
+            ents.pop('datatype', None)
+            if 'space' in ents:
+                # Guaranteed to be valid
+                space = ents.pop('space')
+            else:
+                # Picks first match
+                space = analysis.layout.get_spaces(suffix='bold',
+                                                   extensions=['.nii', '.nii.gz'])[0]
             preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
@@ -261,6 +272,9 @@ class LoadBIDSModel(SimpleInterface):
             contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
             for con in contrasts:
                 con['weights'] = con['weights'].to_dict('records')
+                # Ugly hack. This should be taken care of on the pybids side.
+                con['entities'] = {k: v for k, v in con['entities'].items()
+                                   if k in ENTITY_WHITELIST}
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -278,15 +292,19 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
     def _load_higher_level(self, runtime, analysis):
-        for block in analysis.steps[1:]:
+        for step in analysis.steps[1:]:
             contrast_info = []
-            for contrasts in block.get_contrasts():
+            for contrasts in step.get_contrasts():
                 if all([c.weights.empty for c in contrasts]):
                     continue
 
                 contrasts = [dict(c._asdict()) for c in contrasts]
                 for contrast in contrasts:
                     contrast['weights'] = contrast['weights'].to_dict('records')
+                    # Ugly hack. This should be taken care of on the pybids side.
+                    contrast['entities'] = {k: v
+                                            for k, v in contrast['entities'].items()
+                                            if k in ENTITY_WHITELIST}
                 contrast_info.append(contrasts)
 
             self._results['contrast_info'].append(contrast_info)
@@ -314,10 +332,10 @@ class BIDSSelect(SimpleInterface):
     output_spec = BIDSSelectOutputSpec
 
     def _run_interface(self, runtime):
-        import bids
+        from bids.layout import BIDSLayout
 
         derivatives = self.inputs.derivatives
-        layout = bids.BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
+        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
 
         bold_files = []
         mask_files = []
@@ -413,12 +431,12 @@ class BIDSDataSink(IOBase):
     _always_run = True
 
     def _list_outputs(self):
-        import bids
+        from bids.layout import BIDSLayout
         base_dir = self.inputs.base_directory
 
         os.makedirs(base_dir, exist_ok=True)
 
-        layout = bids.BIDSLayout(base_dir, validate=False)
+        layout = BIDSLayout(base_dir, validate=False)
         path_patterns = self.inputs.path_patterns
         if not isdefined(path_patterns):
             path_patterns = None

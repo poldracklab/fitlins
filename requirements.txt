@@ -5,4 +5,4 @@ nilearn>=0.4.0
 pandas>=0.19
 nipype>=1.1.6
 git+https://github.com/nistats/nistats.git@009ce3fddb3dd01e82bca3ad7d2cdbeece0138f2#egg=nistats
-git+https://github.com/bids-standard/pybids.git@dd8c9bc6478bb63e09f6c95566a11677ce12ded7#egg=pybids
+git+https://github.com/bids-standard/pybids.git@36853b0bf222d3174ae7d9d1d9c7a7ecf5049cdd#egg=pybids

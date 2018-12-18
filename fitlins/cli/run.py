@@ -17,8 +17,8 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
 
-from bids import BIDSLayout, Analysis
-from bids.analysis import auto_model
+from bids.layout import BIDSLayout
+from bids.analysis import auto_model, Analysis
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
@@ -140,6 +140,9 @@ def run_fitlins(argv=None):
         model = 'default'
 
     derivatives = True if not opts.derivatives else opts.derivatives
+    # Need this when specifying args directly (i.e. neuroscout)
+    if len(derivatives) == 1:
+        derivatives = derivatives[0].split(" ")
 
     pipeline_name = 'fitlins'
     if opts.derivative_label:
