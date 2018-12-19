@@ -102,6 +102,7 @@ class ContrastMatrixPlot(Visualization):
 class GlassBrainPlotInputSpec(VisualizationInputSpec):
     threshold = traits.Enum('auto', None, traits.Float(), usedefault=True)
     vmax = traits.Float()
+    colormap = traits.Str('bwr_r', usedefault=True)
 
 class GlassBrainPlot(Visualization):
     input_spec = GlassBrainPlotInputSpec
@@ -113,4 +114,5 @@ class GlassBrainPlot(Visualization):
         nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
                              display_mode='lyrz', axes=None,
                              vmax=vmax, threshold=self.inputs.threshold,
+                             cmap=self.inputs.colormap,
                              output_file=out_name)
