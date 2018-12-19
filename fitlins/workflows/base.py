@@ -134,7 +134,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (l1_model, plot_design, [('design_matrix', 'data')]),
         ])
 
-    stage = []
+    stage = None
+    model = l1_model
     for ix, step in enumerate(step['Level'] for step in model_dict['Steps']):
         # Set up elements common across levels
 
@@ -189,7 +190,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
-            model = l1_model
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
@@ -214,8 +214,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                 name='{}_model'.format(level))
 
             wf.connect([
-                (stage[-1], model, [('contrast_maps', 'stat_files'),
-                                    ('contrast_metadata', 'stat_metadata')]),
+                (stage, model, [('contrast_maps', 'stat_files'),
+                                ('contrast_metadata', 'stat_metadata')]),
             ])
 
         wf.connect([
@@ -231,6 +231,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
             ])
 
-        stage.append(model)
+        stage = model
 
     return wf
