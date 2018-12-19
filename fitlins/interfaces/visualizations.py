@@ -6,7 +6,7 @@ import nistats.reporting  # noqa: F401
 
 from nipype.interfaces.base import (
     SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    File, traits
+    File, traits, isdefined
     )
 from nipype.utils.filemanip import fname_presuffix, split_filename
 
@@ -99,9 +99,18 @@ class ContrastMatrixPlot(Visualization):
         plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,
                       ornt=self.inputs.orientation)
 
+class GlassBrainPlotInputSpec(VisualizationInputSpec):
+    threshold = traits.Enum('auto', None, traits.Float(), usedefault=True)
+    vmax = traits.Float()
 
 class GlassBrainPlot(Visualization):
+    input_spec = GlassBrainPlotInputSpec
+
     def _visualize(self, data, out_name):
+        vmax = self.inputs.vmax
+        if not isdefined(vmax):
+            vmax = None
         nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
                              display_mode='lyrz', axes=None,
+                             vmax=vmax, threshold=self.inputs.threshold,
                              output_file=out_name)

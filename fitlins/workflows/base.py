@@ -190,6 +190,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
+            plot_contrasts.inputs.vmax = 20
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
