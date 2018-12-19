@@ -232,7 +232,7 @@ class LoadBIDSModel(SimpleInterface):
                 # t/aCompCor
                 # We may want to add criteria to include HPF columns that are not
                 # explicitly listed in the model
-                names = step.model['x'].copy()
+                names = [var for var in step.model['x'] if var in dense.columns]
                 names.extend(col for col in dense.columns if col.startswith('non_steady_state'))
                 dense = dense[names]
 
