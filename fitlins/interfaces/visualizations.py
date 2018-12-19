@@ -61,20 +61,28 @@ class DesignPlot(Visualization):
 
 
 class DesignCorrelationPlotInputSpec(VisualizationInputSpec):
-    explanatory_variables = traits.Range(
-        low=0, desc='Number of explanatory variables')
+    contrast_info = traits.List(traits.Dict)
 
 
 class DesignCorrelationPlot(Visualization):
     input_spec = DesignCorrelationPlotInputSpec
 
     def _visualize(self, data, out_name):
+        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
+                                        for c in self.inputs.contrast_info})
+        all_cols = list(data.columns)
+        evs = set(contrast_matrix.index)
+        if set(contrast_matrix.index) != all_cols[:len(evs)]:
+            ev_cols = [col for col in all_cols if col in evs]
+            confound_cols = [col for col in all_cols if col not in evs]
+            data = data[ev_cols + confound_cols]
         plot_and_save(out_name, plot_corr_matrix,
                       data.drop(columns='constant').corr(),
-                      self.inputs.explanatory_variables)
+                      len(evs))
 
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
+    contrast_info = traits.List(traits.Dict)
     orientation = traits.Enum('horizontal', 'vertical', usedefault=True,
                               desc='Display orientation of contrast matrix')
 
@@ -83,9 +91,12 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        if 'constant' in data.index:
-            data = data.drop(index='constant')
-        plot_and_save(out_name, plot_contrast_matrix, data,
+        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
+                                        for c in self.inputs.contrast_info},
+                                       index=data.columns)
+        if 'constant' in contrast_matrix.index:
+            contrast_matrix = contrast_matrix.drop(index='constant')
+        plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,
                       ornt=self.inputs.orientation)
 
 
