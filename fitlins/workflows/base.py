@@ -9,10 +9,6 @@ from ..interfaces.visualizations import (
 from ..interfaces.utils import MergeAll
 
 
-def join_dict(base_dict, dict_list):
-    return [{**base_dict, **iter_dict} for iter_dict in dict_list]
-
-
 def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                     include_pattern=None, model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
@@ -54,13 +50,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
             selectors={
                 'type': 'preproc', 'suffix': 'bold', 'space': space}),
         name='getter')
-
-    # Accumulate metadata
-    l1_metadata = pe.MapNode(
-        niu.Function(function=join_dict),
-        iterfield=['base_dict', 'dict_list'],
-        name='l1_metadata',
-        run_without_submitting=True)
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
@@ -130,12 +119,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         (loader, l1_model, [('session_info', 'session_info')]),
         (getter, l1_model, [('bold_files', 'bold_file'),
                             ('mask_files', 'mask_file')]),
-        (getter, l1_metadata, [('entities', 'base_dict')]),
-        (l1_model, l1_metadata, [('contrast_metadata', 'dict_list')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
         ])
 
-    models = []
+    stage = []
     for ix, step in enumerate(step['Level'] for step in model_dict['Steps']):
         # Set up elements common across levels
 
@@ -195,7 +182,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
                 (select_entities, ds_model_warnings,  [('out', 'entities')]),
-                (l1_metadata, collate, [('out', 'contrast_metadata')]),
                 (select_entities, ds_design, [('out', 'entities')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
@@ -212,15 +198,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                 name='{}_model'.format(level))
 
             wf.connect([
-                (models[-1], model, [('contrast_maps', 'stat_files')]),
-                (l1_metadata, model, [('out', 'stat_metadata')]),
-                (model, collate, [('contrast_metadata', 'contrast_metadata')]),
+                (stage[-1], model, [('contrast_maps', 'stat_files'),
+                                    ('contrast_metadata', 'stat_metadata')]),
             ])
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
             (select_contrasts, model,  [('out', 'contrast_info')]),
-            (model, collate, [('contrast_maps', 'contrast_maps')]),
+            (model, collate, [('contrast_maps', 'contrast_maps'),
+                              ('contrast_metadata', 'contrast_metadata')]),
             (collate, plot_contrasts, [('contrast_maps', 'data')]),
             (collate, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                          ('contrast_metadata', 'entities')]),
@@ -229,6 +215,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
 
             ])
 
-        models.append(model)
+        stage.append(model)
 
     return wf
