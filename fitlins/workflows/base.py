@@ -92,6 +92,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield='data',
         name='plot_design')
 
+    plot_corr = pe.MapNode(
+        DesignCorrelationPlot(image_type='svg'),
+        iterfield=['data', 'contrast_info'],
+        name='plot_corr')
+
     plot_l1_contrast_matrix = pe.MapNode(
         ContrastMatrixPlot(image_type='svg'),
         iterfield=['data', 'contrast_info'],
@@ -103,6 +108,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_design')
+
+    ds_corr = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'corr'},
+                     path_patterns=image_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_corr')
 
     ds_l1_contrasts = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'contrasts'},
@@ -185,9 +197,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
                 (select_entities, ds_design, [('out', 'entities')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
+                (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
                 (model, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
+                (model, plot_corr,  [('design_matrix', 'data')]),
                 (select_entities, ds_l1_contrasts, [('out', 'entities')]),
+                (select_entities, ds_corr, [('out', 'entities')]),
                 (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
+                (plot_corr, ds_corr,  [('figure', 'in_file')]),
             ])
 
         #  Set up higher levels
