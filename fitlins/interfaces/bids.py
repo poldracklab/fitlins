@@ -203,8 +203,20 @@ class LoadBIDSModel(SimpleInterface):
                 space = ents.pop('space')
             else:
                 # Picks first match
-                space = analysis.layout.get_spaces(suffix='bold',
-                                                   extensions=['.nii', '.nii.gz'])[0]
+                spaces = set(
+                    analysis.layout.get_spaces(suffix='bold',
+                                               extensions=['.nii', '.nii.gz'])
+                )
+                if spaces:
+                    spaces = sorted(list(spaces))
+                    space = spaces[0]
+                    if len(spaces) > 1:
+                        iflogger.warning(
+                            'No space was provided, but multiple spaces were detected: %s. '
+                            '"Randomly" choosing the first one in alphabetical order: %s'
+                            % (', '.join(spaces), space))
+                else:
+                    space = None
             preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
