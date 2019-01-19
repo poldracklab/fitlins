@@ -91,6 +91,8 @@ def get_parser():
                         help='regex pattern to include files')
     g_bids.add_argument('--exclude', action='store', default=None,
                         help='regex pattern to exclude files')
+    g_bids.add_argument('--desc', action='store', default='preproc',
+                         help="desc field within BIDS-Derivatives files")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
@@ -155,7 +157,9 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, derivatives, deriv_dir, opts.space, model=model,
+        opts.bids_dir, derivatives, deriv_dir, opts.space,
+        desc=opts.desc,
+        model=model,
         participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
