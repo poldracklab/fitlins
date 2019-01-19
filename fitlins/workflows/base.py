@@ -48,7 +48,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
         BIDSSelect(
             bids_dir=bids_dir, derivatives=derivatives,
             selectors={
-                'type': 'preproc', 'suffix': 'bold', 'space': space}),
+                'suffix': 'bold',
+                'desc': desc,
+                'space': space}),
         name='getter')
 
     l1_model = pe.MapNode(
