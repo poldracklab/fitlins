@@ -141,7 +141,10 @@ def run_fitlins(argv=None):
 
     derivatives = True if not opts.derivatives else opts.derivatives
     # Need this when specifying args directly (i.e. neuroscout)
-    if len(derivatives) == 1:
+    # god bless neuroscout, but let's make it work for others!
+    if isinstance(derivatives, list) and len(derivatives) == 1:
+        # WRONG AND EVIL to those who have spaces in their paths... bad bad practice
+        # TODO - fix neuroscout
         derivatives = derivatives[0].split(" ")
 
     pipeline_name = 'fitlins'
