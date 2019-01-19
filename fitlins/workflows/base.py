@@ -9,8 +9,9 @@ from ..interfaces.visualizations import (
 from ..interfaces.utils import MergeAll
 
 
-def init_fitlins_wf(bids_dir, derivatives, out_dir, space, exclude_pattern=None,
-                    include_pattern=None, model=None, participants=None,
+def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
+                    exclude_pattern=None, include_pattern=None,
+                    model=None, participants=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
