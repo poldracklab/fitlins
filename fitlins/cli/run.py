@@ -158,7 +158,7 @@ def run_fitlins(argv=None):
 
     fitlins_wf = init_fitlins_wf(
         opts.bids_dir, derivatives, deriv_dir, opts.space,
-        desc=opts.desc,
+        desc=opts.desc_label,
         model=model,
         participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
