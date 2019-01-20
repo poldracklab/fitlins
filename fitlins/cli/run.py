@@ -92,7 +92,7 @@ def get_parser():
     g_bids.add_argument('--exclude', action='store', default=None,
                         help='regex pattern to exclude files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
-                         help="desc field within BIDS-Derivatives files")
+                         help="use BOLD files with the provided description label")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
