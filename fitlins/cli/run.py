@@ -91,7 +91,7 @@ def get_parser():
                         help='regex pattern to include files')
     g_bids.add_argument('--exclude', action='store', default=None,
                         help='regex pattern to exclude files')
-    g_bids.add_argument('--desc', action='store', default='preproc',
+    g_bids.add_argument('--desc-label', action='store', default='preproc',
                          help="desc field within BIDS-Derivatives files")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
