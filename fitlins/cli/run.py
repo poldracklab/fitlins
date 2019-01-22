@@ -85,8 +85,9 @@ def get_parser():
     g_bids.add_argument('--derivative-label', action='store', type=str,
                         help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
-                        choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
-                        help='registered space of input datasets')
+                        choices=['MNI152NLin2009cAsym', ''],
+                        default='MNI152NLin2009cAsym',
+                        help='registered space of input datasets. Empty value for no explicit space.')
     g_bids.add_argument('--include', action='store', default=None,
                         help='regex pattern to include files')
     g_bids.add_argument('--exclude', action='store', default=None,
@@ -112,6 +113,9 @@ def run_fitlins(argv=None):
     opts = get_parser().parse_args(argv)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
+    if not opts.space:
+        # make it an explicit None
+        opts.space = None
 
     subject_list = None
     if opts.participant_label is not None:
