@@ -208,12 +208,12 @@ class LoadBIDSModel(SimpleInterface):
                                                extensions=['.nii', '.nii.gz'])
                 )
                 if spaces:
-                    spaces = sorted(list(spaces))
+                    spaces = sorted(spaces)
                     space = spaces[0]
                     if len(spaces) > 1:
                         iflogger.warning(
                             'No space was provided, but multiple spaces were detected: %s. '
-                            '"Randomly" choosing the first one in alphabetical order: %s'
+                            'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
                 else:
                     space = None
