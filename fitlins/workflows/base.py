@@ -149,6 +149,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
 
         level = 'l{:d}'.format(ix + 1)
 
+        # TODO: No longer used at higher level, suggesting we can simply return
+        # entities from loader as a single list
         select_entities = pe.Node(
             niu.Select(index=ix),
             name='select_{}_entities'.format(level),
@@ -193,6 +195,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
+            plot_contrasts.inputs.vmax = 20
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
