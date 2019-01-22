@@ -198,15 +198,11 @@ class LoadBIDSModel(SimpleInterface):
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
-            if 'space' in ents:
-                # Guaranteed to be valid
-                space = ents.pop('space')
-            else:
-                # Picks first match
-                spaces = set(
-                    analysis.layout.get_spaces(suffix='bold',
-                                               extensions=['.nii', '.nii.gz'])
-                )
+            space = ents.pop('space', None)
+            if space is None:
+                spaces = analysis.layout.get_spaces(
+                    suffix='bold',
+                    extensions=['.nii', '.nii.gz'])
                 if spaces:
                     spaces = sorted(spaces)
                     space = spaces[0]
@@ -215,8 +211,6 @@ class LoadBIDSModel(SimpleInterface):
                             'No space was provided, but multiple spaces were detected: %s. '
                             'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
-                else:
-                    space = None
             preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
                                                 space=space,
