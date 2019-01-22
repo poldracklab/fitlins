@@ -41,13 +41,13 @@ REQUIRES = [
     'pandas>=0.19',
     'tables>=3.2.1',
     'nistats>=0.0.1b0',
-    'pybids>=0.6.5',
+    'pybids>=0.7',
     'jinja2',
 ]
 
 LINKS_REQUIRES = [
     'git+https://github.com/bids-standard/pybids.git@'
-    '36853b0bf222d3174ae7d9d1d9c7a7ecf5049cdd#egg=pybids',
+    'a4bbc811e67df8ffbc186cca4c3c61e0992af09f#egg=pybids',
 ]
 
 TESTS_REQUIRES = [
