@@ -85,12 +85,15 @@ def get_parser():
     g_bids.add_argument('--derivative-label', action='store', type=str,
                         help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
-                        choices=['MNI152NLin2009cAsym'], default='MNI152NLin2009cAsym',
-                        help='registered space of input datasets')
+                        choices=['MNI152NLin2009cAsym', ''],
+                        default='MNI152NLin2009cAsym',
+                        help='registered space of input datasets. Empty value for no explicit space.')
     g_bids.add_argument('--include', action='store', default=None,
                         help='regex pattern to include files')
     g_bids.add_argument('--exclude', action='store', default=None,
                         help='regex pattern to exclude files')
+    g_bids.add_argument('--desc-label', action='store', default='preproc',
+                         help="use BOLD files with the provided description label")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
@@ -110,6 +113,9 @@ def run_fitlins(argv=None):
     opts = get_parser().parse_args(argv)
     if opts.debug:
         logger.setLevel(logging.DEBUG)
+    if not opts.space:
+        # make it an explicit None
+        opts.space = None
 
     subject_list = None
     if opts.participant_label is not None:
@@ -141,7 +147,10 @@ def run_fitlins(argv=None):
 
     derivatives = True if not opts.derivatives else opts.derivatives
     # Need this when specifying args directly (i.e. neuroscout)
-    if len(derivatives) == 1:
+    # god bless neuroscout, but let's make it work for others!
+    if isinstance(derivatives, list) and len(derivatives) == 1:
+        # WRONG AND EVIL to those who have spaces in their paths... bad bad practice
+        # TODO - fix neuroscout
         derivatives = derivatives[0].split(" ")
 
     pipeline_name = 'fitlins'
@@ -155,7 +164,9 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, derivatives, deriv_dir, opts.space, model=model,
+        opts.bids_dir, derivatives, deriv_dir, opts.space,
+        desc=opts.desc_label,
+        model=model,
         participants=subject_list, base_dir=work_dir,
         include_pattern=opts.include, exclude_pattern=opts.exclude
         )
