@@ -1,3 +1,25 @@
+0.2.0 (February 1, 2019)
+=======================
+
+This release marks a substantial refactoring in the wake of
+[BIDS Derivatives RC1](https://docs.google.com/document/d/17ebopupQxuRwp7U7TFvS6BH03ALJOgGHufxK8ToAvyI/),
+[fMRIPrep 1.2.x](https://fmriprep.readthedocs.io/en/stable/changes.html#january-17-2019) and
+[pybids 0.7.0](https://github.com/bids-standard/pybids/releases/tag/0.7.0).
+
+Reports at second level and higher are currently broken, but we're at a point where neuroscout
+is depending on the current code base, the user base is increasing, and it's worth having a starting
+point for considering new features.
+
+With thanks to Alejandro de la Vega, Adina Wagner and Yaroslav Halchenko for contributions.
+
+* FIX: Allow derivatives to be a boolean value (https://github.com/poldracklab/fitlins/pull/91)
+* FIX: Restore report generation (https://github.com/poldracklab/fitlins/pull/88)
+* ENH: Plotting improvements (https://github.com/poldracklab/fitlins/pull/89)
+* ENH: Allow selecting for no space ``--space ''`` option (https://github.com/poldracklab/fitlins/pull/96)
+* ENH: Allow selecting for desc with ``--desc`` option (https://github.com/poldracklab/fitlins/pull/95)
+* MAINT: Depend on unreleased pybids commit (https://github.com/poldracklab/fitlins/pull/99)
+* MAINT: Pybids 0.7.0 compatibility (https://github.com/poldracklab/fitlins/pull/84)
+
 0.1.0 (August 24, 2018)
 =======================
 
