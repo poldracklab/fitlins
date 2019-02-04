@@ -95,6 +95,12 @@ def get_parser():
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                          help="use BOLD files with the provided description label")
 
+    g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
+    g_prep.add_argument('-s', '--smoothing', action='store', metavar="TYPE:FWHM",
+                        help="Smooth BOLD series with FWHM mm kernel prior to fitting. "
+                             "Valid types: iso (isotropic); "
+                             "e.g. `--smothing iso:5` will use an isotropic 5mm FWHM kernel")
+
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
                          help='maximum number of threads across all processes')
@@ -168,7 +174,8 @@ def run_fitlins(argv=None):
         desc=opts.desc_label,
         model=model,
         participants=subject_list, base_dir=work_dir,
-        include_pattern=opts.include, exclude_pattern=opts.exclude
+        include_pattern=opts.include, exclude_pattern=opts.exclude,
+        smoothing=opts.smoothing,
         )
 
     retcode = 0
