@@ -102,7 +102,7 @@ class ContrastMatrixPlot(Visualization):
 class GlassBrainPlotInputSpec(VisualizationInputSpec):
     threshold = traits.Enum('auto', None, traits.Float(), usedefault=True)
     vmax = traits.Float()
-    colormap = traits.Str('bwr_r', usedefault=True)
+    colormap = traits.Str('bwr', usedefault=True)
 
 class GlassBrainPlot(Visualization):
     input_spec = GlassBrainPlotInputSpec
