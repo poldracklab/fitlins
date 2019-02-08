@@ -4,5 +4,5 @@ numpy>=1.11
 nilearn>=0.4.0
 pandas>=0.19
 nipype>=1.1.6
+pybids>=0.7.1
 git+https://github.com/nistats/nistats.git@009ce3fddb3dd01e82bca3ad7d2cdbeece0138f2#egg=nistats
-git+https://github.com/bids-standard/pybids.git@a4bbc811e67df8ffbc186cca4c3c61e0992af09f#egg=pybids
