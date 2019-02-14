@@ -161,8 +161,20 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
+        import re
+
         force_index = self.inputs.force_index or None
-        ignore = self.inputs.ignore or None
+        if self.inputs.ignore:
+            ignore = []
+            for patt in self.inputs.ignore:
+                # If starts and ends with `/` `/`, treat as aregex
+                if patt[0] == '/' and patt[-1] == '/':
+                    patt = re.compile(patt[1:-1])
+                ignore.append(patt)
+        else:
+            ignore = None
+
+        # If empty , then None
         derivatives = self.inputs.derivatives or None
 
         layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,

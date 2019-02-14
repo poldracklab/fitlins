@@ -88,10 +88,10 @@ def get_parser():
                         choices=['MNI152NLin2009cAsym', ''],
                         default='MNI152NLin2009cAsym',
                         help='registered space of input datasets. Empty value for no explicit space.')
-    g_bids.add_argument('--include', action='store', default=None,
+    g_bids.add_argument('--force_index', action='store', default=None,
                         help='regex pattern to include files')
-    g_bids.add_argument('--exclude', action='store', default=None,
-                        help='regex pattern to exclude files')
+    g_bids.add_argument('--ignore', action='store', default=None,
+                        help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                          help="use BOLD files with the provided description label")
 
@@ -174,7 +174,7 @@ def run_fitlins(argv=None):
         desc=opts.desc_label,
         model=model,
         participants=subject_list, base_dir=work_dir,
-        include_pattern=opts.include, exclude_pattern=opts.exclude,
+        force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing,
         )
 
