@@ -139,11 +139,11 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
                                 desc='Derivative folders')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
-    include_pattern = InputMultiPath(
-        traits.Str, xor=['exclude_pattern'],
+    force_index = InputMultiPath(
+        traits.Str,
         desc='Patterns to select sub-directories of BIDS root')
-    exclude_pattern = InputMultiPath(
-        traits.Str, xor=['include_pattern'],
+    ignore = InputMultiPath(
+        traits.Str,
         desc='Patterns to ignore sub-directories of BIDS root')
 
 
@@ -161,18 +161,12 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
-        include = self.inputs.include_pattern
-        exclude = self.inputs.exclude_pattern
-        derivatives = self.inputs.derivatives
-        if not isdefined(include):
-            include = None
-        if not isdefined(exclude):
-            exclude = None
-        if not isdefined(derivatives):
-            exclude = False
+        force_index = self.inputs.force_index or None
+        ignore = self.inputs.ignore or None
+        derivatives = self.inputs.derivatives or None
 
-        layout = BIDSLayout(self.inputs.bids_dir, include=include,
-                            exclude=exclude, derivatives=derivatives)
+        layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,
+                            ignore=ignore, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 

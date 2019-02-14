@@ -40,9 +40,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
         name='loader')
 
     if exclude_pattern is not None:
-        loader.inputs.exclude_pattern = exclude_pattern
+        loader.inputs.ignore = exclude_pattern
     if include_pattern is not None:
-        loader.inputs.include_pattern = include_pattern
+        loader.inputs.force_index = include_pattern
     if participants is not None:
         loader.inputs.selectors = {'subject': participants}
 
