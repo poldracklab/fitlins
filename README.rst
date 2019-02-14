@@ -7,6 +7,14 @@ specification proposal, to BIDS-formatted datasets.
 This software is in alpha stage, and should be considered unstable.
 Users are welcome to test the software, and open issues.
 
+Contributors
+============
+
+[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/0)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/0)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/1)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/1)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/2)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/2)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/3)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/3)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/4)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/4)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/5)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/5)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/6)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/6)[![](https://sourcerer.io/fame/effigies/poldracklab/fitlins/images/7)](https://sourcerer.io/fame/effigies/poldracklab/fitlins/links/7)
+
+Usage
+=====
+
 The CLI follows the `BIDS-Apps`_ convention:
 
 Usage::
