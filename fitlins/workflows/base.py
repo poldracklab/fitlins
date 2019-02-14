@@ -59,7 +59,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
     if smoothing:
         smoothing_params = smoothing.split(':', 1)
         if smoothing_params[0] != 'iso':
-            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
+            raise ValueError("Unknown smoothing type {smoothing_params[0]}")
         smoother = pe.MapNode(
             fsl.IsotropicSmooth(fwhm=int(smoothing_params[1])),
             iterfield=['in_file'],
