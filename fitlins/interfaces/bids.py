@@ -164,17 +164,13 @@ class LoadBIDSModel(SimpleInterface):
         import re
 
         force_index = self.inputs.force_index or None
-        if self.inputs.ignore:
-            ignore = []
-            for patt in self.inputs.ignore:
-                # If starts and ends with `/` `/`, treat as aregex
-                if patt[0] == '/' and patt[-1] == '/':
-                    patt = re.compile(patt[1:-1])
-                ignore.append(patt)
-        else:
-            ignore = None
+        ignore = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.ignore or ()]
 
-        # If empty , then None
+        # If empty, then None
         derivatives = self.inputs.derivatives or None
 
         layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,

@@ -88,7 +88,7 @@ def get_parser():
                         choices=['MNI152NLin2009cAsym', ''],
                         default='MNI152NLin2009cAsym',
                         help='registered space of input datasets. Empty value for no explicit space.')
-    g_bids.add_argument('--force_index', action='store', default=None,
+    g_bids.add_argument('--force-index', action='store', default=None,
                         help='regex pattern to include files')
     g_bids.add_argument('--ignore', action='store', default=None,
                         help='regex pattern or string to ignore files')
