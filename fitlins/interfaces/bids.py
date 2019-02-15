@@ -161,8 +161,20 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
-        force_index = self.inputs.force_index or None
-        ignore = self.inputs.ignore or None
+        import re
+
+        force_index = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.force_index or ()]
+        ignore = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.ignore or ()]
+
+        # If empty, then None
         derivatives = self.inputs.derivatives or None
 
         layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,

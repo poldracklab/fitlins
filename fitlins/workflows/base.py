@@ -11,7 +11,7 @@ from ..interfaces.utils import MergeAll
 
 
 def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
-                    exclude_pattern=None, include_pattern=None,
+                    ignore=None, force_index=None,
                     model=None, participants=None,
                     smoothing=None,
                     base_dir=None, name='fitlins_wf'):
@@ -39,10 +39,10 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
                       model=model_dict),
         name='loader')
 
-    if exclude_pattern is not None:
-        loader.inputs.ignore = exclude_pattern
-    if include_pattern is not None:
-        loader.inputs.force_index = include_pattern
+    if ignore is not None:
+        loader.inputs.ignore = ignore
+    if force_index is not None:
+        loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors = {'subject': participants}
 
