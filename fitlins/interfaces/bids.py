@@ -163,7 +163,11 @@ class LoadBIDSModel(SimpleInterface):
         from bids.layout import BIDSLayout
         import re
 
-        force_index = self.inputs.force_index or None
+        force_index = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.force_index or ()]
         ignore = [
             # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
             re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
