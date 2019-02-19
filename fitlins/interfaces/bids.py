@@ -139,11 +139,11 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
                                 desc='Derivative folders')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
-    include_pattern = InputMultiPath(
-        traits.Str, xor=['exclude_pattern'],
+    force_index = InputMultiPath(
+        traits.Str,
         desc='Patterns to select sub-directories of BIDS root')
-    exclude_pattern = InputMultiPath(
-        traits.Str, xor=['include_pattern'],
+    ignore = InputMultiPath(
+        traits.Str,
         desc='Patterns to ignore sub-directories of BIDS root')
 
 
@@ -161,18 +161,24 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
-        include = self.inputs.include_pattern
-        exclude = self.inputs.exclude_pattern
-        derivatives = self.inputs.derivatives
-        if not isdefined(include):
-            include = None
-        if not isdefined(exclude):
-            exclude = None
-        if not isdefined(derivatives):
-            exclude = False
+        import re
 
-        layout = BIDSLayout(self.inputs.bids_dir, include=include,
-                            exclude=exclude, derivatives=derivatives)
+        force_index = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.force_index or ()]
+        ignore = [
+            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+            # Iterate over empty tuple if undefined
+            for ign in self.inputs.ignore or ()]
+
+        # If empty, then None
+        derivatives = self.inputs.derivatives or None
+
+        layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,
+                            ignore=ignore, derivatives=derivatives)
 
         selectors = self.inputs.selectors
 
