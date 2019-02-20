@@ -163,24 +163,38 @@ class LoadBIDSModel(SimpleInterface):
     -------
     session_info : list of dictionaries
         At the first level, a dictionary per-run containing the following keys:
-            'events'    : HDF5 file containing sparse representation of events
+            'sparse' : HDF5 file containing sparse representation of events
                        (onset, duration, amplitude)
-            'confounds' : HDF5 file containing dense representation of confound
-                          regressors
+            'dense'  : HDF5 file containing dense representation of events
+                       regressors
             'repetition_time'   : float (in seconds)
 
-    contrast_info : list of lists of files
-        A list of files for each level of analysis (length depends on model)
-        An HDF5 file per analysis unit (e.g. run, subject, etc.) containing a pandas matrix
-        with a row for each contrast output.
-        The columns correspond to input files, and the entries are weights.
-        A final, additional column is added indicating whether the row is a T or F
-        contrast.
+    entities : list of list of dictionaries
+        The entities list contains a list for each level of analysis.
+        At each level, the list contains a dictionary of entities that apply to each
+        unit of analysis. For example, if the first level is "Run" and there are 20
+        runs in the dataset, the first entry will be a list of 20 dictionaries, each
+        uniquely identifying a run.
 
-    contrast_indices : list of lists of lists of dictionaries
-        A list of lists of dictionaries for each level of analysis (length depends on model)
-        A list of dictionaries per analysis unit (e.g. run, subject, etc.)
-        Each dictionary contains a set of entities describing
+    contrast_info : list of lists of files
+        A list of contrast specifications at each unit of analysis; hence a list of
+        dictionaries for each entity dictionary.
+        A contrast specification is a list of contrast dictionaries
+        Each dictionary has form:
+          {
+            'entities': dict,
+            'name': str,
+            'type': 't' or 'F',
+            'weights': dict
+          }
+
+        The entities dictionary is a subset of the corresponding dictionary in the entities
+        output.
+        The weights dictionary is a mapping from design matrix column names to floats.
+
+    warnings : list of files
+        Files containing HTML snippets with any warnings produced while processing the first
+        level.
     """
     input_spec = LoadBIDSModelInputSpec
     output_spec = LoadBIDSModelOutputSpec
