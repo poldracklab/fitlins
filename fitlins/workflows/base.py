@@ -1,7 +1,7 @@
 from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
+#from nipype.interfaces import fsl
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
@@ -56,14 +56,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
                 'space': space}),
         name='getter')
 
-    if smoothing:
-        smoothing_params = smoothing.split(':', 1)
-        if smoothing_params[0] != 'iso':
-            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
-        smoother = pe.MapNode(
-            fsl.IsotropicSmooth(fwhm=int(smoothing_params[1])),
-            iterfield=['in_file'],
-            name='smoother')
+#    if smoothing:
+#        smoothing_params = smoothing.split(':', 1)
+#        if smoothing_params[0] != 'iso':
+#            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
+#        smoother = pe.MapNode(
+#            fsl.IsotropicSmooth(fwhm=int(smoothing_params[1])),
+#            iterfield=['in_file'],
+#            name='smoother')
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
