@@ -56,19 +56,17 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
                 'space': space}),
         name='getter')
 
-#    if smoothing:
-#        smoothing_params = smoothing.split(':', 1)
-#        if smoothing_params[0] != 'iso':
-#            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
-#        smoother = pe.MapNode(
-#            fsl.IsotropicSmooth(fwhm=int(smoothing_params[1])),
-#            iterfield=['in_file'],
-#            name='smoother')
+    if smoothing:
+        smoothing_params = smoothing.split(':', 1)
+        if smoothing_params[0] != 'iso':
+            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
+        smoothing_fwhm = int(smoothing_params[1])
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-        name='l1_model')
+        name='l1_model',
+        smoothing_fwhm=smoothing_fwhm)
 
     # Set up common patterns
     image_pattern = '[sub-{subject}/][ses-{session}/]' \
@@ -145,17 +143,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
         (loader, l1_model, [('session_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
+        (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
-
-    if smoothing:
-        wf.connect([
-            (getter, smoother, [('bold_files', 'in_file')]),
-            (smoother, l1_model, [('out_file', 'in_file')]),
-            ])
-    else:
-        wf.connect([
-            (getter, l1_model, [('bold_files', 'bold_file')]),
-            ])
 
     stage = None
     model = l1_model
