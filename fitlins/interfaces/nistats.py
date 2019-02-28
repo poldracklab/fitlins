@@ -41,9 +41,8 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     mask_file = File(exists=True)
     session_info = traits.Dict()
     contrast_info = traits.List(traits.Dict)
-    smoothing_fwhm = traits.Either(
-        None, traits.Float, default=None, usedefault=True,
-        desc='FWHM for Gaussian smoothing kernel')
+    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
