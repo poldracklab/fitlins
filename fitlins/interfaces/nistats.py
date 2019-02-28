@@ -92,6 +92,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
             mask_file = None
+        smoothing_fwhm = self.inputs.smoothing_fwhm
+        if not isdefined(smoothing_fwhm):
+            smoothing_fwhm = None
         flm = level1.FirstLevelModel(
             mask=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
