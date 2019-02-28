@@ -60,13 +60,12 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
         smoothing_params = smoothing.split(':', 1)
         if smoothing_params[0] != 'iso':
             raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
-        smoothing_fwhm = int(smoothing_params[1])
+        smoothing_fwhm = float(smoothing_params[1])
 
     l1_model = pe.MapNode(
-        FirstLevelModel(),
+        FirstLevelModel(smoothing_fwhm=smoothing_fwhm),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
-        name='l1_model',
-        smoothing_fwhm=smoothing_fwhm)
+        name='l1_model')
 
     # Set up common patterns
     image_pattern = '[sub-{subject}/][ses-{session}/]' \
