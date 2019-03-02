@@ -94,6 +94,7 @@ class ContrastMatrixPlot(Visualization):
         contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
                                         for c in self.inputs.contrast_info},
                                        index=data.columns)
+        contrast_matrix.fillna(value=0, inplace=True)
         if 'constant' in contrast_matrix.index:
             contrast_matrix = contrast_matrix.drop(index='constant')
         plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,

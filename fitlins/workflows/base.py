@@ -1,7 +1,7 @@
 from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
+#from nipype.interfaces import fsl
 from ..interfaces.bids import (
     ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
@@ -60,15 +60,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
         smoothing_params = smoothing.split(':', 1)
         if smoothing_params[0] != 'iso':
             raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
-        smoother = pe.MapNode(
-            fsl.IsotropicSmooth(fwhm=int(smoothing_params[1])),
-            iterfield=['in_file'],
-            name='smoother')
+        smoothing_fwhm = float(smoothing_params[1])
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='l1_model')
+    if smoothing:
+        l1_model.inputs.smoothing_fwhm = smoothing_fwhm
 
     # Set up common patterns
     image_pattern = '[sub-{subject}/][ses-{session}/]' \
@@ -145,17 +144,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
         (loader, l1_model, [('session_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
+        (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
-
-    if smoothing:
-        wf.connect([
-            (getter, smoother, [('bold_files', 'in_file')]),
-            (smoother, l1_model, [('out_file', 'in_file')]),
-            ])
-    else:
-        wf.connect([
-            (getter, l1_model, [('bold_files', 'bold_file')]),
-            ])
 
     stage = None
     model = l1_model

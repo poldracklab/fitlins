@@ -41,6 +41,8 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     mask_file = File(exists=True)
     session_info = traits.Dict()
     contrast_info = traits.List(traits.Dict)
+    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
@@ -90,7 +92,11 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
             mask_file = None
-        flm = level1.FirstLevelModel(mask=mask_file)
+        smoothing_fwhm = self.inputs.smoothing_fwhm
+        if not isdefined(smoothing_fwhm):
+            smoothing_fwhm = None
+        flm = level1.FirstLevelModel(
+            mask=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
         contrast_maps = []
