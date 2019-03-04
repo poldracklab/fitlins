@@ -17,10 +17,11 @@ See the output of ``fitlins --help`` for all valid options::
 
     usage: fitlins [-h] [-v]
                    [--participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
-                   [-m MODEL] [-p PREPROC_DIR]
+                   [-m MODEL] [-d DERIVATIVES [DERIVATIVES ...]]
                    [--derivative-label DERIVATIVE_LABEL]
-                   [--space {MNI152NLin2009cAsym}] [--include INCLUDE]
-                   [--exclude EXCLUDE] [--n-cpus N_CPUS] [--debug] [-w WORK_DIR]
+                   [--space {MNI152NLin2009cAsym,}] [--force-index FORCE_INDEX]
+                   [--ignore IGNORE] [--desc-label DESC_LABEL] [-s TYPE:FWHM]
+                   [--n-cpus N_CPUS] [--debug] [-w WORK_DIR]
                    bids_dir output_dir {run,session,participant,dataset}
 
     FitLins: Workflows for Fitting Linear models to fMRI
@@ -30,7 +31,7 @@ See the output of ``fitlins --help`` for all valid options::
                             found at the top level in this folder).
       output_dir            the output path for the outcomes of preprocessing and visual reports
       {run,session,participant,dataset}
-                            processing stage to be runa (see BIDS-Apps specification).
+                            processing stage to be run (see BIDS-Apps specification).
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -40,16 +41,25 @@ See the output of ``fitlins --help`` for all valid options::
       --participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
                             one or more participant identifiers (the sub- prefix can be removed)
       -m MODEL, --model MODEL
-                            location of BIDS model description (default bids_dir/model.json)
-      -p PREPROC_DIR, --preproc-dir PREPROC_DIR
-                            location of preprocessed data (if relative path, search
-                            bids_dir/derivatives, followed by output_dir)
+                            location of BIDS model description
+      -d DERIVATIVES [DERIVATIVES ...], --derivatives DERIVATIVES [DERIVATIVES ...]
+                            location of derivatives (including preprocessed images).
+                            If none specified, indexes all derivatives under bids_dir/derivatives.
       --derivative-label DERIVATIVE_LABEL
                             execution label to append to derivative directory name
-      --space {MNI152NLin2009cAsym}
-                            registered space of input datasets
-      --include INCLUDE     regex pattern to include files
-      --exclude EXCLUDE     regex pattern to exclude files
+      --space {MNI152NLin2009cAsym,}
+                            registered space of input datasets. Empty value for no explicit space.
+      --force-index FORCE_INDEX
+                            regex pattern or string to include files
+      --ignore IGNORE       regex pattern or string to ignore files
+      --desc-label DESC_LABEL
+                            use BOLD files with the provided description label
+
+    Options for preprocessing BOLD series:
+      -s TYPE:FWHM, --smoothing TYPE:FWHM
+                            Smooth BOLD series with FWHM mm kernel prior to fitting.
+                            Valid types: iso (isotropic);
+                            e.g., `--smothing iso:5` will use an isotropic 5mm FWHM kernel
 
     Options to handle performance:
       --n-cpus N_CPUS       maximum number of threads across all processes
@@ -59,8 +69,7 @@ See the output of ``fitlins --help`` for all valid options::
       -w WORK_DIR, --work-dir WORK_DIR
                             path where intermediate results should be stored
 
-At present, FitLins does not support smoothing or operate in subject-native
-space.
+At present, FitLins does not operate in subject-native space.
 It is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
 
