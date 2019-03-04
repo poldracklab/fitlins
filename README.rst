@@ -19,8 +19,9 @@ See the output of ``fitlins --help`` for all valid options::
                    [--participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
                    [-m MODEL] [-p PREPROC_DIR]
                    [--derivative-label DERIVATIVE_LABEL]
-                   [--space {MNI152NLin2009cAsym}] [--include INCLUDE]
-                   [--exclude EXCLUDE] [--n-cpus N_CPUS] [--debug] [-w WORK_DIR]
+                   [--space {MNI152NLin2009cAsym}] [-s --smoothing]
+		   [--include INCLUDE] [--exclude EXCLUDE] [--n-cpus N_CPUS] 
+		   [--debug] [-w WORK_DIR]
                    bids_dir output_dir {run,session,participant,dataset}
 
     FitLins: Workflows for Fitting Linear models to fMRI
@@ -48,6 +49,9 @@ See the output of ``fitlins --help`` for all valid options::
                             execution label to append to derivative directory name
       --space {MNI152NLin2009cAsym}
                             registered space of input datasets
+      -s --smoothing	    full width at half-maximum (FWHM) mm kernel 
+                            (valid types: iso (isotropic); e.g. `--smothing iso:5` will use 
+			    an isotropic 5mm FWHM kernel)
       --include INCLUDE     regex pattern to include files
       --exclude EXCLUDE     regex pattern to exclude files
 
@@ -59,9 +63,7 @@ See the output of ``fitlins --help`` for all valid options::
       -w WORK_DIR, --work-dir WORK_DIR
                             path where intermediate results should be stored
 
-At present, FitLins does not support smoothing or operate in subject-native
-space.
-It is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
+FitLins is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
 
 Models
