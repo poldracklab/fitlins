@@ -63,8 +63,8 @@ See the output of ``fitlins --help`` for all valid options::
       -w WORK_DIR, --work-dir WORK_DIR
                             path where intermediate results should be stored
 
-FitLins is developed against `FMRIPREP`_-preprocessed datasets, but is intended to
-work with any dataset following the `BIDS Derivatives`_ draft specification.
+At present, FitLins does not operate in subject-native space. It is developed against `FMRIPREP`_-preprocessed datasets, 
+but is intended to work with any dataset following the `BIDS Derivatives`_ draft specification.
 
 Models
 ------
