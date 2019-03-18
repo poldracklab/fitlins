@@ -93,7 +93,7 @@ def get_parser():
     g_bids.add_argument('--ignore', action='store', default=None,
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
-                         help="use BOLD files with the provided description label")
+                        help="use BOLD files with the provided description label")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="TYPE:FWHM",
@@ -170,9 +170,9 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, derivatives, deriv_dir, opts.space,
-        desc=opts.desc_label,
-        model=model,
+        opts.bids_dir, derivatives, deriv_dir,
+        analysis_level=opts.analysis_level, model=model,
+        space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing,
