@@ -249,5 +249,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             ])
 
         stage = model
+        if step == analysis_level:
+            break
 
     return wf
