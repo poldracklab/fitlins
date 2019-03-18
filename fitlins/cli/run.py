@@ -93,7 +93,7 @@ def get_parser():
     g_bids.add_argument('--ignore', action='store', default=None,
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
-                         help="use BOLD files with the provided description label")
+                        help="use BOLD files with the provided description label")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="TYPE:FWHM",

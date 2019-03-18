@@ -190,7 +190,7 @@ class LoadBIDSModel(SimpleInterface):
         steps = []
         for i, step in enumerate(self.inputs.model['Steps']):
             steps.append(i)
-            if step['Level'] == analysis_level:
+            if step['Level'] == self.inputs.analysis_level:
                 break
 
         analysis = Analysis(model=self.inputs.model, layout=layout)
