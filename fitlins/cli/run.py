@@ -171,7 +171,7 @@ def run_fitlins(argv=None):
 
     fitlins_wf = init_fitlins_wf(
         opts.bids_dir, derivatives, deriv_dir,
-        analysis_level, model=model,
+        analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,

@@ -184,11 +184,11 @@ class LoadBIDSModel(SimpleInterface):
 
         selectors = self.inputs.selectors
 
-        if analysis_level == 'participant':
-            analysis_level = 'subject'
+        if self.inputs.analysis_level == 'participant':
+            self.inputs.analysis_level = 'subject'
 
         steps = []
-        for i, step in enumerate(model['Steps']):
+        for i, step in enumerate(self.inputs.model['Steps']):
             steps.append(i)
             if step['Level'] == analysis_level:
                 break
@@ -197,7 +197,7 @@ class LoadBIDSModel(SimpleInterface):
         analysis.setup(steps=steps, drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
         if len(steps) > 1:
-            self._load_higher_level(runtime, analysis, analysis_level)
+            self._load_higher_level(runtime, analysis, self.inputs.analysis_level)
 
         return runtime
 
