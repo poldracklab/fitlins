@@ -170,9 +170,9 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, derivatives, deriv_dir, opts.space,
-        desc=opts.desc_label,
-        model=model,
+        opts.bids_dir, derivatives, deriv_dir,
+        analysis_level, model=model,
+        space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing,

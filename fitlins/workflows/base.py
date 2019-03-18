@@ -10,9 +10,9 @@ from ..interfaces.visualizations import (
 from ..interfaces.utils import MergeAll
 
 
-def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
+def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
+                    desc=None, model=None, participants=None,
                     ignore=None, force_index=None,
-                    model=None, participants=None,
                     smoothing=None,
                     base_dir=None, name='fitlins_wf'):
     wf = pe.Workflow(name=name, base_dir=base_dir)
@@ -36,7 +36,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, space, desc=None,
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      model=model_dict),
+                      model=model_dict,
+                      analysis_level=analysis_level),
         name='loader')
 
     if ignore is not None:
