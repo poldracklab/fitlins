@@ -138,8 +138,6 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
     model = traits.Dict(desc='Model specification', mandatory=True)
-    analysis_level = traits.Enum('run', 'session', 'subject', 'participant', 'dataset',
-                                 mandatory=True, desc='Highest level of analysis to complete')
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     force_index = InputMultiPath(
         traits.Str,
@@ -184,20 +182,10 @@ class LoadBIDSModel(SimpleInterface):
 
         selectors = self.inputs.selectors
 
-        if self.inputs.analysis_level == 'participant':
-            self.inputs.analysis_level = 'subject'
-
-        steps = []
-        for i, step in enumerate(self.inputs.model['Steps']):
-            steps.append(i)
-            if step['Level'] == self.inputs.analysis_level:
-                break
-
         analysis = Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(steps=steps, drop_na=False, desc='preproc', **selectors)
+        analysis.setup(drop_na=False, desc='preproc', **selectors)
         self._load_level1(runtime, analysis)
-        if len(steps) > 1:
-            self._load_higher_level(runtime, analysis, self.inputs.analysis_level)
+        self._load_higher_level(runtime, analysis)
 
         return runtime
 
@@ -314,7 +302,7 @@ class LoadBIDSModel(SimpleInterface):
         self._results.setdefault('entities', []).append(entities)
         self._results.setdefault('contrast_info', []).append(contrast_info)
 
-    def _load_higher_level(self, runtime, analysis, analysis_level):
+    def _load_higher_level(self, runtime, analysis):
         for step in analysis.steps[1:]:
             contrast_info = []
             for contrasts in step.get_contrasts():
@@ -331,9 +319,6 @@ class LoadBIDSModel(SimpleInterface):
                 contrast_info.append(contrasts)
 
             self._results['contrast_info'].append(contrast_info)
-
-            if step.level == analysis_level:
-                break
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):

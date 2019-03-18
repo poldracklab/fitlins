@@ -36,8 +36,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      model=model_dict,
-                      analysis_level=analysis_level),
+                      model=model_dict),
         name='loader')
 
     if ignore is not None:
