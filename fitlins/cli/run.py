@@ -178,6 +178,11 @@ def run_fitlins(argv=None):
         smoothing=opts.smoothing,
         )
 
+    if opts.work_dir:
+        # dump crashes in working directory (non /tmp)
+        fitlins_wf.config['execution']['crashdump_dir'] = opts.work_dir
+    # easy to read crashfiles
+    fitlins_wf.config['execution']['crashfile_format'] = 'txt'
     retcode = 0
     try:
         fitlins_wf.run(**plugin_settings)
