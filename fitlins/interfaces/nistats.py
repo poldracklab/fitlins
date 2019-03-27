@@ -95,17 +95,23 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-        flm = level1.FirstLevelModel(
-            mask=mask_file, smoothing_fwhm=smoothing_fwhm)
-        flm.fit(img, design_matrices=mat)
+        if isinstance(img, nb.Cifti2image):
+            pass
+        else:
+            flm = level1.FirstLevelModel(
+                mask=mask_file, smoothing_fwhm=smoothing_fwhm)
+            flm.fit(img, design_matrices=mat)
 
         contrast_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
         for name, weights, type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            es = flm.compute_contrast(
-                weights, type, output_type='effect_size')
+            if isinstance(img, nb.Cifti2image):
+                pass
+            else:
+                es = flm.compute_contrast(
+                    weights, type, output_type='effect_size')
             es_fname = os.path.join(
                 runtime.cwd, '{}.nii.gz').format(name)
             es.to_filename(es_fname)
@@ -151,7 +157,6 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = SecondLevelModelOutputSpec
 
     def _run_interface(self, runtime):
-        model = level2.SecondLevelModel()
         contrast_maps = []
         contrast_metadata = []
 
@@ -168,6 +173,13 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                 filtered_files.append(f)
                 names.append(m['contrast'])
 
+        # check at least one file:
+        img = nb.load(filtered_files[0])
+        if isinstance(img, nb.Cifti2image):
+            pass
+        else:
+            model = level2.SecondLevelModel()
+
         for name, weights, type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
@@ -175,7 +187,10 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             input = (np.array(filtered_files)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(input, design_matrix=design_matrix)
+            if isinstance(img, nb.Cifti2image):
+                pass
+            else:
+                model.fit(input, design_matrix=design_matrix)
 
             stat = model.compute_contrast(second_level_stat_type=type)
             stat_fname = os.path.join(runtime.cwd, '{}.nii.gz').format(name)
