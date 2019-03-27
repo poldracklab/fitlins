@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 import numpy as np
 import pandas as pd
@@ -5,6 +6,7 @@ import nibabel as nb
 from nistats import design_matrix as dm
 from nistats import first_level_model as level1
 from nistats import second_level_model as level2
+from nistats.contrasts import compute_contrast
 
 from nipype.interfaces.base import (
     LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -96,7 +98,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
         if isinstance(img, nb.Cifti2image):
-            pass
+            labels, estimates = level1.run_glm(img.get_fdata(), mat.values)
         else:
             flm = level1.FirstLevelModel(
                 mask=mask_file, smoothing_fwhm=smoothing_fwhm)
@@ -105,16 +107,26 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         contrast_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
-        for name, weights, type in prepare_contrasts(
+        for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
             if isinstance(img, nb.Cifti2image):
-                pass
+                es = compute_contrast(labels, estimates, weights,
+                                      contrast_type=contrast_type)
+                effect_size = es.effect_size()
+                newheader = deepcopy(img.header)
+                newheader.matrix.pop(0)
+                newheader.matrix[0].AppliesToMatrixDimension = 0
+                newheader.matrix[0].IndicesMapToDataType = "CIFTI_INDEX_TYPE_SCALAR"
+                newimg = nb.Cifti2Image(effect_size, header=newheader)
+                es_fname = os.path.join(
+                    runtime.cwd, '{}.dscalar.nii.gz').format(name)
+                newimg.to_filename(es_fname)
             else:
                 es = flm.compute_contrast(
-                    weights, type, output_type='effect_size')
-            es_fname = os.path.join(
-                runtime.cwd, '{}.nii.gz').format(name)
-            es.to_filename(es_fname)
+                    weights, contrast_type, output_type='effect_size')
+                es_fname = os.path.join(
+                    runtime.cwd, '{}.nii.gz').format(name)
+                es.to_filename(es_fname)
 
             contrast_maps.append(es_fname)
             contrast_metadata.append(
