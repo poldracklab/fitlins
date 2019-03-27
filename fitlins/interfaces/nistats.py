@@ -97,7 +97,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-        if isinstance(img, nb.Cifti2image):
+        if isinstance(img, nb.Cifti2Image):
             labels, estimates = level1.run_glm(img.get_fdata(), mat.values)
         else:
             flm = level1.FirstLevelModel(
@@ -109,7 +109,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         out_ents = self.inputs.contrast_info[0]['entities']
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            if isinstance(img, nb.Cifti2image):
+            if isinstance(img, nb.Cifti2Image):
                 es = compute_contrast(labels, estimates, weights,
                                       contrast_type=contrast_type)
                 effect_size = es.effect_size()
@@ -187,7 +187,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
         # check at least one file:
         img = nb.load(filtered_files[0])
-        if isinstance(img, nb.Cifti2image):
+        if isinstance(img, nb.Cifti2Image):
             pass
         else:
             model = level2.SecondLevelModel()
@@ -199,7 +199,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             input = (np.array(filtered_files)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            if isinstance(img, nb.Cifti2image):
+            if isinstance(img, nb.Cifti2Image):
                 pass
             else:
                 model.fit(input, design_matrix=design_matrix)
