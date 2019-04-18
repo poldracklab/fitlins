@@ -37,13 +37,17 @@ def parse_directory(deriv_dir, work_dir, analysis):
     wd_layout = BIDSLayout(
         str(Path(work_dir) / 'reportlets' / 'fitlins'),
         validate=False)
-    contrast_svgs = fl_layout.get(extensions='.svg', suffix='contrasts')
+    all_pngs = fl_layout.get(extensions='.png')
+    fig_dirs = set(
+        (png.dirname, tuple(ent for ent in png.entities.items()
+                            if ent[0] not in ('suffix', 'contrast')))
+        for png in fl_layout.get(extensions='.png'))
 
     analyses = []
-    for contrast_svg in contrast_svgs:
-        ents = contrast_svg.entities
-        ents.pop('suffix')
+    for figdir, ent_tuple in fig_dirs:
+        ents = dict(ent_tuple)
         ents.setdefault('subject', None)
+        contrast_matrix = fl_layout.get(extensions='.svg', suffix='contrasts', **ents)
         correlation_matrix = fl_layout.get(extensions='.svg', suffix='corr',
                                            **ents)
         design_matrix = fl_layout.get(extensions='.svg', suffix='design', **ents)
@@ -51,10 +55,11 @@ def parse_directory(deriv_dir, work_dir, analysis):
             'ents': {k: v for k, v in ents.items() if v is not None},
             'dataset': analysis.layout.root,
             'model_name': analysis.model['name'],
-            'contrasts_svg': contrast_svg.path,
             }
         if ents.get('subject'):
             job_desc['subject_id'] = ents.get('subject')
+        if contrast_matrix:
+            job_desc['contrasts_svg']: contrast_matrix[0].path
         if correlation_matrix:
             job_desc['correlation_matrix_svg'] = correlation_matrix[0].path
         if design_matrix:
