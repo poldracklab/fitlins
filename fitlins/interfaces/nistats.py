@@ -46,7 +46,11 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class FirstLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = traits.List(File)
+    effect_maps = traits.List(File)
+    variance_maps = traits.List(File)
+    stat_maps = traits.List(File)
+    zscore_maps = traits.List(File)
+    pvalue_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
     design_matrix = File()
 
@@ -99,25 +103,37 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             mask=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
-        contrast_maps = []
+        effect_maps = []
+        variance_maps = []
+        stat_maps = []
+        zscore_maps = []
+        pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
-        for name, weights, type in prepare_contrasts(
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz')
+        for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            es = flm.compute_contrast(
-                weights, type, output_type='effect_size')
-            es_fname = os.path.join(
-                runtime.cwd, '{}.nii.gz').format(name)
-            es.to_filename(es_fname)
-
-            contrast_maps.append(es_fname)
+            maps = flm.compute_contrast(weights, contrast_type, output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
                  'suffix': 'effect',
                  **out_ents}
                 )
 
-        self._results['contrast_maps'] = contrast_maps
+            for map_type, map_list in (('effect_size', effect_maps),
+                                       ('effect_variance', variance_maps),
+                                       ('z_score', zscore_maps),
+                                       ('p_value', pvalue_maps),
+                                       ('stat', stat_maps)):
+                fname = fname_fmt(name, map_type)
+                maps[map_type].to_filename(fname)
+                map_list.append(fname)
+
+        self._results['effect_maps'] = effect_maps
+        self._results['variance_maps'] = variance_maps
+        self._results['stat_maps'] = stat_maps
+        self._results['zscore_maps'] = zscore_maps
+        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
@@ -130,7 +146,11 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
 
 
 class SecondLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = traits.List(File)
+    effect_maps = traits.List(File)
+    variance_maps = traits.List(File)
+    stat_maps = traits.List(File)
+    zscore_maps = traits.List(File)
+    pvalue_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
     contrast_matrix = File()
 
@@ -152,11 +172,14 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
     def _run_interface(self, runtime):
         model = level2.SecondLevelModel()
-        contrast_maps = []
+        effect_maps = []
+        variance_maps = []
+        stat_maps = []
+        zscore_maps = []
+        pvalue_maps = []
         contrast_metadata = []
-
-        entities = self.inputs.contrast_info[0]['entities']  # Same for all
-        out_ents = {'suffix': 'stat', **entities}
+        out_ents = self.inputs.contrast_info[0]['entities']  # Same for all
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz')
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -168,23 +191,36 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                 filtered_files.append(f)
                 names.append(m['contrast'])
 
-        for name, weights, type in prepare_contrasts(self.inputs.contrast_info, names):
+        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
-            input = (np.array(filtered_files)[weights != 0]).tolist()
+            inputs = (np.array(filtered_files)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(input, design_matrix=design_matrix)
+            model.fit(inputs, design_matrix=design_matrix)
 
-            stat = model.compute_contrast(second_level_stat_type=type)
-            stat_fname = os.path.join(runtime.cwd, '{}.nii.gz').format(name)
-            stat.to_filename(stat_fname)
+            maps = model.compute_contrast(second_level_stat_type=contrast_type,
+                                          output_type='all')
+            contrast_metadata.append(
+                {'contrast': name,
+                 'suffix': 'stat',
+                 **out_ents})
 
-            contrast_maps.append(stat_fname)
-            contrast_metadata.append({'contrast': name, **out_ents})
+            for map_type, map_list in (('effect_size', effect_maps),
+                                       ('effect_variance', variance_maps),
+                                       ('z_score', zscore_maps),
+                                       ('p_value', pvalue_maps),
+                                       ('stat', stat_maps)):
+                fname = fname_fmt(name, map_type)
+                maps[map_type].to_filename(fname)
+                map_list.append(fname)
 
-        self._results['contrast_maps'] = contrast_maps
+        self._results['effect_maps'] = effect_maps
+        self._results['variance_maps'] = variance_maps
+        self._results['stat_maps'] = stat_maps
+        self._results['zscore_maps'] = zscore_maps
+        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
