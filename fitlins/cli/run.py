@@ -200,7 +200,7 @@ def run_fitlins(argv=None):
     for model in models:
         analysis = Analysis(layout, model=model)
         report_dicts = parse_directory(deriv_dir, work_dir, analysis)
-        write_report('unknown', report_dicts, run_context, deriv_dir)
+        write_report(report_dicts, run_context, deriv_dir)
 
     return retcode
 

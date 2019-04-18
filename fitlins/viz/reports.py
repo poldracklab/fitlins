@@ -66,6 +66,14 @@ def parse_directory(deriv_dir, work_dir, analysis):
             job_desc['correlation_matrix_svg'] = correlation_matrix[0].path
         if design_matrix:
             job_desc['design_matrix_svg'] = design_matrix[0].path
+        if ents['run'] is not None:
+            job_desc['level'] = 'run'
+        elif ents['session'] is not None:
+            job_desc['level'] = 'session'
+        elif ents['subject'] is not None:
+            job_desc['level'] = 'subject'
+        else:
+            job_desc['level'] = 'dataset'
 
         snippet = wd_layout.get(extensions='.html', suffix='snippet', **ents)
         if snippet:
@@ -84,7 +92,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
     return analyses
 
 
-def write_report(level, report_dicts, run_context, deriv_dir):
+def write_report(report_dicts, run_context, deriv_dir):
     fl_layout = BIDSLayout(
         deriv_dir, config=['bids', 'derivatives', 'fitlins'])
 
@@ -98,7 +106,7 @@ def write_report(level, report_dicts, run_context, deriv_dir):
         ents = context['ents'].copy()
         ents['model'] = snake_to_camel(context['model_name'])
         target_file = op.join(deriv_dir, fl_layout.build_path(ents, PATH_PATTERNS))
-        html = tpl.render(deroot({'level': level, **context, **run_context},
+        html = tpl.render(deroot({**context, **run_context},
                                  op.dirname(target_file)))
         with open(target_file, 'w') as fobj:
             fobj.write(html)
