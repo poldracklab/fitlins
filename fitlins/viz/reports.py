@@ -7,8 +7,8 @@ from bids.layout import add_config_paths, BIDSLayout
 from ..utils import snake_to_camel
 
 PATH_PATTERNS = [
-    '[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
-    'model-{model}[_run-{run}].html'
+    'reports/[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+    '[run-{run}_]model-{model}.html'
 ]
 
 add_config_paths(fitlins=pkgr.resource_filename('fitlins', 'data/fitlins.json'))
