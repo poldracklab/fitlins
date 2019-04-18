@@ -26,20 +26,24 @@
             <li>Model: {{ model_name }}</li>
         </ul>
     </div>
+    {% if warning or design_matrix_svg or contrasts_svg or correlation_matrix_svg %}
     <div id="model">
         <h1 class="sub-report-title">Model</h1>
         {{ warning }}
         {% if design_matrix_svg %}
-        <h2>Design matrix</h3>
+        <h2>Design matrix</h2>
         <img src="{{ design_matrix_svg }}" />
         {% endif %}
-        <h2>Contrasts</h3>
+        {% if contrasts_svg %}
+        <h2>Contrasts</h2>
         <img src="{{ contrasts_svg }}" />
+        {% endif %}
         {% if correlation_matrix_svg %}
-        <h2>Correlation matrix</h3>
+        <h2>Correlation matrix</h2>
         <img src="{{ correlation_matrix_svg }}" />
         {% endif %}
     </div>
+    {% endif %}
     {% if contrasts %}
     <div id="contrasts">
         <h1 class="sub-report-title">Contrasts</h1>

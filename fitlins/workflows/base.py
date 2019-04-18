@@ -70,18 +70,18 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         l1_model.inputs.smoothing_fwhm = smoothing_fwhm
 
     # Set up common patterns
-    image_pattern = '[sub-{subject}/][ses-{session}/]' \
+    image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_' \
         '{suffix<design|corr|contrasts>}.svg'
-    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
+    contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_ortho.png'
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'contrast-{contrast}_ortho.png'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_{suffix<effect|stat>}.nii.gz'
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'contrast-{contrast}_{suffix<effect|stat>}.nii.gz'
 
     # Set up general interfaces
     #
