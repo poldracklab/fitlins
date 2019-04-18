@@ -204,6 +204,12 @@ class LoadBIDSModel(SimpleInterface):
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
+            if step.level in ('session', 'subject', 'dataset'):
+                ents.pop('run', None)
+            if step.level in ('subject', 'dataset'):
+                ents.pop('session', None)
+            if step.level == 'dataset':
+                ents.pop('subject', None)
             space = ents.pop('space', None)
             if space is None:
                 spaces = analysis.layout.get_spaces(
@@ -286,6 +292,12 @@ class LoadBIDSModel(SimpleInterface):
                 # Ugly hack. This should be taken care of on the pybids side.
                 con['entities'] = {k: v for k, v in con['entities'].items()
                                    if k in ENTITY_WHITELIST}
+                if step.level in ('session', 'subject', 'dataset'):
+                    con['entities'].pop('run', None)
+                if step.level in ('subject', 'dataset'):
+                    con['entities'].pop('session', None)
+                if step.level == 'dataset':
+                    con['entities'].pop('subject', None)
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
@@ -316,6 +328,12 @@ class LoadBIDSModel(SimpleInterface):
                     contrast['entities'] = {k: v
                                             for k, v in contrast['entities'].items()
                                             if k in ENTITY_WHITELIST}
+                    if step.level in ('session', 'subject', 'dataset'):
+                        contrast['entities'].pop('run', None)
+                    if step.level in ('subject', 'dataset'):
+                        contrast['entities'].pop('session', None)
+                    if step.level == 'dataset':
+                        contrast['entities'].pop('subject', None)
                 contrast_info.append(contrasts)
 
             self._results['contrast_info'].append(contrast_info)
