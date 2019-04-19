@@ -1,10 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-import nibabel as nb
-from nistats import design_matrix as dm
-from nistats import first_level_model as level1
-from nistats import second_level_model as level2
 
 from nipype.interfaces.base import (
     LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -60,6 +56,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = FirstLevelModelOutputSpec
 
     def _run_interface(self, runtime):
+        import nibabel as nb
+        from nistats import design_matrix as dm
+        from nistats import first_level_model as level1
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
@@ -171,6 +170,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = SecondLevelModelOutputSpec
 
     def _run_interface(self, runtime):
+        from nistats import second_level_model as level2
         model = level2.SecondLevelModel()
         effect_maps = []
         variance_maps = []
