@@ -1,3 +1,25 @@
+0.3.0 (April 19, 2019)
+======================
+
+This release restores reports at the second level and higher, and enables isotropic
+smoothing with the nistats backend. Reporting has also been refactored to reduce
+clutter in the outputs.
+
+With thanks to Karolina Finc, Rastko Ciric and Mathias Goncalves for contributions.
+
+* FIX: Restore level 2+ reports (https://github.com/poldracklab/fitlins/pull/130)
+* FIX: Remove uninformative metadata from derivative filenames (https://github.com/poldracklab/fitlins/pull/129)
+* FIX: Re-enable analysis level selection (https://github.com/poldracklab/fitlins/pull/120)
+* FIX: Switch plot colors to conventional blue for negative, red for positive (https://github.com/poldracklab/fitlins/pull/108)
+* ENH: Save crashfiles as text in working directory (https://github.com/poldracklab/fitlins/pull/121)
+* ENH: Add naive isotropic smoothing (https://github.com/poldracklab/fitlins/pull/104)
+* REF: Delegate isotropic smoothing to nistats (https://github.com/poldracklab/fitlins/pull/118)
+* DOC: Update README with latest help text, remove smoothing disclaimer (https://github.com/poldracklab/fitlins/pull/119)
+* MAINT: Add contributors to Zenodo (https://github.com/poldracklab/fitlins/pull/122)
+* MAINT: Consolidate configuration (https://github.com/poldracklab/fitlins/pull/113)
+* MAINT: Pybids 0.8 compatibility (https://github.com/poldracklab/fitlins/pull/109)
+* MAINT: Use numpy 1.15 to accommodate pytables (https://github.com/poldracklab/fitlins/pull/106)
+
 0.2.0 (February 1, 2019)
 =======================
 
