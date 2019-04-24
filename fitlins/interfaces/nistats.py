@@ -126,6 +126,7 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
+    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
 
 
 class SecondLevelModelOutputSpec(TraitedSpec):
@@ -150,7 +151,11 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = SecondLevelModelOutputSpec
 
     def _run_interface(self, runtime):
-        model = level2.SecondLevelModel()
+        smoothing_fwhm = self.inputs.smoothing_fwhm
+        if not isdefined(smoothing_fwhm):
+            smoothing_fwhm = None
+
+        model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
         contrast_maps = []
         contrast_metadata = []
 
