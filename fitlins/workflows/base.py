@@ -57,17 +57,18 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         name='getter')
 
     if smoothing:
-        smoothing_params = smoothing.split(':', 1)
+        smoothing_params = smoothing.split(':', 2)
         if smoothing_params[0] != 'iso':
             raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
         smoothing_fwhm = float(smoothing_params[1])
+        smoothing_level = int(smoothing_params[1])
+        if smoothing_level < 0:
+            smoothing_level = len(model_dict) - smoothing_level
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='l1_model')
-    if smoothing:
-        l1_model.inputs.smoothing_fwhm = smoothing_fwhm
 
     # Set up common patterns
     image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
@@ -158,6 +159,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         #
 
         level = 'l{:d}'.format(ix + 1)
+
+        if smoothing and smoothing_level == ix:
+            model.inputs.smoothing_fwhm = smoothing_fwhm
 
         # TODO: No longer used at higher level, suggesting we can simply return
         # entities from loader as a single list

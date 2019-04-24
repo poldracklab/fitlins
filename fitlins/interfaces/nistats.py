@@ -44,7 +44,6 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
 
 
-
 class FirstLevelModelOutputSpec(TraitedSpec):
     contrast_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
