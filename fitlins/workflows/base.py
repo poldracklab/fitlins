@@ -63,7 +63,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         smoothing_fwhm = float(smoothing_params[1])
         smoothing_level = int(smoothing_params[1])
         if smoothing_level < 0:
-            smoothing_level = len(model_dict) - smoothing_level
+            smoothing_level = len(model_dict['Steps']) - smoothing_level
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
