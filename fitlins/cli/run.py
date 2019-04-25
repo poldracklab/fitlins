@@ -99,7 +99,7 @@ def get_parser():
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="TYPE:FWHM:LEVEL",
                         help="Smooth BOLD series with FWHM mm kernel prior to fitting. "
                              "Valid types: iso (isotropic); "
-                             "e.g. `--smothing iso:5:1` will use an isotropic 5mm"
+                             "e.g. `--smoothing iso:5:1` will use an isotropic 5mm"
                              "FWHM at the first level.")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
