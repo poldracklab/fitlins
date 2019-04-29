@@ -71,7 +71,7 @@
     ],
     [
       "run",
-      "echo \"$VERSION\" > /src/fitlins/fitlins/VERSION && echo include fitlins/VERSION >> /src/fitlins/MANIFEST.in"
+      "echo \"$VERSION\" > /src/fitlins/fitlins/VERSION"
     ],
     [
       "run",

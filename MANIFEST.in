@@ -1,2 +1,3 @@
 include versioneer.py
 include fitlins/_version.py
+include fitlins/VERSION
