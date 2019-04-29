@@ -139,7 +139,8 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
 
 class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
-    stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
+    effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
+    variance_maps = traits.List(traits.List(File(exists=True)))
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
 
@@ -183,22 +184,29 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
-        stat_files = _flatten(self.inputs.stat_files)
-        filtered_files = []
+        input_effects = _flatten(self.inputs.effect_maps)
+        # XXX nistats should begin supporting mixed effects models soon
+        # input_variances = _flatten(self.inputs.variance_maps)
+        input_variances = [None] * len(input_effects)
+
+        filtered_effects = []
+        filtered_variances = []
         names = []
-        for m, f in zip(stat_metadata, stat_files):
+        for m, eff, var in zip(stat_metadata, input_effects, input_variances):
             if _match(entities, m):
-                filtered_files.append(f)
+                filtered_effects.append(eff)
+                filtered_variances.append(var)
                 names.append(m['contrast'])
 
         for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
-            inputs = (np.array(filtered_files)[weights != 0]).tolist()
+            effects = (np.array(filtered_effects)[weights != 0]).tolist()
+            variances = (np.array(filtered_variances)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(inputs, design_matrix=design_matrix)
+            model.fit(effects, design_matrix=design_matrix)
 
             maps = model.compute_contrast(second_level_stat_type=contrast_type,
                                           output_type='all')
