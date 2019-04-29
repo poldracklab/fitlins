@@ -6,9 +6,9 @@ jobs:
     working_directory: /tmp/src/fitlins
     steps:
       - run:
-          name: Install parallel gzip
+          name: Install parallel gzip and Python 3
           command: |
-            apk add --no-cache pigz
+            apk add --no-cache pigz python3
       - checkout
       - setup_remote_docker
       - run:
@@ -20,11 +20,13 @@ jobs:
           name: Build image
           no_output_timeout: 30m
           command: |
+            THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
+            echo "Building version ${CIRCLE_TAG:-$THISVERSION}"
             docker build \
               --tag poldracklab/fitlins:latest \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
               --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
-              --build-arg VERSION="${CIRCLE_TAG}" .
+              --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" .
       - run:
           name: Verify executable can be run
           command: docker run --rm -it poldracklab/fitlins:latest --help
