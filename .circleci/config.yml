@@ -21,12 +21,7 @@ jobs:
           no_output_timeout: 30m
           command: |
             THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
-            if [[ ${THISVERSION:0:1} == "0" ]] ; then
-              echo "WARNING: latest git tag could not be found"
-              echo "Please, make sure you fetch all tags from upstream with"
-              echo "the command ``git fetch --tags --verbose`` and push"
-              echo "them to your fork with ``git push origin --tags``"
-            fi
+            echo "Building version ${CIRCLE_TAG:-$THISVERSION}"
             docker build \
               --tag poldracklab/fitlins:latest \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
