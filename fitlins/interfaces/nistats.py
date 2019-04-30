@@ -211,7 +211,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                                           output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
-                 'suffix': 'stat',
+                 'stat': contrast_type,
                  **out_ents})
 
             for map_type, map_list in (('effect_size', effect_maps),

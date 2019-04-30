@@ -199,7 +199,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 field_to_metadata_map={
                     'effect_maps': {'stat': 'effect'},
                     'variance_maps': {'stat': 'variance'},
-                    'pvalue_maps': {'stat': 'P'},
+                    'pvalue_maps': {'stat': 'p'},
                     'zscore_maps': {'stat': 'z'},
                 }),
             name=f'collate_{level}_outputs')
