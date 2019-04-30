@@ -1,5 +1,5 @@
-from nipype.interfaces.io import IOBase, add_traits, BaseInterface
-from nipype.interfaces.base import DynamicTraitedSpec, TraitedSpec, traits
+from nipype.interfaces.io import IOBase, add_traits
+from nipype.interfaces.base import SimpleInterface, DynamicTraitedSpec, TraitedSpec, traits
 
 
 class MergeAll(IOBase):
@@ -42,7 +42,7 @@ class CollateWithMetadataOutputSpec(TraitedSpec):
     out = traits.List(traits.Any)
 
 
-class CollateWithMetadata(BaseInterface):
+class CollateWithMetadata(SimpleInterface):
     input_spec = CollateWithMetadataInputSpec
     output_spec = CollateWithMetadataOutputSpec
 
@@ -56,11 +56,12 @@ class CollateWithMetadata(BaseInterface):
         self._fields = fields
         add_traits(self.inputs, fields)
 
-    def _list_outputs(self):
-        outputs = self._outputs().get()
+    def _run_interface(self, runtime):
         orig_metadata = self.inputs.metadata
         md_map = self.inputs.field_to_metadata_map
         n = len(orig_metadata)
+
+        self._results.update({'metadata': [], 'out': []})
         for key in self._fields:
             val = getattr(self.inputs, key)
             if len(val) != n:
@@ -68,7 +69,7 @@ class CollateWithMetadata(BaseInterface):
             for md, obj in zip(orig_metadata, val):
                 metadata = md.copy()
                 metadata.update(md_map.get(key, {}))
-                outputs['metadata'].append(metadata)
-                outputs['out'].append(obj)
+                self._results['metadata'].append(metadata)
+                self._results['out'].append(obj)
 
-        return outputs
+        return runtime
