@@ -202,7 +202,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     'pvalue_maps': {'stat': 'P'},
                     'zscore_maps': {'stat': 'z'},
                 }),
-            name='collate_outputs')
+            name=f'collate_{level}_outputs')
 
         # XXX: Add function node to take contrast specification
         # and outputs and determine the contrast_pattern entities

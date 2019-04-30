@@ -40,7 +40,6 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
 
 
-
 class FirstLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
     variance_maps = traits.List(File)
@@ -109,7 +108,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
-        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz')
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
             maps = flm.compute_contrast(weights, contrast_type, output_type='all')
@@ -180,7 +179,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']  # Same for all
-        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz')
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -193,7 +192,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         filtered_variances = []
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
-            if _match(entities, m):
+            if _match(out_ents, m):
                 filtered_effects.append(eff)
                 filtered_variances.append(var)
                 names.append(m['contrast'])
@@ -203,7 +202,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
             effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            variances = (np.array(filtered_variances)[weights != 0]).tolist()
+            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
             model.fit(effects, design_matrix=design_matrix)

@@ -1,5 +1,5 @@
 from nipype.interfaces.io import IOBase, add_traits, BaseInterface
-from nipype.interfaces.base import DynamicTraitedSpec, TraitedSpec
+from nipype.interfaces.base import DynamicTraitedSpec, TraitedSpec, traits
 
 
 class MergeAll(IOBase):
@@ -46,8 +46,8 @@ class CollateWithMetadata(BaseInterface):
     input_spec = CollateWithMetadataInputSpec
     output_spec = CollateWithMetadataOutputSpec
 
-    def __init__(self, fields=None):
-        super(CollateWithMetadata, self).__init__()
+    def __init__(self, fields=None, **kwargs):
+        super(CollateWithMetadata, self).__init__(**kwargs)
         if not fields:
             fields = self.inputs.field_to_metadata_map.keys()
             if not fields:
