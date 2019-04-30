@@ -47,6 +47,32 @@ jobs:
             - cache/docker.tar.gz
             - src/fitlins
 
+  cache_test_data:
+    docker:
+      - image: continuumio/miniconda3:4.5.12
+    working_directory: /tmp/data
+    steps:
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ epoch }}
+            - ds003-v0-
+      - run:
+          name: Install datalad and set git ID
+          command: |
+            conda install -c conda-forge datalad git-annex
+            git config --global user.name 'FitLins CircleCI User'
+            git config --global user.email 'crn.poldracklab@gmail.com'
+      - run:
+          name: Install test dataset
+          command: |
+            datalad install -r ///labs/poldrack/ds003_fmriprep
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
+      - save_cache:
+         key: ds003-v0-{{ epoch }}
+         paths:
+            - /tmp/data
+
+
   deploy_test:
     machine:
       image: circleci/classic:201711-01
@@ -145,6 +171,10 @@ workflows:
   fitlins_tests:
     jobs:
       - build:
+          filters:
+            tags:
+              only: /.*/
+      - cache_test_data:
           filters:
             tags:
               only: /.*/
