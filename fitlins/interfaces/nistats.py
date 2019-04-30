@@ -115,7 +115,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             maps = flm.compute_contrast(weights, contrast_type, output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
-                 'suffix': 'effect',
+                 'stat': contrast_type,
                  **out_ents}
                 )
 

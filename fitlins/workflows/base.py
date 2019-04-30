@@ -7,7 +7,7 @@ from ..interfaces.bids import (
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
 from ..interfaces.visualizations import (
     DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
-from ..interfaces.utils import MergeAll
+from ..interfaces.utils import MergeAll, CollateWithMetadata
 
 
 def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
@@ -193,6 +193,17 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # Derivatives
         #
 
+        collate_outputs = pe.Node(
+            CollateWithMetadata(
+                fields=['effect_maps', 'variance_maps', 'stat_maps', 'pvalue_maps', 'zscore_maps'],
+                field_to_metadata_map={
+                    'effect_maps': {'stat': 'effect'},
+                    'variance_maps': {'stat': 'variance'},
+                    'pvalue_maps': {'stat': 'P'},
+                    'zscore_maps': {'stat': 'z'},
+                }),
+            name='collate_outputs')
+
         # XXX: Add function node to take contrast specification
         # and outputs and determine the contrast_pattern entities
         # with
@@ -203,15 +214,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # maptype=pvalue => stat=p
         # maptype=zscore => stat=z
 
-        ds_maps = {
-            f'{maptype}_maps': pe.Node(
-                BIDSDataSink(base_directory=out_dir,
-                             path_patterns=contrast_pattern),
-                run_without_submitting=True,
-                name=f'ds_{level}_{maptype}_maps')
-            for maptype in ('effect', 'variance', 'zscore', 'pvalue')
-            }
-        ds_stat_maps
+        # ds_maps = {
+        #     f'{maptype}_maps': pe.Node(
+        #         BIDSDataSink(base_directory=out_dir,
+        #                      path_patterns=contrast_pattern),
+        #         run_without_submitting=True,
+        #         name=f'ds_{level}_{maptype}_maps')
+        #     for maptype in ('effect', 'variance', 'zscore', 'pvalue')
+        #     }
+        # ds_stat_maps
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_pattern),
@@ -250,7 +261,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 name='{}_model'.format(level))
 
             wf.connect([
-                (stage, model, [('effect_maps', 'stat_files'),
+                (stage, model, [('effect_maps', 'effect_maps'),
+                                ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
 
@@ -263,6 +275,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                               ('zscore_maps', 'zscore_maps'),
                               ('pvalue_maps', 'pvalue_maps'),
                               ('contrast_metadata', 'contrast_metadata')]),
+            (collate, collate_outputs, [
+                ('contrast_metadata', 'metadata'),
+                ('effect_maps', 'effect_maps'),
+                ('variance_maps', 'variance_maps'),
+                ('stat_maps', 'stat_maps'),
+                ('zscore_maps', 'zscore_maps'),
+                ('pvalue_maps', 'pvalue_maps'),
+                ]),
             (collate, plot_contrasts, [('stat_maps', 'data')]),
             (collate, ds_contrast_maps, [('contrast_maps', 'in_file'),
                                          ('contrast_metadata', 'entities')]),
