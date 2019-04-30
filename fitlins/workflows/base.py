@@ -204,25 +204,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 }),
             name=f'collate_{level}_outputs')
 
-        # XXX: Add function node to take contrast specification
-        # and outputs and determine the contrast_pattern entities
-        # with
-        # maptype=effect => stat=effect
-        # maptype=variance => stat=variance
-        # maptype=stat & test=t => stat=t
-        # maptype=stat & test=F => stat=F
-        # maptype=pvalue => stat=p
-        # maptype=zscore => stat=z
-
-        # ds_maps = {
-        #     f'{maptype}_maps': pe.Node(
-        #         BIDSDataSink(base_directory=out_dir,
-        #                      path_patterns=contrast_pattern),
-        #         run_without_submitting=True,
-        #         name=f'ds_{level}_{maptype}_maps')
-        #     for maptype in ('effect', 'variance', 'zscore', 'pvalue')
-        #     }
-        # ds_stat_maps
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_pattern),
