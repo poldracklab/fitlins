@@ -1,10 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-import nibabel as nb
-from nistats import design_matrix as dm
-from nistats import first_level_model as level1
-from nistats import second_level_model as level2
 
 from nipype.interfaces.base import (
     LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -44,9 +40,12 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
 
 
-
 class FirstLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = traits.List(File)
+    effect_maps = traits.List(File)
+    variance_maps = traits.List(File)
+    stat_maps = traits.List(File)
+    zscore_maps = traits.List(File)
+    pvalue_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
     design_matrix = File()
 
@@ -56,6 +55,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = FirstLevelModelOutputSpec
 
     def _run_interface(self, runtime):
+        import nibabel as nb
+        from nistats import design_matrix as dm
+        from nistats import first_level_model as level1
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
@@ -99,38 +101,55 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             mask=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
-        contrast_maps = []
+        effect_maps = []
+        variance_maps = []
+        stat_maps = []
+        zscore_maps = []
+        pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
-        for name, weights, type in prepare_contrasts(
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+        for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            es = flm.compute_contrast(
-                weights, type, output_type='effect_size')
-            es_fname = os.path.join(
-                runtime.cwd, '{}.nii.gz').format(name)
-            es.to_filename(es_fname)
-
-            contrast_maps.append(es_fname)
+            maps = flm.compute_contrast(weights, contrast_type, output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
-                 'suffix': 'effect',
+                 'stat': contrast_type,
                  **out_ents}
                 )
 
-        self._results['contrast_maps'] = contrast_maps
+            for map_type, map_list in (('effect_size', effect_maps),
+                                       ('effect_variance', variance_maps),
+                                       ('z_score', zscore_maps),
+                                       ('p_value', pvalue_maps),
+                                       ('stat', stat_maps)):
+                fname = fname_fmt(name, map_type)
+                maps[map_type].to_filename(fname)
+                map_list.append(fname)
+
+        self._results['effect_maps'] = effect_maps
+        self._results['variance_maps'] = variance_maps
+        self._results['stat_maps'] = stat_maps
+        self._results['zscore_maps'] = zscore_maps
+        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
 
 
 class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
-    stat_files = traits.List(traits.List(File(exists=True)), mandatory=True)
+    effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
+    variance_maps = traits.List(traits.List(File(exists=True)))
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
 
 
 class SecondLevelModelOutputSpec(TraitedSpec):
-    contrast_maps = traits.List(File)
+    effect_maps = traits.List(File)
+    variance_maps = traits.List(File)
+    stat_maps = traits.List(File)
+    zscore_maps = traits.List(File)
+    pvalue_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
     contrast_matrix = File()
 
@@ -151,40 +170,64 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     output_spec = SecondLevelModelOutputSpec
 
     def _run_interface(self, runtime):
+        from nistats import second_level_model as level2
         model = level2.SecondLevelModel()
-        contrast_maps = []
+        effect_maps = []
+        variance_maps = []
+        stat_maps = []
+        zscore_maps = []
+        pvalue_maps = []
         contrast_metadata = []
-
-        entities = self.inputs.contrast_info[0]['entities']  # Same for all
-        out_ents = {'suffix': 'stat', **entities}
+        out_ents = self.inputs.contrast_info[0]['entities']  # Same for all
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
-        stat_files = _flatten(self.inputs.stat_files)
-        filtered_files = []
+        input_effects = _flatten(self.inputs.effect_maps)
+        # XXX nistats should begin supporting mixed effects models soon
+        # input_variances = _flatten(self.inputs.variance_maps)
+        input_variances = [None] * len(input_effects)
+
+        filtered_effects = []
+        filtered_variances = []
         names = []
-        for m, f in zip(stat_metadata, stat_files):
-            if _match(entities, m):
-                filtered_files.append(f)
+        for m, eff, var in zip(stat_metadata, input_effects, input_variances):
+            if _match(out_ents, m):
+                filtered_effects.append(eff)
+                filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        for name, weights, type in prepare_contrasts(self.inputs.contrast_info, names):
+        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
-            input = (np.array(filtered_files)[weights != 0]).tolist()
+            effects = (np.array(filtered_effects)[weights != 0]).tolist()
+            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(input, design_matrix=design_matrix)
+            model.fit(effects, design_matrix=design_matrix)
 
-            stat = model.compute_contrast(second_level_stat_type=type)
-            stat_fname = os.path.join(runtime.cwd, '{}.nii.gz').format(name)
-            stat.to_filename(stat_fname)
+            maps = model.compute_contrast(second_level_stat_type=contrast_type,
+                                          output_type='all')
+            contrast_metadata.append(
+                {'contrast': name,
+                 'stat': contrast_type,
+                 **out_ents})
 
-            contrast_maps.append(stat_fname)
-            contrast_metadata.append({'contrast': name, **out_ents})
+            for map_type, map_list in (('effect_size', effect_maps),
+                                       ('effect_variance', variance_maps),
+                                       ('z_score', zscore_maps),
+                                       ('p_value', pvalue_maps),
+                                       ('stat', stat_maps)):
+                fname = fname_fmt(name, map_type)
+                maps[map_type].to_filename(fname)
+                map_list.append(fname)
 
-        self._results['contrast_maps'] = contrast_maps
+        self._results['effect_maps'] = effect_maps
+        self._results['variance_maps'] = variance_maps
+        self._results['stat_maps'] = stat_maps
+        self._results['zscore_maps'] = zscore_maps
+        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
 
         return runtime
