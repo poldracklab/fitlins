@@ -45,7 +45,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     if force_index is not None:
         loader.inputs.force_index = force_index
     if participants is not None:
-        loader.inputs.selectors = {'subject': participants}
+        loader.inputs.selectors['subject'] = participants
+    if space is not None:
+        loader.inputs.selectors['space'] = space
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
