@@ -61,7 +61,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         if smoothing_params[1] != 'iso':
             raise ValueError(f"Unknown smoothing type {smoothing_params[1]}")
         smoothing_fwhm = float(smoothing_params[2])
-        smoothing_level = int(smoothing_params[0])
+        smoothing_level = smoothing_params[0]
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
