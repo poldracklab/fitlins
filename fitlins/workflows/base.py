@@ -91,6 +91,16 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='l1_model')
 
+    def _deindex(tsv):
+        from pathlib import Path
+        import pandas as pd
+        out_tsv = str(Path.cwd() / Path(tsv).name)
+        pd.read_csv(tsv, sep='\t', index_col=0).to_csv(out_tsv, sep='\t', index=False)
+        return out_tsv
+
+    deindex_tsv = pe.MapNode(niu.Function(function=_deindex),
+                             iterfield=['tsv'], name='deindex_tsv')
+
     # Set up common patterns
     image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
@@ -176,7 +186,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         (loader, l1_model, [('session_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
-        (l1_model, ds_design_matrix, [('design_matrix', 'in_file')]),
+        (l1_model, deindex_tsv, [('design_matrix', 'tsv')]),
+        (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
         (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
 
