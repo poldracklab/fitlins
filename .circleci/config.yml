@@ -113,7 +113,7 @@ jobs:
                 -v /tmp/data/ds003_models:/models \
                 poldracklab/fitlins:latest /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
-                --participant-label 01 02 03 \
+                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2
       - store_artifacts:
           path: /tmp/ds003
