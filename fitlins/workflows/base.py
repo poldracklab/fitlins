@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 # from nipype.interfaces import fsl
@@ -58,10 +59,31 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
     if smoothing:
         smoothing_params = smoothing.split(':', 2)
-        if smoothing_params[1] != 'iso':
-            raise ValueError(f"Unknown smoothing type {smoothing_params[1]}")
-        smoothing_fwhm = float(smoothing_params[2])
-        smoothing_level = smoothing_params[0]
+        smoothing_fwhm = float(smoothing_params[0])
+        if smoothing_fwhm == 'iso':
+            warnings.warn(
+                "The order of arguments for smoothing will"
+                "change in the next release.", FutureWarning)
+            smoothing_level = 'l1'
+            smoothing_fwhm = smoothing_params[1]
+        else:
+            if len(smoothing_params) > 1:
+                smoothing_level = smoothing_params[1]
+            else:
+                smoothing_level = 'l1'
+
+            if len(smoothing_params) > 2:
+                if smoothing_params[2] != 'iso':
+                    raise ValueError(
+                        f"Unknown smoothing type {smoothing_params[1]}")
+
+        # Check that smmoothing level exists in model
+        if (smoothing_level.startswith("l") and
+                int(smoothing_level.strip("l")) > len(model_dict)):
+            raise ValueError("Invalid smoothing level {smoothing_level}")
+        elif (smoothing_level not in
+                [step['Level'] for step in model_dict['Steps']]):
+            raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
