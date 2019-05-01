@@ -180,7 +180,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
         level = 'l{:d}'.format(ix + 1)
 
-        if smoothing and smoothing_level == step:
+        if smoothing and (smoothing_level == step or smoothing_level == level):
             model.inputs.smoothing_fwhm = smoothing_fwhm
 
         # TODO: No longer used at higher level, suggesting we can simply return
