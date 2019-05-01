@@ -37,11 +37,11 @@ def parse_directory(deriv_dir, work_dir, analysis):
     wd_layout = BIDSLayout(
         str(Path(work_dir) / 'reportlets' / 'fitlins'),
         validate=False)
-    all_pngs = fl_layout.get(extensions='.png')
+    all_pngs = fl_layout.get(extension='.png')
     fig_dirs = set(
         (png.dirname, tuple(ent for ent in png.entities.items()
                             if ent[0] not in ('suffix', 'contrast')))
-        for png in fl_layout.get(extensions='.png'))
+        for png in fl_layout.get(extension='.png'))
 
     analyses = []
     for figdir, ent_tuple in fig_dirs:
@@ -49,10 +49,10 @@ def parse_directory(deriv_dir, work_dir, analysis):
         ents.setdefault('subject', None)
         ents.setdefault('session', None)
         ents.setdefault('run', None)
-        contrast_matrix = fl_layout.get(extensions='.svg', suffix='contrasts', **ents)
-        correlation_matrix = fl_layout.get(extensions='.svg', suffix='corr',
+        contrast_matrix = fl_layout.get(extension='.svg', suffix='contrasts', **ents)
+        correlation_matrix = fl_layout.get(extension='.svg', suffix='corr',
                                            **ents)
-        design_matrix = fl_layout.get(extensions='.svg', suffix='design', **ents)
+        design_matrix = fl_layout.get(extension='.svg', suffix='design', **ents)
         job_desc = {
             'ents': {k: v for k, v in ents.items() if v is not None},
             'dataset': analysis.layout.root,
@@ -75,12 +75,12 @@ def parse_directory(deriv_dir, work_dir, analysis):
         else:
             job_desc['level'] = 'dataset'
 
-        snippet = wd_layout.get(extensions='.html', suffix='snippet', **ents)
+        snippet = wd_layout.get(extension='.html', suffix='snippet', **ents)
         if snippet:
             with open(snippet[0].path) as fobj:
                 job_desc['warning'] = fobj.read()
 
-        contrasts = fl_layout.get(extensions='.png', suffix='ortho', **ents)
+        contrasts = fl_layout.get(extension='.png', suffix='ortho', **ents)
         # TODO: Split contrasts from estimates
         job_desc['contrasts'] = [{'image_file': c.path,
                                   'name':
