@@ -100,6 +100,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
         'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_ortho.png'
+    design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}.tsv'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
@@ -144,6 +147,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         run_without_submitting=True,
         name='ds_design')
 
+    ds_design_matrix = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'design'},
+                     path_patterns=design_matrix_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_design_matrix')
+
     ds_corr = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'corr'},
                      path_patterns=image_pattern),
@@ -166,6 +176,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         (loader, l1_model, [('session_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
+        (l1_model, ds_design_matrix, [('design_matrix', 'in_file')]),
         (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
 
@@ -248,6 +259,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 (select_entities, getter,  [('out', 'entities')]),
                 (select_entities, ds_model_warnings,  [('out', 'entities')]),
                 (select_entities, ds_design, [('out', 'entities')]),
+                (select_entities, ds_design_matrix, [('out', 'entities')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
                 (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
