@@ -233,8 +233,7 @@ class LoadBIDSModel(SimpleInterface):
             fname = preproc_files[0].path
 
             # Required field in seconds
-            TR = analysis.layout.get_metadata(fname, suffix='bold',
-                                              full_search=True)['RepetitionTime']
+            TR = analysis.layout.get_metadata(fname)['RepetitionTime']
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
