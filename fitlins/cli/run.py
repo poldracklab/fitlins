@@ -100,7 +100,7 @@ def get_parser():
                         help="Smooth BOLD series with FWHM mm kernel prior to fitting. "
                              "Valid types: iso (isotropic); "
                              "e.g. `--smoothing dataset:iso:5` will use an isotropic 5mm"
-                             "FWHM at the first level.")
+                             "FWHM on subject-level maps, before evaluating the dataset level.")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
