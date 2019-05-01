@@ -47,6 +47,77 @@ jobs:
             - cache/docker.tar.gz
             - src/fitlins
 
+  cache_test_data:
+    docker:
+      - image: continuumio/miniconda3:4.5.12
+    working_directory: /tmp/data
+    steps:
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ epoch }}
+            - ds003-v0-
+      - run:
+          name: Install datalad and set git ID
+          command: |
+            conda install -c conda-forge datalad git-annex
+            git config --global user.name 'FitLins CircleCI User'
+            git config --global user.email 'crn.poldracklab@gmail.com'
+      - run:
+          name: Install fMRIPrep derivatives of ds000003
+          command: |
+            datalad install -r ///labs/poldrack/ds003_fmriprep
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv
+      - run:
+          name: Download a model for ds000003
+          command: |
+              mkdir -p ds003_models
+              curl -sSL https://raw.githubusercontent.com/effigies/BIDS-examples/enh/models/ds003/models/model-001_smdl.json \
+                -o ds003_models/model-001_smdl.json
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - data
+      - save_cache:
+         key: ds003-v0-{{ epoch }}
+         paths:
+            - /tmp/data
+
+  test_ds003:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/ds003
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Run FitLins
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
+            chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
+            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data:ro \
+                -v /tmp/ds003/derivatives:/out \
+                -v /tmp/ds003/work:/scratch \
+                -v /tmp/data/ds003_models:/models \
+                poldracklab/fitlins:latest /data/sourcedata /out dataset \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
+                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --n-cpus 2
+      - store_artifacts:
+          path: /tmp/ds003
+
   deploy_test:
     machine:
       image: circleci/classic:201711-01
@@ -148,9 +219,20 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - deploy_master:
+      - cache_test_data:
+          filters:
+            tags:
+              only: /.*/
+      - test_ds003:
           requires:
             - build
+            - cache_test_data
+          filters:
+            tags:
+              only: /.*/
+      - deploy_master:
+          requires:
+            - test_ds003
           filters:
             branches:
               only: master
@@ -164,7 +246,7 @@ workflows:
               ignore: /.*/
       - deploy:
           requires:
-            - build
+            - test_ds003
           filters:
             branches:
               ignore: /.*/
