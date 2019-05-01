@@ -96,12 +96,13 @@ def get_parser():
                         help="use BOLD files with the provided description label")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
-    g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM:LEVEL:TYPE",
-                        help="Smooth BOLD series with FWHM mm kernel prior to fitting. "
-                             "Valid types: iso (isotropic); "
-                             "Defaults: LEVEL='subject' TYPE='iso';"
-                             "e.g. `--smoothing 5:dataset:iso will use an isotropic 5mm"
-                             "FWHM on subject-level maps, before evaluating the dataset level.")
+    g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM[:LEVEL:[TYPE]]",
+                        help="Smooth BOLD series with FWHM mm kernel prior to fitting at LEVEL. "
+                             "Optional analysis LEVEL (default: l1) may be specified numerically "
+                             "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
+                             "Optional smoothing TYPE (default: iso) must be one of: `iso` (isotropic). "
+                             "e.g., `--smoothing 5:dataset:iso` will perform a 5mm FWHM isotropic "
+                             "smoothing on subject-level maps, before evaluating the dataset level.")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,

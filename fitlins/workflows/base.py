@@ -61,28 +61,27 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
     if smoothing:
         smoothing_params = smoothing.split(':', 2)
-        smoothing_fwhm = float(smoothing_params[0])
-        if smoothing_fwhm == 'iso':
+        # Convert old style and warn; this should turn into an (informative) error around 0.5.0
+        if smoothing_params[0] == 'iso':
+            smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
             warnings.warn(
-                "The order of arguments for smoothing will"
-                "change in the next release.", FutureWarning)
-            smoothing_level = 'l1'
-            smoothing_fwhm = smoothing_params[1]
-        else:
-            if len(smoothing_params) > 1:
-                smoothing_level = smoothing_params[1]
-            else:
-                smoothing_level = 'l1'
+                "The format for smoothing arguments has changed. Please use "
+                f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
+        # Add defaults to simplify later logic
+        if len(smoothing_params) == 1:
+            smoothing_params.extend(('l1', 'iso'))
+        elif len(smoothing_params) == 2:
+            smoothing_params.append('iso')
 
-            if len(smoothing_params) > 2:
-                if smoothing_params[2] != 'iso':
-                    raise ValueError(
-                        f"Unknown smoothing type {smoothing_params[1]}")
+        smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
+        smoothing_fwhm = float(smoothing_fwhm)
+        if smoothing_type not in ('iso'):
+            raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
         # Check that smmoothing level exists in model
         if (smoothing_level.startswith("l") and
                 int(smoothing_level.strip("l")) > len(model_dict)):
-            raise ValueError("Invalid smoothing level {smoothing_level}")
+            raise ValueError(f"Invalid smoothing level {smoothing_level}")
         elif (smoothing_level not in
                 [step['Level'] for step in model_dict['Steps']]):
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
@@ -182,7 +181,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
         level = 'l{:d}'.format(ix + 1)
 
-        if smoothing and (smoothing_level == step or smoothing_level == level):
+        if smoothing and smoothing_level in (step, level):
             model.inputs.smoothing_fwhm = smoothing_fwhm
 
         # TODO: No longer used at higher level, suggesting we can simply return
