@@ -1,7 +1,10 @@
 .. FitLins documentation master file, created by
-   sphinx-quickstart on Thu May  2 13:15:04 2019.
+   sphinx-quickstart on Thu May  2 13:30:54 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
+
+.. include:: links.rst
+.. include:: ../README.rst
 
 Welcome to FitLins's documentation!
 ===================================
@@ -10,11 +13,5 @@ Welcome to FitLins's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   changes
+   api/modules

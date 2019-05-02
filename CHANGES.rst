@@ -21,7 +21,7 @@ With thanks to Karolina Finc, Rastko Ciric and Mathias Goncalves for contributio
 * MAINT: Use numpy 1.15 to accommodate pytables (https://github.com/poldracklab/fitlins/pull/106)
 
 0.2.0 (February 1, 2019)
-=======================
+========================
 
 This release marks a substantial refactoring in the wake of
 [BIDS Derivatives RC1](https://docs.google.com/document/d/17ebopupQxuRwp7U7TFvS6BH03ALJOgGHufxK8ToAvyI/),
