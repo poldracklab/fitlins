@@ -35,6 +35,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.apidoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -44,6 +45,11 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+apidoc_module_dir = '../fitlins'
+apidoc_output_dir = 'api'
+apidoc_separate_modules = True
+apidoc_extra_args = ['-H', 'API']
 
 
 # -- Options for HTML output -------------------------------------------------
