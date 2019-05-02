@@ -49,6 +49,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
         ents.setdefault('subject', None)
         ents.setdefault('session', None)
         ents.setdefault('run', None)
+        ents.pop('extension', None)
         contrast_matrix = fl_layout.get(extension='.svg', suffix='contrasts', **ents)
         correlation_matrix = fl_layout.get(extension='.svg', suffix='corr',
                                            **ents)
