@@ -86,10 +86,14 @@ class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
 
 
 class ModelSpecLoaderOutputSpec(TraitedSpec):
-    model_spec = OutputMultiPath(traits.Dict())
+    model_spec = OutputMultiPath(traits.Dict(),
+                                 desc='Model specification(s) as Python dictionaries')
 
 
 class ModelSpecLoader(SimpleInterface):
+    """
+    Load BIDS Stats Models specifications from a BIDS directory
+    """
     input_spec = ModelSpecLoaderInputSpec
     output_spec = ModelSpecLoaderOutputSpec
 
@@ -148,13 +152,58 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
-    session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
-    entities = traits.List(traits.List(traits.Dict()))
-    warnings = traits.List(File)
+    design_info = traits.List(traits.Dict,
+                              desc='Descriptions of design matrices with sparse events, '
+                                   'dense regressors and TR')
+    contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
+                                desc='A list of contrast specifications at each unit of analysis')
+    entities = traits.List(traits.List(traits.Dict),
+                           desc='A list of applicable entities at each unit of analysis')
+    warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
 
 
 class LoadBIDSModel(SimpleInterface):
+    """
+    Read a BIDS dataset and model and produce configurations that may be
+    adapted to various model-fitting packages.
+
+    Outputs
+    -------
+    session_info : list of dictionaries
+        At the first level, a dictionary per-run containing the following keys:
+            'sparse' : HDF5 file containing sparse representation of events
+                       (onset, duration, amplitude)
+            'dense'  : HDF5 file containing dense representation of events
+                       regressors
+            'repetition_time'   : float (in seconds)
+
+    entities : list of list of dictionaries
+        The entities list contains a list for each level of analysis.
+        At each level, the list contains a dictionary of entities that apply to each
+        unit of analysis. For example, if the first level is "Run" and there are 20
+        runs in the dataset, the first entry will be a list of 20 dictionaries, each
+        uniquely identifying a run.
+
+    contrast_info : list of lists of files
+        A list of contrast specifications at each unit of analysis; hence a list of
+        dictionaries for each entity dictionary.
+        A contrast specification is a list of contrast dictionaries
+        Each dictionary has form:
+          {
+            'entities': dict,
+            'name': str,
+            'type': 't' or 'F',
+            'weights': dict
+          }
+
+        The entities dictionary is a subset of the corresponding dictionary in the entities
+        output.
+        The weights dictionary is a mapping from design matrix column names to floats.
+
+    warnings : list of files
+        Files containing HTML snippets with any warnings produced while processing the first
+        level.
+    """
     input_spec = LoadBIDSModelInputSpec
     output_spec = LoadBIDSModelOutputSpec
 
