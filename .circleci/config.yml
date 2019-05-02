@@ -119,9 +119,7 @@ jobs:
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
-                --source $CONDA_PREFIX/lib/python3.6/site-packages/fitlins \
-                --rcfile /src/fitlins/setup.cfg \
-                --concurrency multiprocessing \
+                --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
