@@ -54,7 +54,8 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - ds003-v0-{{ epoch }}
+            - ds003-v0-{{ .Branch }}-
+            - ds003-v0-master-
             - ds003-v0-
       - run:
           name: Install datalad and set git ID
@@ -74,12 +75,8 @@ jobs:
               mkdir -p ds003_models
               curl -sSL https://raw.githubusercontent.com/effigies/BIDS-examples/enh/models/ds003/models/model-001_smdl.json \
                 -o ds003_models/model-001_smdl.json
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - data
       - save_cache:
-         key: ds003-v0-{{ epoch }}
+         key: ds003-v0-{{ .Branch }}-{{ .BuildNum }}
          paths:
             - /tmp/data
 
@@ -90,6 +87,9 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ .Branch }}-{{ .BuildNum }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
