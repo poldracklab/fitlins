@@ -90,7 +90,9 @@ jobs:
           at: /tmp
       - restore_cache:
           keys:
-            - ds003-v0-{{ .Branch }}-{{ .BuildNum }}
+            - ds003-v0-{{ .Branch }}-
+            - ds003-v0-master-
+            - ds003-v0-
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
