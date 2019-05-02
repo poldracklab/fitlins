@@ -86,10 +86,14 @@ class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
 
 
 class ModelSpecLoaderOutputSpec(TraitedSpec):
-    model_spec = OutputMultiPath(traits.Dict())
+    model_spec = OutputMultiPath(traits.Dict(),
+                                 desc='Model specification(s) as Python dictionaries')
 
 
 class ModelSpecLoader(SimpleInterface):
+    """
+    Load BIDS Stats Models specifications from a BIDS directory
+    """
     input_spec = ModelSpecLoaderInputSpec
     output_spec = ModelSpecLoaderOutputSpec
 
@@ -148,10 +152,14 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
-    session_info = traits.List(traits.Dict())
-    contrast_info = traits.List(traits.List(traits.List(traits.Dict())))
-    entities = traits.List(traits.List(traits.Dict()))
-    warnings = traits.List(File)
+    design_info = traits.List(traits.Dict,
+                              desc='Descriptions of design matrices with sparse events, '
+                                   'dense regressors and TR')
+    contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
+                                desc='A list of contrast specifications at each unit of analysis')
+    entities = traits.List(traits.List(traits.Dict),
+                           desc='A list of applicable entities at each unit of analysis')
+    warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
 
 
 class LoadBIDSModel(SimpleInterface):
