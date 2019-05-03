@@ -96,7 +96,7 @@
       {
         "use_env": "neuro",
         "pip_install": [
-          "/src/fitlins[all]"
+          "/src/fitlins[all,test]"
         ],
         "activate": true
       }
