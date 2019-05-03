@@ -169,7 +169,7 @@ class LoadBIDSModel(SimpleInterface):
 
     Outputs
     -------
-    session_info : list of dictionaries
+    design_info : list of dictionaries
         At the first level, a dictionary per-run containing the following keys:
             'sparse' : HDF5 file containing sparse representation of events
                        (onset, duration, amplitude)
@@ -244,7 +244,7 @@ class LoadBIDSModel(SimpleInterface):
         step_subdir.mkdir(parents=True, exist_ok=True)
 
         entities = []
-        session_info = []
+        design_info = []
         contrast_info = []
         warnings = []
         for sparse, dense, ents in step.get_design_matrix():
@@ -354,11 +354,11 @@ class LoadBIDSModel(SimpleInterface):
                     fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
 
             entities.append(ents)
-            session_info.append(info)
+            design_info.append(info)
             contrast_info.append(contrasts)
             warnings.append(str(warning_file))
 
-        self._results['session_info'] = session_info
+        self._results['design_info'] = design_info
         self._results['warnings'] = warnings
         self._results.setdefault('entities', []).append(entities)
         self._results.setdefault('contrast_info', []).append(contrast_info)
