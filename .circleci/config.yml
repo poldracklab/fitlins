@@ -134,10 +134,9 @@ jobs:
               python -m coverage combine \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
                 /tmp/ds003/work/.coverage.*
-              python -m coverage xml \
+              python -m coverage xml -i \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc
               python -m codecov --file coverage.xml \
-                --root /opt/miniconda-latest/envs/neuro/lib/python3.6/site-packages \
                 --flags ds003 -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
