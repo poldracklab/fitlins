@@ -96,6 +96,8 @@ jobs:
       - run:
           name: Install coverage and codecov
           command: |
+              pyenv install 3.6.3
+              pyenv local 3.6.3
               python -m pip install -U coverage codecov
       - run:
           name: Load Docker image layer cache
@@ -131,13 +133,13 @@ jobs:
       - run:
           name: Combine coverage and submit
           command: |
+              pyenv local 3.6.3
               python -m coverage combine \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
                 /tmp/ds003/work/.coverage.*
-              python -m coverage xml -i \
-                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc
-              python -m codecov --file coverage.xml \
-                --flags ds003 -e CIRCLE_JOB
+              sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
+              python -m coverage xml
+              python -m codecov --file coverage.xml --flags ds003 -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
 
