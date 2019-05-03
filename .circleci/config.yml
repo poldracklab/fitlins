@@ -81,6 +81,25 @@ jobs:
          paths:
             - /tmp/data
 
+  build_docs:
+    docker:
+      - image: python:latest
+    working_directory: /tmp/src/fitlins
+    steps:
+      - run:
+          name: Check Python version and upgrade pip
+          command: |
+            python --version
+            python -m pip install -U pip setuptools
+      - checkout
+      - run:
+          name: Install FitLins
+          command: |
+            python -m pip install ".[docs]"
+            make html
+      - store_artifacts:
+          path: /tmp/src/fitlins/docs/_build/html
+
   test_ds003:
     machine:
       image: circleci/classic:201711-01
@@ -248,6 +267,10 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build_docs:
+          filters:
+            tags:
+              only: /.*/
       - test_ds003:
           requires:
             - build
@@ -272,6 +295,7 @@ workflows:
       - deploy:
           requires:
             - test_ds003
+            - build_docs
           filters:
             branches:
               ignore: /.*/
