@@ -183,7 +183,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, l1_model, [('session_info', 'session_info')]),
+        (loader, l1_model, [('design_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
         (l1_model, deindex_tsv, [('design_matrix', 'tsv')]),
