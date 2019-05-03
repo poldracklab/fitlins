@@ -6,8 +6,8 @@
 .. include:: links.rst
 .. include:: ../README.rst
 
-Welcome to FitLins's documentation!
-===================================
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
