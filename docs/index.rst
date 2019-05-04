@@ -13,5 +13,9 @@ Contents
    :maxdepth: 2
    :caption: Contents:
 
+   usage
+   model
    changes
+   support
+   citing
    api/modules
