@@ -6,3 +6,4 @@
 .. _`OpenFMRI dataset ds000030`: http://datasets.datalad.org/?dir=/openfmri/ds000030/
 .. _models: https://github.com/poldracklab/fitlins/tree/models
 .. _Zenodo: https://doi.org/10.5281/zenodo.1306215
+.. _JSON: https://json.org/

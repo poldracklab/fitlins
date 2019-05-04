@@ -14,6 +14,7 @@ Contents
    :caption: Contents:
 
    usage
+   model
    changes
    support
    citing

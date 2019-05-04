@@ -37,6 +37,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
+    'texext.math_dollar',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
