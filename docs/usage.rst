@@ -1,5 +1,7 @@
 .. include:: links.rst
 
+.. _usage:
+
 Usage
 -----
 
@@ -11,7 +13,7 @@ Data Structure)` dataset, one or more derivative datasets, and a `BIDS Stats
 Models`_ file.
 We recommend using `fMRIPrep` for preprocessing your dataset.
 
-The exact command to run ``fitlins`` depends on the Installation_ method.
+The exact command to run ``fitlins`` depends on the :ref:`Installation` method.
 The common parts of the command follow the `BIDS-Apps
 <https://github.com/BIDS-Apps>`_ definition.
 
