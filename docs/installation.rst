@@ -34,9 +34,9 @@ structure::
       dsY/
   /scratch
 
-Here, we have an original BIDS dataset ``/data/raw/dsX``, an fMRIPrep_-preprocessed
-*derivative_* dataset at ``/data/prep/dsX/fmriprep``, and a target directory for
-storing FitLins analyses at ``/data/analyzed/dsX``.
+Here, we have an original BIDS dataset ``/data/raw/dsX``, a `BIDS Derivatives`_ dataset (such as
+would be produced by fMRIPrep_) at ``/data/prep/dsX/fmriprep``, and a target directory for storing
+FitLins analyses at ``/data/analyzed/dsX``.
 
 .. note::
 
@@ -197,7 +197,7 @@ If you have Anaconda_/Miniconda_ installed, you can create a new environment wit
   conda activate fitlins
 
 In most Python installations, you can create an environment with
-`virtualenv <https://virtualenv.pypa.io/>`_::
+virtualenv_::
 
   pip install --upgrade virtualenv
   virtualenv --python=python3.6 fitlins.venv

@@ -14,8 +14,7 @@ Models`_ file.
 We recommend using `fMRIPrep` for preprocessing your dataset.
 
 The exact command to run ``fitlins`` depends on the :ref:`Installation` method.
-The common parts of the command follow the `BIDS-Apps
-<https://github.com/BIDS-Apps>`_ definition.
+The common parts of the command follow the BIDS-Apps_ definition.
 
 Example: ::
 
