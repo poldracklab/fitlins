@@ -255,10 +255,14 @@ workflows:
     jobs:
       - build:
           filters:
+            branches:
+              ignore: /docs?\/.*/
             tags:
               only: /.*/
       - cache_test_data:
           filters:
+            branches:
+              ignore: /docs?\/.*/
             tags:
               only: /.*/
       - build_docs:
