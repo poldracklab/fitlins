@@ -38,6 +38,7 @@ extensions = [
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
+    'm2r',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,6 +54,7 @@ apidoc_output_dir = 'api'
 apidoc_separate_modules = True
 apidoc_extra_args = ['-H', 'API']
 
+source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------
 
