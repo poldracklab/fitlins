@@ -170,28 +170,20 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
-          command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              zcat /tmp/cache/docker.tar.gz | docker load
-              docker images
-            fi
-      - run:
-          name: Deploy to Docker Hub
+          name: Check Docker credentials
           no_output_timeout: 40m
           command: |
             if [[ -n "$DOCKER_PASS" ]]; then
               docker login -u $DOCKER_USER -p $DOCKER_PASS
             fi
       - run:
-          name: Deploy to PyPi
+          name: Build and check Python packages
           command: |
             pip install "setuptools>=27.0" twine
             echo "${CIRCLE_TAG}" > fitlins/VERSION
             python setup.py sdist
+            pip wheel --no-deps -w dist/ .
+            twine check dist/*
 
   deploy_master:
     machine:
@@ -253,6 +245,8 @@ jobs:
             pip install "setuptools>=27.0" twine
             echo "${CIRCLE_TAG}" > fitlins/VERSION
             python setup.py sdist
+            pip wheel --no-deps -w dist/ .
+            twine check dist/*
             twine upload dist/*
 
 workflows:
