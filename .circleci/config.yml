@@ -49,7 +49,7 @@ jobs:
 
   cache_test_data:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: markiewicz/datalad:0.0.1
     working_directory: /tmp/data
     steps:
       - restore_cache:
@@ -58,9 +58,8 @@ jobs:
             - ds003-v0-master-
             - ds003-v0-
       - run:
-          name: Install datalad and set git ID
+          name: Set git ID
           command: |
-            conda install -c conda-forge datalad git-annex
             git config --global user.name 'FitLins CircleCI User'
             git config --global user.email 'crn.poldracklab@gmail.com'
       - run:
