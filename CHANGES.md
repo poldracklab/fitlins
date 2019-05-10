@@ -1,3 +1,25 @@
+0.4.0 (May 10, 2019)
+====================
+
+This release produces effect, variance, statistic (t or F), Z-score, and p-value
+maps at every level, and enables smoothing at higher levels if preferred.
+
+Additionally, documentation has been added at https://fitlins.readthedocs.io and
+versioning/packaging issues have been resolved.
+
+* FIX: Do not install FitLins as editable in Docker (https://github.com/poldracklab/fitlins/pull/137)
+* ENH: Save design matrix as TSV to output directory (https://github.com/poldracklab/fitlins/pull/143)
+* ENH: Enable smoothing at any analysis level (https://github.com/poldracklab/fitlins/pull/135)
+* ENH: Produce all available statistical maps from each analysis unit (https://github.com/poldracklab/fitlins/pull/131)
+* ENH: Add version to non-release Docker images. (https://github.com/poldracklab/fitlins/pull/136)
+* DOC: Flesh out documentation (https://github.com/poldracklab/fitlins/pull/147)
+* DOC: Build API docs on RTD (https://github.com/poldracklab/fitlins/pull/146)
+* DOC: Create Sphinx documentation with API autodocs (https://github.com/poldracklab/fitlins/pull/145)
+* MAINT: Drop Python 3.5 support (https://github.com/poldracklab/fitlins/pull/140)
+* CI: Run FitLins with coverage (https://github.com/poldracklab/fitlins/pull/144)
+* CI: Test FitLins on OpenNeuro DS000003, preprocessed with fMRIPrep 1.3.2 (https://github.com/poldracklab/fitlins/pull/141)
+
+
 0.3.0 (April 19, 2019)
 ======================
 

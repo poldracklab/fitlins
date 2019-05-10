@@ -1,2 +1,2 @@
-fixes:
-  - "/opt/miniconda-latest/envs/neuro/lib/python3.6/site-packages::"
+ignore:
+  - "fitlins/_version.py"

@@ -1,8 +1,1 @@
-nibabel>=2.0
-seaborn>=0.7.1
-numpy>=1.11
-nilearn>=0.4.0
-pandas>=0.19
-nipype>=1.1.6
-pybids>=0.8.0
-git+https://github.com/nistats/nistats.git@51414b8a2bb48dde79de6570074354dcb013c9ae#egg=nistats
+nistats @ git+https://github.com/nistats/nistats.git@b69e127020df05aa8ba540f9a8d799e1dad3d602

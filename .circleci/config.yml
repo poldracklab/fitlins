@@ -23,6 +23,8 @@ jobs:
             THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
             echo "Building version ${CIRCLE_TAG:-$THISVERSION}"
             docker build \
+              --cache-from=poldracklab/fitlins \
+              --rm=false \
               --tag poldracklab/fitlins:latest \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
               --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
@@ -33,7 +35,13 @@ jobs:
       - run:
           name: Check version
           command: |
-              docker run --rm -it poldracklab/fitlins:latest --version
+            THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            DOCKERVERSION=$(docker run --rm -it poldracklab/fitlins:latest --version \
+                           | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
+            echo "$THISVERSION"
+            echo "$DOCKERVERSION"
+            test "$DOCKERVERSION" = "fitlins v$THISVERSION"
       - run:
           name: Docker save
           no_output_timeout: 40m
@@ -44,8 +52,11 @@ jobs:
       - persist_to_workspace:
           root: /tmp
           paths:
-            - cache/docker.tar.gz
             - src/fitlins
+      - save_cache:
+          key: docker-v0-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - /tmp/cache/docker.tar.gz
 
   cache_test_data:
     docker:
@@ -108,6 +119,9 @@ jobs:
           at: /tmp
       - restore_cache:
           keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
+      - restore_cache:
+          keys:
             - ds003-v0-{{ .Branch }}-
             - ds003-v0-master-
             - ds003-v0-
@@ -161,36 +175,93 @@ jobs:
       - store_artifacts:
           path: /tmp/ds003
 
-  deploy_test:
-    machine:
-      image: circleci/classic:201711-01
+  test_packaging:
+    docker:
+      - image: python:latest
     working_directory: /tmp/src/fitlins
     steps:
-      - attach_workspace:
-          at: /tmp
       - run:
-          name: Check Docker credentials
-          no_output_timeout: 40m
+          name: Check Python version and upgrade pip
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
-            fi
+            python --version
+            python -m pip install -U pip setuptools virtualenv twine
+      - checkout
       - run:
-          name: Build and check Python packages
+          name: Build FitLins
           command: |
-            pip install "setuptools>=27.0" twine
-            echo "${CIRCLE_TAG}" > fitlins/VERSION
+            virtualenv --python=python /tmp/venv/build
+            source /tmp/venv/build/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
             python setup.py sdist
             pip wheel --no-deps -w dist/ .
-            twine check dist/*
+      - store_artifacts:
+          path: /tmp/src/fitlins/dist
+      - run:
+          name: Check sdist distribution
+          command: |
+            THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            twine check dist/fitlins*.tar.gz
+            virtualenv --python=python /tmp/venv/sdist
+            source /tmp/venv/sdist/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            pip install dist/fitlins*.tar.gz
+            which fitlins | grep sdist\\/bin
+            INSTALLED_VERSION=$(fitlins --version)
+            echo "VERSION: \"$THISVERSION\""
+            echo "INSTALLED: \"$INSTALLED_VERSION\""
+            test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
+      - run:
+          name: Check wheel distribution
+          command: |
+            THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            twine check dist/fitlins*.tar.gz
+            virtualenv --python=python /tmp/venv/wheel
+            source /tmp/venv/wheel/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            pip install dist/fitlins*.whl
+            which fitlins | grep wheel\\/bin
+            INSTALLED_VERSION=$(fitlins --version)
+            echo "VERSION: \"$THISVERSION\""
+            echo "INSTALLED: \"$INSTALLED_VERSION\""
+            test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
+
+  deploy_pypi:
+    docker:
+      - image: python:latest
+    working_directory: /tmp/src/fitlins
+    steps:
+      - run:
+          name: Check Python version and upgrade pip
+          command: |
+            python --version
+            python -m pip install -U pip setuptools virtualenv twine
+      - checkout
+      - run:
+          name: Build FitLins
+          command: |
+            virtualenv --python=python /tmp/venv/build
+            source /tmp/venv/build/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            python setup.py sdist
+            pip wheel --no-deps -w dist/ .
+      - store_artifacts:
+          path: /tmp/src/fitlins/dist
+      - run:
+          name: Upload packages to PyPI
+          command: |
+            twine check dist/fitlins*
+            twine upload dist/fitlins*
 
   deploy_master:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
     steps:
-      - attach_workspace:
-          at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -211,13 +282,14 @@ jobs:
               docker push poldracklab/fitlins:master
             fi
 
-  deploy:
+  deploy_docker:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
     steps:
-      - attach_workspace:
-          at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -238,15 +310,13 @@ jobs:
               docker tag poldracklab/fitlins poldracklab/fitlins:$CIRCLE_TAG
               docker push poldracklab/fitlins:$CIRCLE_TAG
             fi
-      - run:
-          name: Deploy to PyPi
-          command: |
-            pip install "setuptools>=27.0" twine
-            echo "${CIRCLE_TAG}" > fitlins/VERSION
-            python setup.py sdist
-            pip wheel --no-deps -w dist/ .
-            twine check dist/*
-            twine upload dist/*
+
+  deployable:
+    docker:
+      - image: busybox:latest
+    steps:
+      - run: echo Deploying!
+
 
 workflows:
   version: 2
@@ -275,24 +345,30 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - test_packaging:
+          filters:
+            tags:
+              only: /.*/
       - deploy_master:
           requires:
             - test_ds003
           filters:
             branches:
               only: master
-      - deploy_test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: /rel\/[\d\.]+/
-            tags:
-              ignore: /.*/
-      - deploy:
+      - deploy_docker:
           requires:
             - test_ds003
             - build_docs
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+      - deploy_pypi:
+          requires:
+            - test_ds003
+            - build_docs
+            - test_packaging
           filters:
             branches:
               ignore: /.*/

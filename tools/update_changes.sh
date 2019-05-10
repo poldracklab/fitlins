@@ -12,7 +12,7 @@
 set -u         # Treat unset variables as an error when substituting.
 set -x         # Print command traces before executing command.
 
-CHANGES=CHANGES.rst
+CHANGES=CHANGES.md
 
 # Check whether the Upcoming release header is present
 head -1 $CHANGES | grep -q Upcoming
