@@ -85,7 +85,9 @@
       "miniconda",
       {
         "use_env": "neuro",
+        "pip_opts": "-r",
         "pip_install": [
+          "/src/fitlins/requirements.txt",
           "/src/fitlins[all]"
         ],
         "activate": true
