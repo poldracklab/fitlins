@@ -38,7 +38,7 @@ jobs:
             THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
             THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
             DOCKERVERSION=$(docker run --rm -it poldracklab/fitlins:latest --version \
-                           | tail -n 1 | sed -e 's/[\r\n]//g')
+                           | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
             echo "$THISVERSION"
             echo "$DOCKERVERSION"
             test "$DOCKERVERSION" = "fitlins v$THISVERSION"
