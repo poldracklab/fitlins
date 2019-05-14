@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 # from nipype.interfaces import fsl
@@ -7,7 +8,7 @@ from ..interfaces.bids import (
 from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
 from ..interfaces.visualizations import (
     DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
-from ..interfaces.utils import MergeAll
+from ..interfaces.utils import MergeAll, CollateWithMetadata
 
 
 def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
@@ -44,7 +45,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     if force_index is not None:
         loader.inputs.force_index = force_index
     if participants is not None:
-        loader.inputs.selectors = {'subject': participants}
+        loader.inputs.selectors['subject'] = participants
+    if space is not None:
+        loader.inputs.selectors['space'] = space
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
@@ -57,31 +60,63 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         name='getter')
 
     if smoothing:
-        smoothing_params = smoothing.split(':', 1)
-        if smoothing_params[0] != 'iso':
-            raise ValueError(f"Unknown smoothing type {smoothing_params[0]}")
-        smoothing_fwhm = float(smoothing_params[1])
+        smoothing_params = smoothing.split(':', 2)
+        # Convert old style and warn; this should turn into an (informative) error around 0.5.0
+        if smoothing_params[0] == 'iso':
+            smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
+            warnings.warn(
+                "The format for smoothing arguments has changed. Please use "
+                f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
+        # Add defaults to simplify later logic
+        if len(smoothing_params) == 1:
+            smoothing_params.extend(('l1', 'iso'))
+        elif len(smoothing_params) == 2:
+            smoothing_params.append('iso')
+
+        smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
+        smoothing_fwhm = float(smoothing_fwhm)
+        if smoothing_type not in ('iso'):
+            raise ValueError(f"Unknown smoothing type {smoothing_type}")
+
+        # Check that smmoothing level exists in model
+        if (smoothing_level.startswith("l") and
+                int(smoothing_level.strip("l")) > len(model_dict)):
+            raise ValueError(f"Invalid smoothing level {smoothing_level}")
+        elif (smoothing_level not in
+                [step['Level'] for step in model_dict['Steps']]):
+            raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
         name='l1_model')
-    if smoothing:
-        l1_model.inputs.smoothing_fwhm = smoothing_fwhm
+
+    def _deindex(tsv):
+        from pathlib import Path
+        import pandas as pd
+        out_tsv = str(Path.cwd() / Path(tsv).name)
+        pd.read_csv(tsv, sep='\t', index_col=0).to_csv(out_tsv, sep='\t', index=False)
+        return out_tsv
+
+    deindex_tsv = pe.MapNode(niu.Function(function=_deindex),
+                             iterfield=['tsv'], name='deindex_tsv')
 
     # Set up common patterns
-    image_pattern = '[sub-{subject}/][ses-{session}/]' \
+    image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold_' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_' \
         '{suffix<design|corr|contrasts>}.svg'
-    contrast_plot_pattern = '[sub-{subject}/][ses-{session}/]' \
+    contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_ortho.png'
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_ortho.png'
+    design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}.tsv'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_bold' \
-        '[_space-{space}]_contrast-{contrast}_{suffix<effect|stat>}.nii.gz'
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_statmap.nii.gz'
 
     # Set up general interfaces
     #
@@ -122,6 +157,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         run_without_submitting=True,
         name='ds_design')
 
+    ds_design_matrix = pe.MapNode(
+        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'design'},
+                     path_patterns=design_matrix_pattern),
+        iterfield=['entities', 'in_file'],
+        run_without_submitting=True,
+        name='ds_design_matrix')
+
     ds_corr = pe.MapNode(
         BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'corr'},
                      path_patterns=image_pattern),
@@ -141,9 +183,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, l1_model, [('session_info', 'session_info')]),
+        (loader, l1_model, [('design_info', 'session_info')]),
         (getter, l1_model, [('mask_files', 'mask_file')]),
         (l1_model, plot_design, [('design_matrix', 'data')]),
+        (l1_model, deindex_tsv, [('design_matrix', 'tsv')]),
+        (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
         (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
 
@@ -158,6 +202,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         #
 
         level = 'l{:d}'.format(ix + 1)
+
+        if smoothing and smoothing_level in (step, level):
+            model.inputs.smoothing_fwhm = smoothing_fwhm
 
         # TODO: No longer used at higher level, suggesting we can simply return
         # entities from loader as a single list
@@ -175,7 +222,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
-            MergeAll(['contrast_maps', 'contrast_metadata']),
+            MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                      'pvalue_maps', 'contrast_metadata']),
             name='collate_{}'.format(level),
             run_without_submitting=True)
 
@@ -191,6 +239,17 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         #
         # Derivatives
         #
+
+        collate_outputs = pe.Node(
+            CollateWithMetadata(
+                fields=['effect_maps', 'variance_maps', 'stat_maps', 'pvalue_maps', 'zscore_maps'],
+                field_to_metadata_map={
+                    'effect_maps': {'stat': 'effect'},
+                    'variance_maps': {'stat': 'variance'},
+                    'pvalue_maps': {'stat': 'p'},
+                    'zscore_maps': {'stat': 'z'},
+                }),
+            name=f'collate_{level}_outputs')
 
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
@@ -211,6 +270,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 (select_entities, getter,  [('out', 'entities')]),
                 (select_entities, ds_model_warnings,  [('out', 'entities')]),
                 (select_entities, ds_design, [('out', 'entities')]),
+                (select_entities, ds_design_matrix, [('out', 'entities')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
                 (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
@@ -230,18 +290,31 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 name='{}_model'.format(level))
 
             wf.connect([
-                (stage, model, [('contrast_maps', 'stat_files'),
+                (stage, model, [('effect_maps', 'effect_maps'),
+                                ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
             (select_contrasts, model,  [('out', 'contrast_info')]),
-            (model, collate, [('contrast_maps', 'contrast_maps'),
+            (model, collate, [('effect_maps', 'effect_maps'),
+                              ('variance_maps', 'variance_maps'),
+                              ('stat_maps', 'stat_maps'),
+                              ('zscore_maps', 'zscore_maps'),
+                              ('pvalue_maps', 'pvalue_maps'),
                               ('contrast_metadata', 'contrast_metadata')]),
-            (collate, plot_contrasts, [('contrast_maps', 'data')]),
-            (collate, ds_contrast_maps, [('contrast_maps', 'in_file'),
-                                         ('contrast_metadata', 'entities')]),
+            (collate, collate_outputs, [
+                ('contrast_metadata', 'metadata'),
+                ('effect_maps', 'effect_maps'),
+                ('variance_maps', 'variance_maps'),
+                ('stat_maps', 'stat_maps'),
+                ('zscore_maps', 'zscore_maps'),
+                ('pvalue_maps', 'pvalue_maps'),
+                ]),
+            (collate, plot_contrasts, [('stat_maps', 'data')]),
+            (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
+                                                 ('metadata', 'entities')]),
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
 

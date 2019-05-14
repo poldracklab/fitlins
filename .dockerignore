@@ -7,3 +7,5 @@ data
 *.md
 *.egg-info/
 .circleci/
+docs/
+examples/

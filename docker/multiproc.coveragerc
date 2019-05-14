@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = /opt/miniconda-latest/envs/neuro/lib/python3.6/site-packages/fitlins
+omit =
+    */tests/*
+concurrency = multiprocessing

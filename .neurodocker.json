@@ -64,16 +64,6 @@
       "root"
     ],
     [
-      "arg",
-      {
-        "VERSION": ""
-      }
-    ],
-    [
-      "run",
-      "echo \"$VERSION\" > /src/fitlins/fitlins/VERSION"
-    ],
-    [
       "run",
       "mkdir /work && chown -R neuro /src /work && chmod a+w /work"
     ],
@@ -82,21 +72,22 @@
       "neuro"
     ],
     [
-      "miniconda",
+      "arg",
       {
-        "use_env": "neuro",
-        "pip_opts": "-r",
-        "pip_install": [
-          "/src/fitlins/requirements.txt"
-        ]
+        "VERSION": ""
       }
+    ],
+    [
+      "run",
+      "echo \"$VERSION\" > /src/fitlins/VERSION"
     ],
     [
       "miniconda",
       {
         "use_env": "neuro",
-        "pip_opts": "-e",
+        "pip_opts": "-r",
         "pip_install": [
+          "/src/fitlins/requirements.txt",
           "/src/fitlins[all]"
         ],
         "activate": true

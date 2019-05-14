@@ -6,9 +6,9 @@ jobs:
     working_directory: /tmp/src/fitlins
     steps:
       - run:
-          name: Install parallel gzip
+          name: Install parallel gzip and Python 3
           command: |
-            apk add --no-cache pigz
+            apk add --no-cache pigz python3
       - checkout
       - setup_remote_docker
       - run:
@@ -20,18 +20,28 @@ jobs:
           name: Build image
           no_output_timeout: 30m
           command: |
+            THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
+            echo "Building version ${CIRCLE_TAG:-$THISVERSION}"
             docker build \
+              --cache-from=poldracklab/fitlins \
+              --rm=false \
               --tag poldracklab/fitlins:latest \
               --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
               --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
-              --build-arg VERSION="${CIRCLE_TAG}" .
+              --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" .
       - run:
           name: Verify executable can be run
           command: docker run --rm -it poldracklab/fitlins:latest --help
       - run:
           name: Check version
           command: |
-              docker run --rm -it poldracklab/fitlins:latest --version
+            THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            DOCKERVERSION=$(docker run --rm -it poldracklab/fitlins:latest --version \
+                           | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
+            echo "$THISVERSION"
+            echo "$DOCKERVERSION"
+            test "$DOCKERVERSION" = "fitlins v$THISVERSION"
       - run:
           name: Docker save
           no_output_timeout: 40m
@@ -42,16 +52,85 @@ jobs:
       - persist_to_workspace:
           root: /tmp
           paths:
-            - cache/docker.tar.gz
             - src/fitlins
+      - save_cache:
+          key: docker-v0-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - /tmp/cache/docker.tar.gz
 
-  deploy_test:
+  cache_test_data:
+    docker:
+      - image: markiewicz/datalad:0.0.1
+    working_directory: /tmp/data
+    steps:
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ .Branch }}-
+            - ds003-v0-master-
+            - ds003-v0-
+      - run:
+          name: Set git ID
+          command: |
+            git config --global user.name 'FitLins CircleCI User'
+            git config --global user.email 'crn.poldracklab@gmail.com'
+      - run:
+          name: Install fMRIPrep derivatives of ds000003
+          command: |
+            datalad install -r ///labs/poldrack/ds003_fmriprep
+            datalad update ds003_fmriprep/
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv
+      - run:
+          name: Download a model for ds000003
+          command: |
+              mkdir -p ds003_models
+              curl -sSL https://raw.githubusercontent.com/effigies/BIDS-examples/enh/models/ds003/models/model-001_smdl.json \
+                -o ds003_models/model-001_smdl.json
+      - save_cache:
+         key: ds003-v0-{{ .Branch }}-{{ .BuildNum }}
+         paths:
+            - /tmp/data
+
+  build_docs:
+    docker:
+      - image: python:latest
+    working_directory: /tmp/src/fitlins
+    steps:
+      - run:
+          name: Check Python version and upgrade pip
+          command: |
+            python --version
+            python -m pip install -U pip setuptools
+      - checkout
+      - run:
+          name: Install FitLins
+          command: |
+            python -m pip install ".[docs]"
+            make html
+      - store_artifacts:
+          path: /tmp/src/fitlins/docs/_build/html
+
+  test_ds003:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
     steps:
       - attach_workspace:
           at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ .Branch }}-
+            - ds003-v0-master-
+            - ds003-v0-
+      - run:
+          name: Install coverage and codecov
+          command: |
+              pyenv install 3.6.3
+              pyenv local 3.6.3
+              python -m pip install -U coverage codecov
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -59,30 +138,130 @@ jobs:
             docker info
             set +o pipefail
             if [ -f /tmp/cache/docker.tar.gz ]; then
-              zcat /tmp/cache/docker.tar.gz | docker load
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
               docker images
             fi
       - run:
-          name: Deploy to Docker Hub
-          no_output_timeout: 40m
+          name: Run FitLins
+          no_output_timeout: 2h
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
-            fi
+            mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
+            chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
+            export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
+            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data:ro \
+                -v /tmp/ds003/derivatives:/out \
+                -v /tmp/ds003/work:/scratch \
+                -v /tmp/data/ds003_models:/models \
+                -e COVERAGE_FILE=/scratch/.coverage \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                coverage run \
+                --rcfile /src/fitlins/docker/multiproc.coveragerc \
+                $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
+                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --n-cpus 2
       - run:
-          name: Deploy to PyPi
+          name: Combine coverage and submit
           command: |
-            pip install "setuptools>=27.0" twine
-            echo "${CIRCLE_TAG}" > fitlins/VERSION
+              pyenv local 3.6.3
+              python -m coverage combine \
+                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
+                /tmp/ds003/work/.coverage.*
+              sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
+              python -m coverage xml
+              python -m codecov --file coverage.xml --flags ds003 -e CIRCLE_JOB
+      - store_artifacts:
+          path: /tmp/ds003
+
+  test_packaging:
+    docker:
+      - image: python:latest
+    working_directory: /tmp/src/fitlins
+    steps:
+      - run:
+          name: Check Python version and upgrade pip
+          command: |
+            python --version
+            python -m pip install -U pip setuptools virtualenv twine
+      - checkout
+      - run:
+          name: Build FitLins
+          command: |
+            virtualenv --python=python /tmp/venv/build
+            source /tmp/venv/build/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
             python setup.py sdist
+            pip wheel --no-deps -w dist/ .
+      - store_artifacts:
+          path: /tmp/src/fitlins/dist
+      - run:
+          name: Check sdist distribution
+          command: |
+            THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            twine check dist/fitlins*.tar.gz
+            virtualenv --python=python /tmp/venv/sdist
+            source /tmp/venv/sdist/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            pip install dist/fitlins*.tar.gz
+            which fitlins | grep sdist\\/bin
+            INSTALLED_VERSION=$(fitlins --version)
+            echo "VERSION: \"$THISVERSION\""
+            echo "INSTALLED: \"$INSTALLED_VERSION\""
+            test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
+      - run:
+          name: Check wheel distribution
+          command: |
+            THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+            THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
+            twine check dist/fitlins*.tar.gz
+            virtualenv --python=python /tmp/venv/wheel
+            source /tmp/venv/wheel/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            pip install dist/fitlins*.whl
+            which fitlins | grep wheel\\/bin
+            INSTALLED_VERSION=$(fitlins --version)
+            echo "VERSION: \"$THISVERSION\""
+            echo "INSTALLED: \"$INSTALLED_VERSION\""
+            test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
+
+  deploy_pypi:
+    docker:
+      - image: python:latest
+    working_directory: /tmp/src/fitlins
+    steps:
+      - run:
+          name: Check Python version and upgrade pip
+          command: |
+            python --version
+            python -m pip install -U pip setuptools virtualenv twine
+      - checkout
+      - run:
+          name: Build FitLins
+          command: |
+            virtualenv --python=python /tmp/venv/build
+            source /tmp/venv/build/bin/activate
+            pip install --upgrade "pip>=19.1" setuptools wheel
+            python setup.py sdist
+            pip wheel --no-deps -w dist/ .
+      - store_artifacts:
+          path: /tmp/src/fitlins/dist
+      - run:
+          name: Upload packages to PyPI
+          command: |
+            twine check dist/fitlins*
+            twine upload dist/fitlins*
 
   deploy_master:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
     steps:
-      - attach_workspace:
-          at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -103,13 +282,14 @@ jobs:
               docker push poldracklab/fitlins:master
             fi
 
-  deploy:
+  deploy_docker:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
     steps:
-      - attach_workspace:
-          at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v0-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -130,13 +310,13 @@ jobs:
               docker tag poldracklab/fitlins poldracklab/fitlins:$CIRCLE_TAG
               docker push poldracklab/fitlins:$CIRCLE_TAG
             fi
-      - run:
-          name: Deploy to PyPi
-          command: |
-            pip install "setuptools>=27.0" twine
-            echo "${CIRCLE_TAG}" > fitlins/VERSION
-            python setup.py sdist
-            twine upload dist/*
+
+  deployable:
+    docker:
+      - image: busybox:latest
+    steps:
+      - run: echo Deploying!
+
 
 workflows:
   version: 2
@@ -144,25 +324,51 @@ workflows:
     jobs:
       - build:
           filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+      - cache_test_data:
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+      - build_docs:
+          filters:
+            tags:
+              only: /.*/
+      - test_ds003:
+          requires:
+            - build
+            - cache_test_data
+          filters:
+            tags:
+              only: /.*/
+      - test_packaging:
+          filters:
             tags:
               only: /.*/
       - deploy_master:
           requires:
-            - build
+            - test_ds003
           filters:
             branches:
               only: master
-      - deploy_test:
+      - deploy_docker:
           requires:
-            - build
+            - test_ds003
+            - build_docs
           filters:
             branches:
-              only: /rel\/[\d\.]+/
-            tags:
               ignore: /.*/
-      - deploy:
+            tags:
+              only: /.*/
+      - deploy_pypi:
           requires:
-            - build
+            - test_ds003
+            - build_docs
+            - test_packaging
           filters:
             branches:
               ignore: /.*/

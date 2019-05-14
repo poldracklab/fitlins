@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 
 def get_keywords():
@@ -483,10 +484,9 @@ def get_versions():
 
     cfg = get_config()
     verbose = cfg.verbose
-    root_dir = os.path.dirname(__file__)
-    if os.path.isfile(os.path.join(root_dir, 'VERSION')):
-        with open(os.path.join(root_dir, 'VERSION')) as vfile:
-            version = vfile.readline().strip()
+    ver_file = Path(__file__).parent.parent / 'VERSION'
+    if ver_file.is_file():
+        version = ver_file.read_text().splitlines()[0].strip()
 
         return {
             "version": version,
