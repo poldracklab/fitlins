@@ -199,6 +199,9 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
         import nibabel as nb
+        from nistats import first_level_model as level1
+        from nistats.contrasts import compute_contrast
+
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
@@ -237,7 +240,27 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
             if isinstance(effects[0], nb.Cifti2Image):
-                raise ValueError('CIFTI files not supported in second level')
+                effect_data = np.array([nb.load(effect).get_fdata()
+                                        for effect in effects])
+                labels, estimates = level1.run_glm(effect_data, design_matrix,
+                                                   noise_model='ols')
+                contrast = compute_contrast(labels, estimates, weights,
+                                            contrast_type=contrast_type)
+                fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
+                output_types = ['z_score', 'stat', 'p_value', 'effect_size',
+                                'effect_variance']
+                outputs = {}
+                for output_type_ in output_types:
+                    estimate_ = getattr(contrast, output_type_)()
+                    # Prepare the returned images
+                    newheader = deepcopy(nb.load(effects[0]).header)
+                    newheader.matrix.pop(0)
+                    newheader.matrix[0].AppliesToMatrixDimension = 0
+                    newheader.matrix[0].IndicesMapToDataType = \
+                        "CIFTI_INDEX_TYPE_SCALAR"
+                    newimg = nb.Cifti2Image(estimate_, header=newheader)
+                    fname = fname_fmt(name, output_type_)
+                    newimg.to_filename(fname)
             else:
                 model.fit(effects, design_matrix=design_matrix)
                 maps = model.compute_contrast(second_level_stat_type=contrast_type,
