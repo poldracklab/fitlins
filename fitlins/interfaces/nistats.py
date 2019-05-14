@@ -122,7 +122,6 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
                 fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
                 output_types = ['z_score', 'stat', 'p_value', 'effect_size',
                                 'effect_variance']
-                outputs = {}
                 for output_type_ in output_types:
                     estimate_ = getattr(contrast, output_type_)()
                     # Prepare the returned images
@@ -249,7 +248,6 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                 fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
                 output_types = ['z_score', 'stat', 'p_value', 'effect_size',
                                 'effect_variance']
-                outputs = {}
                 for output_type_ in output_types:
                     estimate_ = getattr(contrast, output_type_)()
                     # Prepare the returned images
