@@ -39,6 +39,7 @@ extensions = [
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
     'm2r',
+    'sphinx_nbexamples',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -67,3 +68,10 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+example_gallery_config = {
+    'pattern': '.+.ipynb',
+    'disable_warnings': False,
+    'dont_preprocess': ['../examples/ds003_sample_analysis.ipynb'],
+    'toctree_depth': 0,
+    }

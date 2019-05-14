@@ -16,6 +16,7 @@ Contents
    installation
    usage
    model
+   examples/index
    changes
    support
    citing

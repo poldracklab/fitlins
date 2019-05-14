@@ -101,6 +101,11 @@ jobs:
           command: |
             python --version
             python -m pip install -U pip setuptools
+      - run:
+          name: Install pandoc
+          command: |
+            apt-get update
+            apt-get install -y pandoc
       - checkout
       - run:
           name: Install FitLins
@@ -325,13 +330,13 @@ workflows:
       - build:
           filters:
             branches:
-              ignore: /docs?\/.*/
+              ignore: /doc\/.*/
             tags:
               only: /.*/
       - cache_test_data:
           filters:
             branches:
-              ignore: /docs?\/.*/
+              ignore: /doc\/.*/
             tags:
               only: /.*/
       - build_docs:
