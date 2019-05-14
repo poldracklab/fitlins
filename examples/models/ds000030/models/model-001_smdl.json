@@ -1,0 +1,68 @@
+{
+    "Name": "ds000030_bart",
+    "Description": "model for balloon analog risk task",
+    "Input": {
+        "task": "bart"
+    },
+    "Steps": [
+        {
+            "Level": "run",
+            "Transformations": [
+                {
+                    "Name": "Factor",
+                    "Input": [
+                        "trial_type",
+                        "action"
+                    ]
+                },
+                {
+                    "Name": "And",
+                    "Input": [
+                        "trial_type.BALOON",
+                        "action.ACCEPT"
+                    ],
+                    "Output": [
+                        "accept"
+                    ]
+                },
+                {
+                    "Name": "And",
+                    "Input": [
+                        "trial_type.BALOON",
+                        "action.EXPLODE"
+                    ],
+                    "Output": [
+                        "explode"
+                    ]
+                },
+                {
+                    "Name": "Convolve",
+                    "Input": ["accept", "explode"],
+                    "Model": "spm"
+                }
+            ],
+            "Model": {
+                "X": [
+                  "accept", "explode",
+                  "framewise_displacement",
+                  "trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"
+                ]
+            },
+            "Contrasts": [
+                {
+                    "Name": "accept_vs_explode",
+                    "ConditionList": [
+                        "accept",
+                        "explode"
+                    ],
+                    "weights": [1, -1],
+                    "type": "T"
+                }
+            ]
+        },
+        {
+            "Level": "dataset",
+            "AutoContrasts": ["accept_vs_explode"]
+        }
+    ]
+}
