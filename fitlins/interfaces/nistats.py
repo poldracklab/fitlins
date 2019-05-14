@@ -198,6 +198,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
+        import nibabel as nb
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
@@ -210,7 +211,6 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']  # Same for all
-        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -238,12 +238,12 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
 
             if isinstance(effects[0], nb.Cifti2Image):
                 raise ValueError('CIFTI files not supported in second level')
-                pass
             else:
                 model.fit(effects, design_matrix=design_matrix)
-
                 maps = model.compute_contrast(second_level_stat_type=contrast_type,
                                               output_type='all')
+                fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
