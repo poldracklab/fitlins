@@ -11,8 +11,8 @@ documentation.
 .. toctree::
     :maxdepth: 1
 
-    models/index
-    reports
+    Models <models>
+    Reports <reports>
 
 .. _notebooks:
 
