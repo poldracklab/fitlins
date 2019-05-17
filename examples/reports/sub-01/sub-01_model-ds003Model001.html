@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Fitlins - subject-level report</title>
+<style type="text/css">
+.sub-report-title {}
+.run-title {}
+.elem-title {}
+.elem-desc {}
+.elem-filename {}
+.warning {
+    border: 1px solid #ffaaaa;
+    background: #ffe8e8;
+    padding: 0.8em;
+}
+</style>
+</head>
+<body>
+    <div id="summary">
+        <h1 class="sub-report-title">Summary</h1>
+        <ul class="elem-desc">
+            <li>Subject ID: 01</li>
+            <li>Dataset: /Users/markiewicz/Projects/crn/fitlins/examples/notebooks/ds003_fmriprep/sourcedata</li>
+            <li>Model: ds003_model001</li>
+        </ul>
+    </div>
+    
+    <div id="model">
+        <h1 class="sub-report-title">Model</h1>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        
+        <h2>Design matrix</h2>
+        <img src="figures/sub-01_task-rhymejudgment_design.svg" />
+        
+        
+        
+        <h2>Correlation matrix</h2>
+        <img src="figures/sub-01_task-rhymejudgment_corr.svg" />
+        
+    </div>
+    
+    
+    <div id="contrasts">
+        <h1 class="sub-report-title">Contrasts</h1>
+        
+        <h2>wordGtPseudo</h2>
+        <img class="ortho" src="figures/sub-01_task-rhymejudgment_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+    </div>
+    
+    
+    <div id="about">
+        <h1 class="sub-report-title">About</h1>
+        <ul>
+            <li>Fitlins version: 0.4.0+2.ge71c132.dirty</li>
+            <li>Fitlins command: <tt>/anaconda3/envs/jupyter/bin/fitlins ds003_fmriprep/sourcedata output/ dataset --derivatives /Users/markiewicz/Projects/crn/fitlins/examples/notebooks/ds003_fmriprep --model /Users/markiewicz/Projects/crn/fitlins/examples/notebooks/../models/ds000003/models/model-001_smdl.json --participant-label 01 02 03 -w scratch --n-cpus 2</tt></li>
+            <li>Date processed: 2019-05-17 16:49:00 -0400</li>
+        </ul>
+    </div>
+</body>
+</html>
