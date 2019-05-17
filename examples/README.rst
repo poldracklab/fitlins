@@ -13,11 +13,7 @@ documentation.
 
     Models <models>
     Reports <reports>
-
-.. _notebooks:
-
-Notebooks
----------
+    Notebooks <notebooks/index>
 
 .. _examples directory: https://github.com/poldracklab/fitlins/tree/master/examples
 .. _examples section: https://fitlins.readthedocs.io/en/latest/examples/

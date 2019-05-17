@@ -70,8 +70,10 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 example_gallery_config = {
+    'examples_dirs': '../examples/notebooks',
+    'gallery_dirs': 'examples/notebooks',
     'pattern': '.+.ipynb',
     'disable_warnings': False,
-    'dont_preprocess': ['../examples/ds003_sample_analysis.ipynb'],
-    'toctree_depth': 0,
+    'dont_preprocess': ['../examples/notebooks/ds003_sample_analysis.ipynb'],
+    'toctree_depth': 1,
     }
