@@ -61,7 +61,7 @@ def parse_directory(deriv_dir, work_dir, analysis):
         if ents.get('subject'):
             job_desc['subject_id'] = ents.get('subject')
         if contrast_matrix:
-            job_desc['contrasts_svg']: contrast_matrix[0].path
+            job_desc['contrasts_svg'] = contrast_matrix[0].path
         if correlation_matrix:
             job_desc['correlation_matrix_svg'] = correlation_matrix[0].path
         if design_matrix:
