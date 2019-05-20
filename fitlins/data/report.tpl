@@ -53,15 +53,6 @@
         {% endfor %}
     </div>
     {% endif %}
-    {% if estimates %}
-    <div id="estimates">
-        <h1 class="sub-report-title">Estimates</h1>
-        {% for estimate in estimates %}
-        <h2>{{ estimate.name }}</h2>
-        <img class="ortho" src="{{ estimate.image_file }}" />
-        {% endfor %}
-    </div>
-    {% endif %}
     <div id="about">
         <h1 class="sub-report-title">About</h1>
         <ul>
