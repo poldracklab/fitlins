@@ -98,7 +98,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
         flm = level1.FirstLevelModel(
-            mask=mask_file, smoothing_fwhm=smoothing_fwhm)
+            mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
         effect_maps = []
