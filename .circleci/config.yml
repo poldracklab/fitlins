@@ -224,7 +224,7 @@ jobs:
           command: |
             THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
             THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
-            twine check dist/fitlins*.tar.gz
+            twine check dist/fitlins*.whl
             virtualenv --python=python /tmp/venv/wheel
             source /tmp/venv/wheel/bin/activate
             pip install --upgrade "pip>=19.1" setuptools wheel
