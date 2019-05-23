@@ -79,11 +79,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
         # Check that smmoothing level exists in model
-        if (smoothing_level.startswith("l") and
-                int(smoothing_level.strip("l")) > len(model_dict)):
-            raise ValueError(f"Invalid smoothing level {smoothing_level}")
-        elif (smoothing_level not in
-                [step['Level'] for step in model_dict['Steps']]):
+        if smoothing_level.lower().startswith("l"):
+            if int(smoothing_level[1:]) > len(model_dict['Steps']):
+                raise ValueError(f"Invalid smoothing level {smoothing_level}")
+        elif smoothing_level.lower() not in (step['Level'].lower()
+                                             for step in model_dict['Steps']):
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     l1_model = pe.MapNode(
