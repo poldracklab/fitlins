@@ -39,12 +39,21 @@
           ],
           "Weights": [1, -1],
           "Type": "t"
+        },
+        {
+          "Name": "task_vs_baseline",
+          "ConditionList": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "Weights": [0.5, 0.5],
+          "Type": "t"
         }
       ]
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["word_gt_pseudo"]
+      "AutoContrasts": ["word_gt_pseudo", "task_vs_baseline"]
     }
   ]
 }
