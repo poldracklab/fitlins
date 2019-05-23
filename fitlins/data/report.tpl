@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Fitlins - {{ level }}-level report</title>
+<title>FitLins - {{ level }}-level report</title>
 <style type="text/css">
 .sub-report-title {}
 .run-title {}
@@ -50,15 +50,6 @@
         {% for contrast in contrasts %}
         <h2>{{ contrast.name }}</h2>
         <img class="ortho" src="{{ contrast.image_file }}" />
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% if estimates %}
-    <div id="estimates">
-        <h1 class="sub-report-title">Estimates</h1>
-        {% for estimate in estimates %}
-        <h2>{{ estimate.name }}</h2>
-        <img class="ortho" src="{{ estimate.image_file }}" />
         {% endfor %}
     </div>
     {% endif %}

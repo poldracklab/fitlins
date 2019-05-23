@@ -109,9 +109,14 @@ class GlassBrainPlot(Visualization):
     input_spec = GlassBrainPlotInputSpec
 
     def _visualize(self, data, out_name):
+        import numpy as np
         vmax = self.inputs.vmax
         if not isdefined(vmax):
             vmax = None
+            abs_data = np.abs(data.get_fdata())
+            pctile99 = np.percentile(abs_data, 99.99)
+            if abs_data.max() - pctile99 > 10:
+                vmax = pctile99
         nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
                              display_mode='lyrz', axes=None,
                              vmax=vmax, threshold=self.inputs.threshold,
