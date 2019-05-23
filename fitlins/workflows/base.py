@@ -80,7 +80,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
         # Check that smmoothing level exists in model
         if (smoothing_level.startswith("l") and
-                int(smoothing_level.strip("l")) > len(model_dict)):
+                int(smoothing_level.strip("l")) > len(model_dict['Steps'])):
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
         elif (smoothing_level not in
                 [step['Level'] for step in model_dict['Steps']]):
