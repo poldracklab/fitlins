@@ -6,7 +6,7 @@ FitLins generates summary reports, written to ``<output dir>/fitlins/reports/``.
 This directory contains a report for each unit of analysis, with visualizations
 of design matrices and statistical outputs.
 
-View `example report <../_static/reports/model-ds003Model001.html>`_.
+View `example report`_.
 
 ==============
 Visualizations
@@ -64,3 +64,21 @@ Glass brain plots
 .. figure:: /_static/reports/sub-01/figures/sub-01_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png
    :scale: 50%
    :alt: Glass brain plot, or maximum intensity projection
+
+   Glass brains, or maximum-intensity projections, show the highest absolute value
+   along the viewing axis at each point in the viewing plane.
+   Large patterns will be evident in this view.
+
+================
+Naming decisions
+================
+
+For reporting purposes, FitLins performs some minor reformatting of contrast
+names.
+If ``_gt_`` is found, for example, FitLins will display it in the report
+document (although not the figures) as ``>``.
+Similarly, ``_lt_`` and ``_vs_`` become ``<`` and "vs.", respectively.
+See the `example report`_ for examples.
+
+
+.. _example report: ../_static/reports/model-ds003Model001.html
