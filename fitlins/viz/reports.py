@@ -14,6 +14,14 @@ PATH_PATTERNS = [
 add_config_paths(fitlins=pkgr.resource_filename('fitlins', 'data/fitlins.json'))
 
 
+def displayify(contrast_name):
+    for match, repl in (('_gt_', ' &gt; '),
+                        ('_lt_', ' &lt; '),
+                        ('_vs_', ' vs. ')):
+        contrast_name = contrast_name.replace(match, repl)
+    return contrast_name
+
+
 def deroot(val, root):
     if isinstance(val, str):
         if val.startswith(root):
@@ -29,13 +37,13 @@ def deroot(val, root):
     return val
 
 
-def parse_directory(deriv_dir, work_dir, analysis):
+def build_report_dict(deriv_dir, work_dir, analysis):
     fl_layout = BIDSLayout(
         deriv_dir,
         config=['bids', 'derivatives', 'fitlins'],
         validate=False)
     wd_layout = BIDSLayout(
-        str(Path(work_dir) / 'reportlets' / 'fitlins'),
+        Path(work_dir) / 'reportlets' / 'fitlins',
         validate=False)
     all_pngs = fl_layout.get(extensions='.png')
     fig_dirs = set(
@@ -43,56 +51,63 @@ def parse_directory(deriv_dir, work_dir, analysis):
                             if ent[0] not in ('suffix', 'contrast')))
         for png in fl_layout.get(extensions='.png'))
 
-    analyses = []
-    for figdir, ent_tuple in fig_dirs:
-        ents = dict(ent_tuple)
-        ents.setdefault('subject', None)
-        ents.setdefault('session', None)
-        ents.setdefault('run', None)
-        contrast_matrix = fl_layout.get(extensions='.svg', suffix='contrasts', **ents)
-        correlation_matrix = fl_layout.get(extensions='.svg', suffix='corr',
-                                           **ents)
-        design_matrix = fl_layout.get(extensions='.svg', suffix='design', **ents)
-        job_desc = {
-            'ents': {k: v for k, v in ents.items() if v is not None},
-            'dataset': analysis.layout.root,
-            'model_name': analysis.model['name'],
-            }
-        if ents.get('subject'):
-            job_desc['subject_id'] = ents.get('subject')
-        if contrast_matrix:
-            job_desc['contrasts_svg'] = contrast_matrix[0].path
-        if correlation_matrix:
-            job_desc['correlation_matrix_svg'] = correlation_matrix[0].path
-        if design_matrix:
-            job_desc['design_matrix_svg'] = design_matrix[0].path
-        if ents['run'] is not None:
-            job_desc['level'] = 'run'
-        elif ents['session'] is not None:
-            job_desc['level'] = 'session'
-        elif ents['subject'] is not None:
-            job_desc['level'] = 'subject'
-        else:
-            job_desc['level'] = 'dataset'
+    report = {
+        'dataset': {
+            'name': analysis.layout.description['Name'],
+            },
+        'model': analysis.model,
+        'steps': []
+        }
 
-        snippet = wd_layout.get(extensions='.html', suffix='snippet', **ents)
-        if snippet:
-            with open(snippet[0].path) as fobj:
-                job_desc['warning'] = fobj.read()
+    if 'DatasetDOI' in analysis.layout.description:
+        report['dataset']['doi'] = analysis.layout.description['DatasetDOI']
 
-        contrasts = fl_layout.get(extensions='.png', suffix='ortho', **ents)
-        # TODO: Split contrasts from estimates
-        job_desc['contrasts'] = [{'image_file': c.path,
-                                  'name':
-                                      fl_layout.parse_file_entities(
-                                          c.path)['contrast']}
-                                 for c in contrasts]
-        analyses.append(job_desc)
+    for step in analysis.steps:
+        report_step = {'name': step.level, 'analyses': []}
+        report['steps'].append(report_step)
+        for _, _, ents in step.get_design_matrix():
+            contrasts = step.get_contrasts(**ents)[0]
+            for key in ('datatype', 'desc', 'suffix'):
+                ents.pop(key, None)
 
-    return analyses
+            analysis = {
+                'entities': {
+                    key: val
+                    for key, val in ents.items()
+                    if key in ('subject', 'session', 'task', 'run') and val},
+                'contrasts': [
+                    {'name': displayify(contrast.name),
+                     'glassbrain': fl_layout.get(contrast=snake_to_camel(contrast.name),
+                                                 suffix='ortho', extensions='png', **ents)[0].path}
+                    for contrast in contrasts]
+                }
+
+            report_step['analyses'].append(analysis)
+
+            # Space doesn't apply to design/contrast matrices
+            ents.pop('space', None)
+            design_matrix = fl_layout.get(suffix='design', extensions='svg', **ents)
+            correlation_matrix = fl_layout.get(suffix='corr', extensions='svg', **ents)
+            contrast_matrix = fl_layout.get(suffix='contrasts', extensions='svg', **ents)
+            warning = wd_layout.get(extensions='.html', suffix='snippet', **ents)
+            if design_matrix:
+                analysis['design_matrix'] = design_matrix[0].path
+            if correlation_matrix:
+                analysis['correlation_matrix'] = correlation_matrix[0].path
+            if contrast_matrix:
+                analysis['contrast_matrix'] = contrast_matrix[0].path
+            if warning:
+                analysis['warning'] = Path(warning[0].path).read_text()
+
+    # Get subjects hackily
+    report['subjects'] = sorted({
+        analysis['entities']['subject']
+        for analysis in report['steps'][0]['analyses']})
+
+    return report
 
 
-def write_report(report_dicts, run_context, deriv_dir):
+def write_full_report(report_dict, run_context, deriv_dir):
     fl_layout = BIDSLayout(
         deriv_dir, config=['bids', 'derivatives', 'fitlins'])
 
@@ -100,13 +115,9 @@ def write_report(report_dicts, run_context, deriv_dir):
         loader=jinja2.FileSystemLoader(
             searchpath=pkgr.resource_filename('fitlins', '/')))
 
-    tpl = env.get_template('data/report.tpl')
+    tpl = env.get_template('data/full_report.tpl')
 
-    for context in report_dicts:
-        ents = context['ents'].copy()
-        ents['model'] = snake_to_camel(context['model_name'])
-        target_file = op.join(deriv_dir, fl_layout.build_path(ents, PATH_PATTERNS))
-        html = tpl.render(deroot({**context, **run_context},
-                                 op.dirname(target_file)))
-        with open(target_file, 'w') as fobj:
-            fobj.write(html)
+    model = snake_to_camel(report_dict['model']['name'])
+    target_file = op.join(deriv_dir, fl_layout.build_path({'model': model}, PATH_PATTERNS))
+    html = tpl.render(deroot({**report_dict, **run_context}, op.dirname(target_file)))
+    Path(target_file).write_text(html)
