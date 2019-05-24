@@ -6,10 +6,7 @@ FitLins generates summary reports, written to ``<output dir>/fitlins/reports/``.
 This directory contains a report for each unit of analysis, with visualizations
 of design matrices and statistical outputs.
 
-View example:
-
-* `run-level report <../_static/reports/sub-01/sub-01_model-ds003Model001.html>`_
-* `dataset-level report <../_static/reports/model-ds003Model001.html>`_
+View `example report <../_static/reports/model-ds003Model001.html>`_.
 
 ==============
 Visualizations
@@ -64,6 +61,6 @@ Contrast matrices
 Glass brain plots
 -----------------
 
-.. figure:: /_static/reports/sub-01/figures/sub-01_task-rhymejudgment_contrast-wordGtPseudo_stat-t_ortho.png
+.. figure:: /_static/reports/sub-01/figures/sub-01_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png
    :scale: 50%
    :alt: Glass brain plot, or maximum intensity projection
