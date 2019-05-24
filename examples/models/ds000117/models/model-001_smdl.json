@@ -1,0 +1,61 @@
+{
+  "Name": "Basic",
+  "Description": "",
+  "Input": {
+    "task": "facerecognition"
+  },
+  "Steps": [
+    {
+      "Level": "run",
+      "Transformations": [
+        {
+          "Name": "Factor",
+          "Input": ["stim_type"]
+        },
+        {
+          "Name": "Or",
+          "Input": [
+            "stim_type.FAMOUS",
+            "stim_type.UNFAMILIAR"
+          ],
+          "output": [
+            "stim_type.REAL"
+          ]
+        },
+        {
+          "Name": "Convolve",
+          "Input": [
+            "stim_type.REAL",
+            "stim_type.SCRAMBLED"
+          ]
+        }
+      ],
+      "Model": {
+        "X": [
+          "stim_type.SCRAMBLED",
+          "stim_type.REAL",
+          "trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"
+        ]
+      },
+      "Contrasts": [
+        {
+          "Name": "face_vs_scram",
+          "ConditionList": [
+            "stim_type.REAL",
+            "stim_type.SCRAMBLED"
+          ],
+          "weights": [1, -1],
+          "type": "t"
+        }
+      ]
+    },
+    {
+      "Level": "subject",
+      "AutoContrasts": ["face_vs_scram"]
+    },
+    {
+      "Level": "dataset",
+      "AutoContrasts": ["face_vs_scram"]
+    }
+  ]
+}
