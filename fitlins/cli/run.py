@@ -23,7 +23,7 @@ from bids.analysis import auto_model, Analysis
 from .. import __version__
 from ..workflows import init_fitlins_wf
 from ..utils import bids
-from ..viz.reports import write_report, parse_directory
+from ..viz.reports import build_report_dict, write_full_report
 
 logging.addLevelName(25, 'INFO')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
@@ -109,6 +109,8 @@ def get_parser():
                          help='maximum number of threads across all processes')
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
+    g_perfm.add_argument('--reports-only', action='store_true', default=False,
+                         help='skip running of workflow and generate reports')
 
     g_other = parser.add_argument_group('Other options')
     g_other.add_argument('-w', '--work-dir', action='store', type=op.abspath,
@@ -187,12 +189,13 @@ def run_fitlins(argv=None):
     # easy to read crashfiles
     fitlins_wf.config['execution']['crashfile_format'] = 'txt'
     retcode = 0
-    try:
-        fitlins_wf.run(**plugin_settings)
-    except Exception:
-        retcode = 1
+    if not opts.reports_only:
+        try:
+            fitlins_wf.run(**plugin_settings)
+        except Exception:
+            retcode = 1
 
-    layout = BIDSLayout(opts.bids_dir)
+    layout = BIDSLayout(opts.bids_dir, derivatives=derivatives)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
@@ -200,10 +203,17 @@ def run_fitlins(argv=None):
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
 
+    selectors = {'desc': opts.desc_label}
+    if opts.space is not None:
+        selectors['space'] = opts.space
+    if subject_list is not None:
+        selectors['subject'] = subject_list
+
     for model in models:
         analysis = Analysis(layout, model=model)
-        report_dicts = parse_directory(deriv_dir, work_dir, analysis)
-        write_report(report_dicts, run_context, deriv_dir)
+        analysis.setup(**selectors)
+        report_dict = build_report_dict(deriv_dir, work_dir, analysis)
+        write_full_report(report_dict, run_context, deriv_dir)
 
     return retcode
 

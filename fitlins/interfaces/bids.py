@@ -19,7 +19,7 @@ from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
-ENTITY_WHITELIST = {'task', 'run', 'session', 'subject'}
+ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space'}
 
 
 def bids_split_filename(fname):
@@ -259,7 +259,7 @@ class LoadBIDSModel(SimpleInterface):
                 ents.pop('session', None)
             if step.level == 'dataset':
                 ents.pop('subject', None)
-            space = ents.pop('space', None)
+            space = ents.get('space')
             if space is None:
                 spaces = analysis.layout.get_spaces(
                     suffix='bold',
@@ -272,9 +272,9 @@ class LoadBIDSModel(SimpleInterface):
                             'No space was provided, but multiple spaces were detected: %s. '
                             'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
+                ents['space'] = space
             preproc_files = analysis.layout.get(suffix='bold',
                                                 extensions=['.nii', '.nii.gz'],
-                                                space=space,
                                                 **ents)
             if len(preproc_files) != 1:
                 raise ValueError('Too many BOLD files found')
