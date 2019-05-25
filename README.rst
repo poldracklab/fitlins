@@ -16,7 +16,8 @@ FitLins is a tool for estimating linear models, defined by the
 FitLins is developed against `fMRIPrep`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
 
-Example models are available in the `models`_ branch of the main FitLins repository.
+Example models can be found in `examples/models`_ in the main repository and
+`FitLins Example Models`_ in the documentation.
 
 This pipeline is developed by the `Poldrack lab at Stanford University
 <https://poldracklab.stanford.edu/>`_ for use at the `Center for Reproducible
@@ -29,6 +30,6 @@ open-source software distribution.
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _fMRIPrep: https://fmriprep.readthedocs.io
 .. _`OpenFMRI dataset ds000030`: http://datasets.datalad.org/?dir=/openfmri/ds000030/
-.. _models: https://github.com/poldracklab/fitlins/tree/models
 .. _Zenodo: https://doi.org/10.5281/zenodo.1306215
-
+.. _examples/models: https://github.com/poldracklab/fitlins/tree/master/examples/models/
+.. _`FitLins Example Models`: https://fitlins.readthedocs.io/en/latest/examples/models.html
