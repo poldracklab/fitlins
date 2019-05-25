@@ -7,7 +7,9 @@ Word vs Pseudoword Contrast
 ---------------------------
 Dataset: https://openneuro.org/datasets/ds000003/versions/00001
 
-This model is translated from `model001`_ in the original OpenFMRI dataset.
+This model is translated from `model001
+<https://legacy.openfmri.org/s3-browser/?prefix=ds000003/ds000003_R1.1.0/uncompressed/models/model001/>`_
+in the original OpenFMRI dataset.
 
 It demonstrates using the ``Factor`` transform to turn the ``trial_type``
 column into a column for each trial type (*i.e.*, the ``trial_type.word``
@@ -106,6 +108,38 @@ finally the dataset level again takes a simple mean across subjects.
     </details>
 
 
-.. _model001: https://openfmri.org/s3-browser/?prefix=ds000003/ds000003_R1.1.0/uncompressed/models/model001/
+DS000117 Model
+--------------
+
+Dataset: `doi:10.18112/openneuro.ds000117.v1.0.3 <https://doi.org/10.18112/openneuro.ds000117.v1.0.3>`_
+
+This model is translated from `model001
+<https://legacy.openfmri.org/s3-browser/?prefix=ds000117/ds000117_R0.1.1/uncompressed/models/model001/>`_
+in the original OpenFMRI dataset.
+
+This model is another basic contrast, mostly interesting because there are
+several runs per subject to be averaged over before taking the group average.
+
+FitLins does not currently support fixed effects models, but this will be
+updated as we decide how to indicate that an analysis level should be a fixed
+or random effects combination.
+
+It also demonstrates the use of the logical ``Or`` transformation.
+
+
+.. raw:: html
+
+    <details>
+    <summary><code>ds000117/models/model-001_smdl.json</code></summary>
+
+.. literalinclude:: /../examples/models/ds000117/models/model-001_smdl.json
+   :language: json
+   :linenos:
+
+.. raw:: html
+
+    </details>
+
+
 .. _///openfmri: http://datasets.datalad.org/?dir=/openfmri
 .. _examples: https://github.com/poldracklab/fitlins/tree/master/examples
