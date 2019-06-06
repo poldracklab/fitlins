@@ -104,7 +104,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             labels, estimates = level1.run_glm(img.get_fdata(), mat.values)
         else:
             flm = level1.FirstLevelModel(
-                mask=mask_file, smoothing_fwhm=smoothing_fwhm)
+                mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
             flm.fit(img, design_matrices=mat)
 
         effect_maps = []

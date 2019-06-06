@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FitLins - -level report</title>
+<style type="text/css">
+.sub-report-title {}
+.summary-heading {}
+.run-title {}
+.elem-title {}
+.elem-desc {}
+.elem-filename {}
+.warning {
+    border: 1px solid #ffaaaa;
+    background: #ffe8e8;
+    padding: 0.8em;
+}
+summary.heading-1 {
+    font-size: 12pt;
+    font-weight: bold;
+}
+summary.heading-2 {
+    font-size: 11pt;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+    <div id="summary">
+        <h1 class="sub-report-title">Summary</h1>
+        <ul class="elem-desc">
+            <li>Dataset: Rhyme judgment</li>
+            <li>Model: ds003_model001</li>
+            <li>Participants (13): 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13
+        </ul>
+    </div>
+    <div id="model">
+        <h1 class="sub-report-title">Model</h1>
+        <details>
+        <summary>Model specification</summary>
+        <pre>{
+  "description": "",
+  "input": {
+    "task": "rhymejudgment"
+  },
+  "name": "ds003_model001",
+  "steps": [
+    {
+      "contrasts": [
+        {
+          "condition_list": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "name": "word_gt_pseudo",
+          "type": "t",
+          "weights": [
+            1,
+            -1
+          ]
+        },
+        {
+          "condition_list": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "name": "task_vs_baseline",
+          "type": "t",
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      ],
+      "level": "run",
+      "model": {
+        "x": [
+          "trial_type.word",
+          "trial_type.pseudoword",
+          "framewise_displacement",
+          "trans_x",
+          "trans_y",
+          "trans_z",
+          "rot_x",
+          "rot_y",
+          "rot_z",
+          "a_comp_cor_00",
+          "a_comp_cor_01",
+          "a_comp_cor_02",
+          "a_comp_cor_03",
+          "a_comp_cor_04",
+          "a_comp_cor_05"
+        ]
+      },
+      "transformations": [
+        {
+          "input": [
+            "trial_type"
+          ],
+          "name": "Factor"
+        },
+        {
+          "input": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "model": "spm",
+          "name": "Convolve"
+        }
+      ]
+    },
+    {
+      "auto_contrasts": [
+        "word_gt_pseudo",
+        "task_vs_baseline"
+      ],
+      "level": "dataset"
+    }
+  ]
+}</pre>
+        </details>
+
+        <!-- { % for step in steps % } -->
+        
+        <h2>Run level</h2>
+
+        <!-- { % if loop.first %} -->
+        <h3>Design matrices</h3>
+        <p>A design matrix was generated for each run. All but the
+        first are collapsed, but each should be inspected for correctness.
+        
+        <details open>
+        <summary class="heading-1">Subject: 01, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-01/figures/sub-01_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <p>The correlation matrix of a design matrix shows the correlation between
+        each pair of regressors. Very high or low correlations among variables of
+        interest (top left) or between variables of interest and nuisance regressors
+        (top right) can indicate deficiency in the design. High correlations among
+        nuisance regressors will generally have little effect on the model.
+        </p>
+        
+        <img src="sub-01/figures/sub-01_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        <details>
+        <summary><em>...</em></summary>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 02, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-02/figures/sub-02_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-02/figures/sub-02_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 03, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-03/figures/sub-03_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-03/figures/sub-03_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 04, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-04/figures/sub-04_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-04/figures/sub-04_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 05, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-05/figures/sub-05_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-05/figures/sub-05_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 06, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-06/figures/sub-06_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-06/figures/sub-06_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 07, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-07/figures/sub-07_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-07/figures/sub-07_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 08, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-08/figures/sub-08_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-08/figures/sub-08_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 09, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-09/figures/sub-09_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-09/figures/sub-09_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 10, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-10/figures/sub-10_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-10/figures/sub-10_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 11, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-11/figures/sub-11_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-11/figures/sub-11_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 12, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-12/figures/sub-12_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-12/figures/sub-12_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 13, Task: rhymejudgment</summary>
+        <div class="warning">
+    The following confounds had NaN values for the first volume: framewise_displacement.
+    The mean of non-zero values for the remaining entries was imputed.
+    If another strategy is desired, it must be explicitly specified in
+    the model.
+</div>
+
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_design.svg" />
+        <h4>Correlation matrix</h4>
+        
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_corr.svg" />
+        </details>
+        
+        
+        </details>
+        <!-- { % endif %} -->
+
+        <h3>Contrasts</h3>
+        <p>A contrast matrix was generated for each run. Except
+        in very rare cases, these should be identical, so these should be
+        inspected to ensure no unexpected differences are present.</p>
+        
+        <details open>
+        <summary class="heading-1">Subject: 01, Task: rhymejudgment</summary>
+        <img src="sub-01/figures/sub-01_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        <details>
+        <summary><em>...</em></summary>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 02, Task: rhymejudgment</summary>
+        <img src="sub-02/figures/sub-02_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 03, Task: rhymejudgment</summary>
+        <img src="sub-03/figures/sub-03_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 04, Task: rhymejudgment</summary>
+        <img src="sub-04/figures/sub-04_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 05, Task: rhymejudgment</summary>
+        <img src="sub-05/figures/sub-05_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 06, Task: rhymejudgment</summary>
+        <img src="sub-06/figures/sub-06_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 07, Task: rhymejudgment</summary>
+        <img src="sub-07/figures/sub-07_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 08, Task: rhymejudgment</summary>
+        <img src="sub-08/figures/sub-08_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 09, Task: rhymejudgment</summary>
+        <img src="sub-09/figures/sub-09_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 10, Task: rhymejudgment</summary>
+        <img src="sub-10/figures/sub-10_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 11, Task: rhymejudgment</summary>
+        <img src="sub-11/figures/sub-11_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 12, Task: rhymejudgment</summary>
+        <img src="sub-12/figures/sub-12_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        <details>
+        <summary class="heading-1">Subject: 13, Task: rhymejudgment</summary>
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_contrasts.svg" />
+        </details>
+        
+        
+        </details>
+
+        <!-- { % endfor %} -->
+    </div>
+    <div id="contrasts">
+        <h1 class="sub-report-title">Contrasts</h1>
+
+        
+        <h2>Run level</h2>
+        
+        <h3>Subject: 01, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-01/figures/sub-01_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-01/figures/sub-01_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 02, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-02/figures/sub-02_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-02/figures/sub-02_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 03, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-03/figures/sub-03_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-03/figures/sub-03_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 04, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-04/figures/sub-04_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-04/figures/sub-04_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 05, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-05/figures/sub-05_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-05/figures/sub-05_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 06, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-06/figures/sub-06_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-06/figures/sub-06_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 07, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-07/figures/sub-07_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-07/figures/sub-07_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 08, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-08/figures/sub-08_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-08/figures/sub-08_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 09, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-09/figures/sub-09_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-09/figures/sub-09_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 10, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-10/figures/sub-10_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-10/figures/sub-10_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 11, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-11/figures/sub-11_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-11/figures/sub-11_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 12, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-12/figures/sub-12_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-12/figures/sub-12_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        <h3>Subject: 13, Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        
+        <h2>Dataset level</h2>
+        
+        <h3>Task: rhymejudgment</h3>
+        
+        <h4>word &gt; pseudo</h4>
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-wordGtPseudo_stat-t_ortho.png" />
+        
+        <h4>task vs. baseline</h4>
+        <img src="sub-13/figures/sub-13_task-rhymejudgment_space-MNI152NLin2009cAsym_contrast-taskVsBaseline_stat-t_ortho.png" />
+        
+        
+        
+    </div>
+    <div id="about">
+        <h1 class="sub-report-title">About</h1>
+        <ul>
+            <li>Fitlins version: 0.4.0+37.g6d2b9bf.dirty</li>
+            <li>Fitlins command: <tt>/anaconda3/envs/jupyter/bin/fitlins ds003_fmriprep/sourcedata output/ dataset --derivatives /Users/markiewicz/Projects/crn/fitlins/examples/notebooks/ds003_fmriprep --model /Users/markiewicz/Projects/crn/fitlins/examples/notebooks/../models/ds000003/models/model-001_smdl.json --smoothing 5:run -w scratch --n-cpus 2</tt></li>
+            <li>Date processed: 2019-05-24 12:54:54 -0400</li>
+        </ul>
+    </div>
+</body>
+</html>

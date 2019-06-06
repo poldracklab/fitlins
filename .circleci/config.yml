@@ -101,11 +101,19 @@ jobs:
           command: |
             python --version
             python -m pip install -U pip setuptools
+      - run:
+          name: Install pandoc
+          command: |
+            apt-get update
+            apt-get install -y pandoc
       - checkout
       - run:
           name: Install FitLins
           command: |
             python -m pip install ".[docs]"
+      - run:
+          name: Build docs
+          command: |
             make html
       - store_artifacts:
           path: /tmp/src/fitlins/docs/_build/html
@@ -216,7 +224,7 @@ jobs:
           command: |
             THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
             THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
-            twine check dist/fitlins*.tar.gz
+            twine check dist/fitlins*.whl
             virtualenv --python=python /tmp/venv/wheel
             source /tmp/venv/wheel/bin/activate
             pip install --upgrade "pip>=19.1" setuptools wheel
@@ -325,13 +333,13 @@ workflows:
       - build:
           filters:
             branches:
-              ignore: /docs?\/.*/
+              ignore: /doc\/.*/
             tags:
               only: /.*/
       - cache_test_data:
           filters:
             branches:
-              ignore: /docs?\/.*/
+              ignore: /doc\/.*/
             tags:
               only: /.*/
       - build_docs:
