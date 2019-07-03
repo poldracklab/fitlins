@@ -67,7 +67,8 @@ def build_report_dict(deriv_dir, work_dir, analysis):
         report['steps'].append(report_step)
         for _, _, ents in step.get_design_matrix():
             contrasts = step.get_contrasts(**ents)[0]
-            for key in ('datatype', 'desc', 'suffix'):
+            for key in ('datatype', 'desc', 'suffix', 'extension',
+                        'RepetitionTime', 'SkullStripped', 'TaskName'):
                 ents.pop(key, None)
 
             analysis = {
