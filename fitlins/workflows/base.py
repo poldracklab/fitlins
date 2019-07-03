@@ -37,7 +37,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
-                      model=model_dict),
+                      model=model_dict,
+                      selectors={'desc': desc,
+                                 'space': space}),
         name='loader')
 
     if ignore is not None:
@@ -46,17 +48,12 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors['subject'] = participants
-    if space is not None:
-        loader.inputs.selectors['space'] = space
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(
             bids_dir=bids_dir, derivatives=derivatives,
-            selectors={
-                'suffix': 'bold',
-                'desc': desc,
-                'space': space}),
+            selectors={'suffix': 'bold'}),
         name='getter')
 
     if smoothing:

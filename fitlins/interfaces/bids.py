@@ -232,7 +232,7 @@ class LoadBIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, desc='preproc', **selectors)
+        analysis.setup(drop_na=False, **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
@@ -263,7 +263,7 @@ class LoadBIDSModel(SimpleInterface):
             if space is None:
                 spaces = analysis.layout.get_spaces(
                     suffix='bold',
-                    extensions=['.nii', '.nii.gz'])
+                    extension=['.nii', '.nii.gz'])
                 if spaces:
                     spaces = sorted(spaces)
                     space = spaces[0]
@@ -413,8 +413,7 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {**self.inputs.selectors, **ents}
-            bold_file = layout.get(extensions=['.nii', '.nii.gz'], **selectors)
+            bold_file = layout.get(**self.inputs.selectors, **ents)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
@@ -435,7 +434,8 @@ class BIDSSelect(SimpleInterface):
             bold_ents = layout.parse_file_entities(bold_file[0].path)
             bold_ents['suffix'] = 'mask'
             bold_ents['desc'] = 'brain'
-            mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
+            bold_ents['extension'] = ['.nii', '.nii.gz']
+            mask_file = layout.get(**bold_ents)
             bold_ents.pop('suffix')
             bold_ents.pop('desc')
 
