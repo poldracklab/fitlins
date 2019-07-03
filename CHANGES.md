@@ -1,3 +1,22 @@
+0.5.0 (July 03, 2019)
+=====================
+
+This release features significant improvements to reporting and documentation,
+including a Jupyter notebook to demonstrate usage. Example models are now in
+the main branch of the repository, and annotated in the documentation.
+
+* FIX: Smoothing level, check length  (https://github.com/poldracklab/fitlins/pull/157)
+* FIX: mask parameter to FirstLevelModel is deprecated for mask_img (https://github.com/poldracklab/fitlins/pull/158)
+* ENH: Add ds000117 model (https://github.com/poldracklab/fitlins/pull/163)
+* ENH: Move to single-page report (https://github.com/poldracklab/fitlins/pull/161)
+* ENH: Add task-vs-baseline contrast to ds003 (https://github.com/poldracklab/fitlins/pull/160)
+* ENH: Reporting cleanups (https://github.com/poldracklab/fitlins/pull/155)
+* DOC: Curate reports and models (https://github.com/poldracklab/fitlins/pull/153)
+* DOC: Add example running through DS003 (https://github.com/poldracklab/fitlins/pull/152)
+* MAINT: BIDSLayout.get() parameter "extensions" deprecated (https://github.com/poldracklab/fitlins/pull/167)
+* MAINT: Update pybids dependency, package name (https://github.com/poldracklab/fitlins/pull/166)
+
+
 0.4.0 (May 10, 2019)
 ====================
 
