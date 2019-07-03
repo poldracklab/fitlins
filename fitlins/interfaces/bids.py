@@ -232,7 +232,7 @@ class LoadBIDSModel(SimpleInterface):
         selectors = self.inputs.selectors
 
         analysis = Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, desc='preproc', **selectors)
+        analysis.setup(drop_na=False, **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
@@ -434,7 +434,8 @@ class BIDSSelect(SimpleInterface):
             bold_ents = layout.parse_file_entities(bold_file[0].path)
             bold_ents['suffix'] = 'mask'
             bold_ents['desc'] = 'brain'
-            mask_file = layout.get(extension=['.nii', '.nii.gz'], **bold_ents)
+            bold_ents['extension'] = ['.nii', '.nii.gz']
+            mask_file = layout.get(**bold_ents)
             bold_ents.pop('suffix')
             bold_ents.pop('desc')
 
