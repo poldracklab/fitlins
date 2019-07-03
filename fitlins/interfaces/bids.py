@@ -413,8 +413,7 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {**self.inputs.selectors, **ents}
-            bold_file = layout.get(extension=['.nii', '.nii.gz'], **selectors)
+            bold_file = layout.get(**self.inputs.selectors, **ents)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
