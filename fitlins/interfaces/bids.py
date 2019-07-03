@@ -273,17 +273,11 @@ class LoadBIDSModel(SimpleInterface):
                             'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
                 ents['space'] = space
-            preproc_files = analysis.layout.get(suffix='bold',
-                                                extensions=['.nii', '.nii.gz'],
-                                                **ents)
-            if len(preproc_files) != 1:
-                raise ValueError('Too many BOLD files found')
 
-            fname = preproc_files[0].path
-
-            # Required field in seconds
-            TR = analysis.layout.get_metadata(fname, suffix='bold',
-                                              full_search=True)['RepetitionTime']
+            # Metadata is now included in entities
+            TR = ents.pop('RepetitionTime')  # Required field in seconds
+            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
+            ents.pop('TaskName', None)
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
