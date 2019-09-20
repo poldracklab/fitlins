@@ -533,7 +533,8 @@ class BIDSDataSink(IOBase):
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
-                base_dir, layout.build_path(ents, path_patterns))
+                base_dir, layout.build_path(
+                    ents, path_patterns, validate=False))
             makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)
