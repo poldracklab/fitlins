@@ -274,9 +274,14 @@ class LoadBIDSModel(SimpleInterface):
                             % (', '.join(spaces), space))
                 ents['space'] = space
 
-            # Metadata is now included in entities
-            TR = ents.pop('RepetitionTime')  # Required field in seconds
-            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
+            bold = analysis.layout.get(**ents)
+
+            TR = bold.get_metadata()['RepetitionTime']  # Required field in seconds
+
+            # Metadata is now included in entities, but is not always pulled in by
+            # get_design_matrix
+            ents.pop('RepetitionTime', None)
+            ents.pop('SkullStripped', None)
             ents.pop('TaskName', None)
 
             ent_string = '_'.join('{}-{}'.format(key, val)
