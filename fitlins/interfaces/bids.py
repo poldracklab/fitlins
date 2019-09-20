@@ -424,7 +424,7 @@ class BIDSSelect(SimpleInterface):
         entities = []
         for ents in self.inputs.entities:
             selectors = {**self.inputs.selectors, **ents}
-            bold_file = layout.get(selectors)
+            bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
