@@ -250,9 +250,24 @@ class LoadBIDSModel(SimpleInterface):
         for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
+            # Metadata is now included in entities
+            TR = ents.pop('RepetitionTime', None)  # Required field in seconds
+            if TR is None: # But is unreliable (for now?)
+                preproc_files = analysis.layout.get(
+                    extensions=['.nii', '.nii.gz'], **ents)
+                if len(preproc_files) != 1:
+                    raise ValueError('Too many BOLD files found')
+
+                fname = preproc_files[0].path
+                TR = analysis.layout.get_metadata(fname)['RepetitionTime']
+
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
+
+            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
+            ents.pop('TaskName', None)
+
             if step.level in ('session', 'subject', 'dataset'):
                 ents.pop('run', None)
             if step.level in ('subject', 'dataset'):
@@ -273,11 +288,6 @@ class LoadBIDSModel(SimpleInterface):
                             'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
                 ents['space'] = space
-
-            # Metadata is now included in entities
-            TR = ents.pop('RepetitionTime')  # Required field in seconds
-            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
-            ents.pop('TaskName', None)
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
@@ -414,7 +424,7 @@ class BIDSSelect(SimpleInterface):
         entities = []
         for ents in self.inputs.entities:
             selectors = {**self.inputs.selectors, **ents}
-            bold_file = layout.get(selectors)
+            bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
@@ -523,7 +533,8 @@ class BIDSDataSink(IOBase):
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
-                base_dir, layout.build_path(ents, path_patterns))
+                base_dir, layout.build_path(
+                    ents, path_patterns, validate=False))
             makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)
