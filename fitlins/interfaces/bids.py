@@ -19,7 +19,8 @@ from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
-ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space'}
+ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space',
+                    'acquisition', 'reconstruction', 'echo'}
 
 
 def bids_split_filename(fname):
