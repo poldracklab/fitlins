@@ -1,3 +1,12 @@
+0.5.1 (September 23, 2019)
+==========================
+
+Bug fix release to work with PyBIDS 0.9.4+.
+
+* FIX: Expand entity whitelist (https://github.com/poldracklab/fitlins/pull/182)
+* FIX: Don't validate generated paths (https://github.com/poldracklab/fitlins/pull/180)
+
+
 0.5.0 (July 03, 2019)
 =====================
 
