@@ -21,11 +21,19 @@ def prepare_contrasts(contrasts, all_regressors):
 
     out_contrasts = []
     for contrast in contrasts:
-        # Fill in zeros
-        weights = np.array([
-            [row[col] if col in row else 0 for col in all_regressors]
-            for row in contrast['weights']
-            ])
+        # Are any necessary values missing for contrast estimation?
+        missing = any([[n for n, v in row.items()
+                        if v != 0 and n not in all_regressors]
+                       for row in contrast['weights']])
+        if missing:
+            weights = None
+        else:
+            # Fill in zeros
+            weights = np.array([
+                [row[col] if col in row else 0 for col in all_regressors]
+                for row in contrast['weights']
+                ])
+
         out_contrasts.append(
             (contrast['name'], weights, contrast['type']))
 
@@ -72,12 +80,21 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
+
+            # Remove columns with NaNs
+            dense = dense[dense.columns[dense.isna().all() == False]]
+
             column_names = dense.columns.tolist()
             drift_model = None if 'cosine_00' in column_names else 'cosine'
+
+            if dense.empty:
+                dense = None
+                columns_names = None
         else:
             dense = None
             column_names = None
             drift_model = 'cosine'
+
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
@@ -111,21 +128,30 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            maps = flm.compute_contrast(weights, contrast_type, output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents}
                 )
 
-            for map_type, map_list in (('effect_size', effect_maps),
-                                       ('effect_variance', variance_maps),
-                                       ('z_score', zscore_maps),
-                                       ('p_value', pvalue_maps),
-                                       ('stat', stat_maps)):
-                fname = fname_fmt(name, map_type)
-                maps[map_type].to_filename(fname)
-                map_list.append(fname)
+            # If contrast is not computable (i.e. missing column for run)
+            if weights is None:
+                for map_list in [effect_maps, variance_maps, zscore_maps,
+                                 pvalue_maps, stat_maps]:
+                    map_list.append(None)
+            else:
+                maps = flm.compute_contrast(
+                    weights, contrast_type, output_type='all')
+
+                for map_type, map_list in (('effect_size', effect_maps),
+                                           ('effect_variance', variance_maps),
+                                           ('z_score', zscore_maps),
+                                           ('p_value', pvalue_maps),
+                                           ('stat', stat_maps)):
+
+                    fname = fname_fmt(name, map_type)
+                    maps[map_type].to_filename(fname)
+                    map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
@@ -197,10 +223,11 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         filtered_variances = []
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
-            if _match(out_ents, m):
-                filtered_effects.append(eff)
-                filtered_variances.append(var)
-                names.append(m['contrast'])
+            if eff is not None: ## Add flag
+                if _match(out_ents, m):
+                    filtered_effects.append(eff)
+                    filtered_variances.append(var)
+                    names.append(m['contrast'])
 
         for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
