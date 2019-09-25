@@ -244,25 +244,39 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
             weights = weights[0]
             effects = (np.array(filtered_effects)[weights != 0]).tolist()
             _variances = (np.array(filtered_variances)[weights != 0]).tolist()
-            design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(effects, design_matrix=design_matrix)
-
-            maps = model.compute_contrast(second_level_stat_type=contrast_type,
-                                          output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            for map_type, map_list in (('effect_size', effect_maps),
-                                       ('effect_variance', variance_maps),
-                                       ('z_score', zscore_maps),
-                                       ('p_value', pvalue_maps),
-                                       ('stat', stat_maps)):
-                fname = fname_fmt(name, map_type)
-                maps[map_type].to_filename(fname)
-                map_list.append(fname)
+            if len(effects) == 1:
+                print("Passing through results from previous model,"
+                      "as only one is available")
+                effect_maps.append(effects[0])
+                variance_maps.append(_variances[0])
+                zscore_maps.append()
+                pvalue_maps.append()
+                stat_maps.append()
+            else:
+                design_matrix = pd.DataFrame(
+                    {'intercept': weights[weights != 0]})
+
+                model.fit(effects, design_matrix=design_matrix)
+
+                maps = model.compute_contrast(
+                    second_level_stat_type=contrast_type,
+                    output_type='all')
+
+
+                for map_type, map_list in (('effect_size', effect_maps),
+                                           ('effect_variance', variance_maps),
+                                           ('z_score', zscore_maps),
+                                           ('p_value', pvalue_maps),
+                                           ('stat', stat_maps)):
+                    fname = fname_fmt(name, map_type)
+                    maps[map_type].to_filename(fname)
+                    map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
