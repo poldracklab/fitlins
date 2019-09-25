@@ -76,13 +76,17 @@ def build_report_dict(deriv_dir, work_dir, analysis):
                     key: val
                     for key, val in ents.items()
                     if key in ('subject', 'session', 'task', 'run') and val},
-                'contrasts': [
-                    {'name': displayify(contrast.name),
-                     'glassbrain': fl_layout.get(contrast=snake_to_camel(contrast.name),
-                                                 suffix='ortho', extension='png', **ents)[0].path}
-                    for contrast in contrasts]
+                'contrasts': []
                 }
 
+            for contrast in contrasts:
+                glassbrain = fl_layout.get(
+                    contrast=snake_to_camel(contrast.name),
+                    suffix='ortho', extension='png', **ents)
+                analysis['contrasts'].append(
+                    {'name': displayify(contrast.name),
+                     'glassbrain': glassbrain[0].path if glassbrain else None}
+                )
             report_step['analyses'].append(analysis)
 
             # Space doesn't apply to design/contrast matrices
