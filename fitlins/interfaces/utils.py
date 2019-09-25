@@ -1,13 +1,18 @@
 from nipype.interfaces.io import IOBase, add_traits
-from nipype.interfaces.base import SimpleInterface, DynamicTraitedSpec, TraitedSpec, traits
+from nipype.interfaces.base import (SimpleInterface, DynamicTraitedSpec,
+                                    TraitedSpec, traits, isdefined)
 
+
+class MergeAllInputSpec(DynamicTraitedSpec):
+    drop_missing = traits.Bool(
+        desc='Drop missing inputs (i.e. contrasts) from previous level.')
 
 class MergeAll(IOBase):
-    input_spec = DynamicTraitedSpec
+    input_spec = MergeAllInputSpec
     output_spec = DynamicTraitedSpec
 
-    def __init__(self, fields=None):
-        super(MergeAll, self).__init__()
+    def __init__(self, fields=None, **kwargs):
+        super(MergeAll, self).__init__(**kwargs)
         if not fields:
             raise ValueError("Fields must be a non-empty list")
 
@@ -18,15 +23,20 @@ class MergeAll(IOBase):
         return add_traits(base, self._fields)
 
     def _list_outputs(self):
+        drop_missing = self.inputs.drop_missing
+        if not isdefined(drop_missing):
+            drop_missing = False
+
         outputs = self._outputs().get()
         lengths = None
         for key in self._fields:
             val = getattr(self.inputs, key)
             _lengths = list(map(len, val))
-            if lengths is None:
-                lengths = _lengths
-            elif _lengths != lengths:
-                raise ValueError("List lengths must be consistent across fields")
+            if drop_missing == False: # Check lengths is missing not allowed
+                if lengths is None:
+                    lengths = _lengths
+                elif _lengths != lengths:
+                    raise ValueError("List lengths must be consistent across fields")
             outputs[key] = [elem for sublist in val for elem in sublist]
 
         return outputs

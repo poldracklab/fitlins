@@ -248,6 +248,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     'zscore_maps': {'stat': 'z'},
                 }),
             name=f'collate_{level}_outputs')
+        collate.inputs.drop_missing = drop_missing
 
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
@@ -262,6 +263,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
+            model.inputs.drop_missing = drop_missing
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
@@ -291,8 +293,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                                 ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
-
-        model.inputs.drop_missing = drop_missing
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),

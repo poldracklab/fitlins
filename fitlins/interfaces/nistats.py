@@ -94,7 +94,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
                     missing_names = ', '.join(
                         dense.columns[missing_columns].tolist())
                     raise RuntimeError(
-                        f'The following columns are empty: {missing_names}.'
+                        f'The following columns are empty: {missing_names}. '
                         'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
@@ -141,16 +141,15 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            contrast_metadata.append(
-                {'contrast': name,
-                 'stat': contrast_type,
-                 **out_ents}
-                )
-
             # If contrast is not computable (i.e. column was dropped)
             if weights is None:
                 continue
             else:
+                contrast_metadata.append(
+                    {'contrast': name,
+                     'stat': contrast_type,
+                     **out_ents}
+                    )
                 maps = flm.compute_contrast(
                     weights, contrast_type, output_type='all')
 
@@ -180,8 +179,6 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-    drop_missing = traits.Bool(
-        desc='Drop missing inputs (i.e. contrasts) from previous level.')
 
 class SecondLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
@@ -213,10 +210,6 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-
-        drop_missing = self.inputs.drop_missing
-        if not isdefined(drop_missing):
-            drop_missing = False
 
         model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
