@@ -149,9 +149,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
             # If contrast is not computable (i.e. column was dropped)
             if weights is None:
-                for map_list in [effect_maps, variance_maps, zscore_maps,
-                                 pvalue_maps, stat_maps]:
-                    map_list.append(None)
+                continue
             else:
                 maps = flm.compute_contrast(
                     weights, contrast_type, output_type='all')
@@ -242,8 +240,6 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         filtered_variances = []
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
-            if not drop_missing and eff is not None: ## Add flag
-                raise RuntimeError('Missing input')
             if _match(out_ents, m):
                 filtered_effects.append(eff)
                 filtered_variances.append(var)
