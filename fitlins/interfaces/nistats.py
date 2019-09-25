@@ -46,7 +46,8 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     session_info = traits.Dict()
     contrast_info = traits.List(traits.Dict)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-
+    drop_missing = traits.Bool(
+        desc='Drop columns in design matrix with all missing values')
 
 class FirstLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
@@ -67,6 +68,9 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         from nistats import design_matrix as dm
         from nistats import first_level_model as level1
         info = self.inputs.session_info
+        drop_missing = self.inputs.drop_missing
+        if not isdefined(drop_missing):
+            drop_missing = False
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
 
@@ -81,8 +85,17 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
 
-            # Remove columns with NaNs
-            dense = dense[dense.columns[dense.isna().all() == False]]
+            missing_columns = dense.isna().all()
+            if drop_missing:
+                # Remove columns with NaNs
+                dense = dense[dense.columns[missing_columns == False]]
+            else:
+                if missing_columns.any():
+                    missing_names = ', '.join(
+                        dense.columns[missing_columns].tolist())
+                    raise RuntimeError(
+                        f'The following columns are empty: {missing_names}.'
+                        'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
             drift_model = None if 'cosine_00' in column_names else 'cosine'
@@ -134,7 +147,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
                  **out_ents}
                 )
 
-            # If contrast is not computable (i.e. missing column for run)
+            # If contrast is not computable (i.e. column was dropped)
             if weights is None:
                 for map_list in [effect_maps, variance_maps, zscore_maps,
                                  pvalue_maps, stat_maps]:
@@ -169,7 +182,8 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-
+    drop_missing = traits.Bool(
+        desc='Drop missing inputs (i.e. contrasts) from previous level.')
 
 class SecondLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
@@ -201,6 +215,11 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
+
+        drop_missing = self.inputs.drop_missing
+        if not isdefined(drop_missing):
+            drop_missing = False
+
         model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
@@ -223,11 +242,12 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         filtered_variances = []
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
-            if eff is not None: ## Add flag
-                if _match(out_ents, m):
-                    filtered_effects.append(eff)
-                    filtered_variances.append(var)
-                    names.append(m['contrast'])
+            if not drop_missing and eff is not None: ## Add flag
+                raise RuntimeError('Missing input')
+            if _match(out_ents, m):
+                filtered_effects.append(eff)
+                filtered_variances.append(var)
+                names.append(m['contrast'])
 
         for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
