@@ -1,12 +1,5 @@
 from pathlib import Path
 import warnings
-# from nipype.interfaces import fsl
-from ..interfaces.bids import (
-    ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
-from ..interfaces.visualizations import (
-    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
-from ..interfaces.utils import MergeAll, CollateWithMetadata
 
 
 def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
@@ -16,6 +9,12 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
+    from ..interfaces.bids import (
+        ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
+    from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
+    from ..interfaces.visualizations import (
+        DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
+    from ..interfaces.utils import MergeAll, CollateWithMetadata
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
