@@ -73,7 +73,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
             column_names = dense.columns.tolist()
-            drift_model = None if 'cosine_00' in column_names else 'cosine'
+            drift_model = None if (('cosine00' in column_names) | ('cosine_00' in column_names)) else 'cosine'
         else:
             dense = None
             column_names = None
