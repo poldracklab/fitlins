@@ -221,7 +221,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
             MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                      'pvalue_maps', 'contrast_metadata']),
+                      'pvalue_maps', 'contrast_metadata'],
+                     check_lengths=(not drop_missing)),
             name='collate_{}'.format(level),
             run_without_submitting=True)
 
@@ -248,7 +249,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     'zscore_maps': {'stat': 'z'},
                 }),
             name=f'collate_{level}_outputs')
-        collate.inputs.drop_missing = drop_missing
 
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
