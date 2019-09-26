@@ -25,17 +25,15 @@ def prepare_contrasts(contrasts, all_regressors):
         missing = any([[n for n, v in row.items()
                         if v != 0 and n not in all_regressors]
                        for row in contrast['weights']])
-        if missing:
-            weights = None
-        else:
+        if not missing:
             # Fill in zeros
             weights = np.array([
                 [row[col] if col in row else 0 for col in all_regressors]
                 for row in contrast['weights']
                 ])
 
-        out_contrasts.append(
-            (contrast['name'], weights, contrast['type']))
+            out_contrasts.append(
+                (contrast['name'], weights, contrast['type']))
 
     return out_contrasts
 
@@ -45,9 +43,11 @@ class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
     mask_file = File(exists=True)
     session_info = traits.Dict()
     contrast_info = traits.List(traits.Dict)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+    smoothing_fwhm = traits.Float(
+        desc='Full-width half max (FWHM) in mm for smoothing in mask')
     drop_missing = traits.Bool(
         desc='Drop columns in design matrix with all missing values')
+
 
 class FirstLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
@@ -88,7 +88,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             missing_columns = dense.isna().all()
             if drop_missing:
                 # Remove columns with NaNs
-                dense = dense[dense.columns[missing_columns == False]]
+                dense = dense[dense.columns[missing_columns is False]]
             else:
                 if missing_columns.any():
                     missing_names = ', '.join(
@@ -102,12 +102,11 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
             if dense.empty:
                 dense = None
-                columns_names = None
+                column_names = None
         else:
             dense = None
             column_names = None
             drift_model = 'cosine'
-
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
@@ -141,27 +140,23 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            # If contrast is not computable (i.e. column was dropped)
-            if weights is None:
-                continue
-            else:
-                contrast_metadata.append(
-                    {'contrast': name,
-                     'stat': contrast_type,
-                     **out_ents}
-                    )
-                maps = flm.compute_contrast(
-                    weights, contrast_type, output_type='all')
+            contrast_metadata.append(
+                {'contrast': name,
+                 'stat': contrast_type,
+                 **out_ents}
+                )
+            maps = flm.compute_contrast(
+                weights, contrast_type, output_type='all')
 
-                for map_type, map_list in (('effect_size', effect_maps),
-                                           ('effect_variance', variance_maps),
-                                           ('z_score', zscore_maps),
-                                           ('p_value', pvalue_maps),
-                                           ('stat', stat_maps)):
+            for map_type, map_list in (('effect_size', effect_maps),
+                                       ('effect_variance', variance_maps),
+                                       ('z_score', zscore_maps),
+                                       ('p_value', pvalue_maps),
+                                       ('stat', stat_maps)):
 
-                    fname = fname_fmt(name, map_type)
-                    maps[map_type].to_filename(fname)
-                    map_list.append(fname)
+                fname = fname_fmt(name, map_type)
+                maps[map_type].to_filename(fname)
+                map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
@@ -179,6 +174,7 @@ class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+
 
 class SecondLevelModelOutputSpec(TraitedSpec):
     effect_maps = traits.List(File)
