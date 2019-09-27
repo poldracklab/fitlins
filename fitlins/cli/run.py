@@ -94,6 +94,9 @@ def get_parser():
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
+    g_bids.add_argument('--database_file', action='store', default=None,
+                        help="Path to SQLite databse containing the index for this BIDS dataset."
+                             "If a value is passed and the file already exists, indexing is skipped.")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM[:LEVEL:[TYPE]]",
@@ -195,7 +198,7 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout(opts.bids_dir, derivatives=derivatives)
+    layout = BIDSLayout(opts.bids_dir, derivatives=derivatives, database_file=opts.database_file)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
