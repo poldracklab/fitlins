@@ -95,7 +95,8 @@ def get_parser():
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
     g_bids.add_argument('--database_file', action='store', default=None,
-                        help="Path to SQLite databse containing the index for this BIDS dataset."
+                        help="Caution, this is an Expert level option subject to change!"
+                             "Path to SQLite databse containing the index for this BIDS dataset."
                              "If a value is passed and the file already exists, indexing is skipped.")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
