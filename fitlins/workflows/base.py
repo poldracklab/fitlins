@@ -11,7 +11,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     from nipype.interfaces import utility as niu
     from ..interfaces.bids import (
         ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-    from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
+    from ..interfaces.nistats import DesignMatrix, FirstLevelModel, SecondLevelModel
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
@@ -90,9 +90,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                                              for step in model_dict['Steps']):
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
+    design_matrix = pe.MapNode(
+        DesignMatrix(),
+        iterfield=['session_info', 'bold_file'],
+        name='design_matrix')
+
     l1_model = pe.MapNode(
         FirstLevelModel(),
-        iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
+        iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
         name='l1_model')
 
     def _deindex(tsv):
@@ -187,12 +192,16 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, l1_model, [('design_info', 'session_info')]),
-        (getter, l1_model, [('mask_files', 'mask_file')]),
-        (l1_model, plot_design, [('design_matrix', 'data')]),
-        (l1_model, deindex_tsv, [('design_matrix', 'tsv')]),
+        (loader, design_matrix, [('design_info', 'session_info')]),
+        (getter, design_matrix, [('bold_files', 'bold_file')]),
+        (getter, l1_model, [('bold_files', 'bold_file'),
+                            ('mask_files', 'mask_file')]),
+        (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
+        (design_matrix, plot_design, [('design_matrix', 'data')]),
+        (design_matrix, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
+        (design_matrix, plot_corr,  [('design_matrix', 'data')]),
+        (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
         (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
-        (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
 
     stage = None
@@ -277,8 +286,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
                 (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
-                (model, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
-                (model, plot_corr,  [('design_matrix', 'data')]),
                 (select_entities, ds_l1_contrasts, [('out', 'entities')]),
                 (select_entities, ds_corr, [('out', 'entities')]),
                 (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
