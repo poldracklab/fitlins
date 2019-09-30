@@ -18,10 +18,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
+    specs = ModelSpecLoader(bids_dir=bids_dir)
     if database_file is not None:
-        specs = ModelSpecLoader(bids_dir=bids_dir, database_file=database_file)
-    else:
-        specs = ModelSpecLoader(bids_dir=bids_dir)
+        specs.inputs.database_file = database_file
     if model is not None:
         specs.inputs.model = model
 
