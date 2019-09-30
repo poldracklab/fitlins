@@ -2,10 +2,10 @@ import os
 import numpy as np
 import pandas as pd
 
-from nipype.interfaces.base import (
-    LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    File, traits, isdefined
-    )
+from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
+
+from .abstract import (
+    DesignMatrixInterface, FirstLevelEstimatorInterface, SecondLevelEstimatorInterface)
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -32,32 +32,10 @@ def prepare_contrasts(contrasts, all_regressors):
     return out_contrasts
 
 
-class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
-    bold_file = File(exists=True, mandatory=True)
-    mask_file = File(exists=True)
-    session_info = traits.Dict()
-    contrast_info = traits.List(traits.Dict)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-
-
-class FirstLevelModelOutputSpec(TraitedSpec):
-    effect_maps = traits.List(File)
-    variance_maps = traits.List(File)
-    stat_maps = traits.List(File)
-    zscore_maps = traits.List(File)
-    pvalue_maps = traits.List(File)
-    contrast_metadata = traits.List(traits.Dict)
-    design_matrix = File()
-
-
-class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
-    input_spec = FirstLevelModelInputSpec
-    output_spec = FirstLevelModelOutputSpec
-
+class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import design_matrix as dm
-        from nistats import first_level_model as level1
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
@@ -73,7 +51,8 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
             column_names = dense.columns.tolist()
-            drift_model = None if (('cosine00' in column_names) | ('cosine_00' in column_names)) else 'cosine'
+            drift_model = None if (('cosine00' in column_names) |
+                                   ('cosine_00' in column_names)) else 'cosine'
         else:
             dense = None
             column_names = None
@@ -90,6 +69,15 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         mat.to_csv('design.tsv', sep='\t')
         self._results['design_matrix'] = os.path.join(runtime.cwd,
                                                       'design.tsv')
+        return runtime
+
+
+class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, SimpleInterface):
+    def _run_interface(self, runtime):
+        import nibabel as nb
+        from nistats import first_level_model as level1
+        mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
+        img = nb.load(self.inputs.bold_file)
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
@@ -137,24 +125,6 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         return runtime
 
 
-class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
-    effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
-    variance_maps = traits.List(traits.List(File(exists=True)))
-    stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
-    contrast_info = traits.List(traits.Dict, mandatory=True)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-
-
-class SecondLevelModelOutputSpec(TraitedSpec):
-    effect_maps = traits.List(File)
-    variance_maps = traits.List(File)
-    stat_maps = traits.List(File)
-    zscore_maps = traits.List(File)
-    pvalue_maps = traits.List(File)
-    contrast_metadata = traits.List(traits.Dict)
-    contrast_matrix = File()
-
-
 def _flatten(x):
     return [elem for sublist in x for elem in sublist]
 
@@ -166,10 +136,7 @@ def _match(query, metadata):
     return True
 
 
-class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
-    input_spec = SecondLevelModelInputSpec
-    output_spec = SecondLevelModelOutputSpec
-
+class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
         smoothing_fwhm = self.inputs.smoothing_fwhm
