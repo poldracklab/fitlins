@@ -84,7 +84,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     design_matrix = pe.MapNode(
-        DesignMatrix(),
+        DesignMatrix(drop_missing=drop_missing),
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
 
@@ -271,7 +271,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
-            model.inputs.drop_missing = drop_missing
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
