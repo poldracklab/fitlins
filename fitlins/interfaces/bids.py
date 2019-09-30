@@ -81,6 +81,8 @@ class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directory')
+    database_file = traits.File(exists=True,
+                                desc='Optional path to bids database file.')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -103,8 +105,11 @@ class ModelSpecLoader(SimpleInterface):
         from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
+            database_file = self.inputs.database_file
+            if not isdefined(database_file):
+                database_file = None
             # model is not yet standardized, so validate=False
-            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
+            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False, database_file=database_file)
 
             if not isdefined(models):
                 models = layout.get(suffix='smdl', return_type='file')
@@ -142,6 +147,8 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directory')
     derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
+    database_file = traits.File(exists=True,
+                                desc='Optional path to bids database file.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     force_index = InputMultiPath(
@@ -227,8 +234,11 @@ class LoadBIDSModel(SimpleInterface):
         # If empty, then None
         derivatives = self.inputs.derivatives or None
 
+        database_file = self.inputs.database_file
+        if not isdefined(database_file):
+            database_file = None
         layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,
-                            ignore=ignore, derivatives=derivatives)
+                            ignore=ignore, derivatives=derivatives, database_file=database_file)
 
         selectors = self.inputs.selectors
 
@@ -399,6 +409,8 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directories')
     derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
+    database_file = traits.File(exists=True,
+                                desc='Optional path to bids database file.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -418,7 +430,10 @@ class BIDSSelect(SimpleInterface):
         from bids.layout import BIDSLayout
 
         derivatives = self.inputs.derivatives
-        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
+        database_file = self.inputs.database_file
+        if not isdefined(database_file):
+            database_file = None
+        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives, database_file=database_file)
 
         bold_files = []
         mask_files = []

@@ -135,7 +135,7 @@ def run_fitlins(argv=None):
     subject_list = None
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
-            opts.bids_dir, participant_label=opts.participant_label)
+            opts.bids_dir, participant_label=opts.participant_label, database_file=opts.database_file)
 
     ncpus = opts.n_cpus
     if ncpus < 1:
@@ -184,7 +184,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
-        smoothing=opts.smoothing,
+        smoothing=opts.smoothing, database_file=opts.database_file
         )
 
     if opts.work_dir:
