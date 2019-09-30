@@ -98,7 +98,7 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
                         'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
-            drift_model = None if 'cosine_00' in column_names else 'cosine'
+            drift_model = None if (('cosine00' in column_names) | ('cosine_00' in column_names)) else 'cosine'
 
             if dense.empty:
                 dense = None
