@@ -66,8 +66,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             if self._drop_missing:
                 # Remove columns with NaNs
                 dense = dense[dense.columns[missing_columns is False]]
-            else:
-                if missing_columns.any():
+            elif missing_columns.any():
                     missing_names = ', '.join(
                         dense.columns[missing_columns].tolist())
                     raise RuntimeError(

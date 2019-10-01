@@ -32,7 +32,6 @@ class MergeAll(IOBase):
         outputs = self._outputs().get()
         for key in self._fields:
             val = getattr(self.inputs, key)
-            self._calculate_length(val)
             if self._check_lengths is True:
                 self._calculate_length(val)
             outputs[key] = [elem for sublist in val for elem in sublist]
