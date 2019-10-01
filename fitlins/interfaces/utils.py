@@ -35,6 +35,7 @@ class MergeAll(IOBase):
             if self._check_lengths is True:
                 self._calculate_length(val)
             outputs[key] = [elem for sublist in val for elem in sublist]
+        self._lengths = None
 
         return outputs
 
