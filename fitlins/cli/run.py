@@ -181,7 +181,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
-        smoothing=opts.smoothing, drop_missing=opts.drop_missing
+        smoothing=opts.smoothing, drop_missing=opts.drop_missing,
         )
 
     if opts.work_dir:
