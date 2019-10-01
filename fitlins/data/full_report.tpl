@@ -102,7 +102,7 @@ summary.heading-2 {
         {% for contrast in analysis.contrasts %}
         <h4>{{ contrast.name }}</h4>
         {% if contrast.glassbrain is none %}
-        <p> Missing contrast skipped (used: --drop-missing) </p>
+        <p> Missing contrast skipped (used: <code>--drop-missing</code>) </p>
         {% else %}
         <img src="{{ contrast.glassbrain }}" />
         {% endif %}
