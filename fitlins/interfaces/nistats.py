@@ -22,6 +22,7 @@ def prepare_contrasts(contrasts, all_regressors):
     out_contrasts = []
     for contrast in contrasts:
         # Are any necessary values missing for contrast estimation?
+        # Will this trigger for fixed-effects model? Should this be allowed for a higher level model?
         missing = any([[n for n, v in row.items()
                         if v != 0 and n not in all_regressors]
                        for row in contrast['weights']])
@@ -30,7 +31,7 @@ def prepare_contrasts(contrasts, all_regressors):
             weights = np.array([
                 [row[col] if col in row else 0 for col in all_regressors]
                 for row in contrast['weights']
-                ])
+                ])[0]
 
             out_contrasts.append(
                 (contrast['name'], weights, contrast['type']))
@@ -166,10 +167,14 @@ def _match(query, metadata):
 class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
+        from nistats.contrasts import fixed_effects_img
+
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
 
+        # Maybe this should only be instantiate if it will be needed (e.g.
+        # if there are any 't' or `F` contrasts)
         model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
@@ -185,8 +190,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
         # XXX nistats should begin supporting mixed effects models soon
-        # input_variances = _flatten(self.inputs.variance_maps)
-        input_variances = [None] * len(input_effects)
+        input_variances = _flatten(self.inputs.variance_maps)
+        # input_variances = [None] * len(input_effects)
 
         filtered_effects = []
         filtered_variances = []
@@ -200,32 +205,54 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
-            weights = weights[0]
             effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
+            variances = (np.array(filtered_variances)[weights != 0]).tolist()
 
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            design_matrix = pd.DataFrame(
-                {'intercept': weights[weights != 0]})
+            if contrast_type == 'FEMA':
+                if len(effects) == 1:
+                    maps = {
+                        'effect_size': effects[0],
+                        'effect_variance': variances[0]
+                        # Don't have access to previous stat map
+                    }
+                else:
+                    fe_res = fixed_effects_img(
+                        effects, variances, smoothing_fwhm=smoothing_fwhm)
+                    maps = {
+                        'effect_size': fe_res[0],
+                        'effect_variance': fe_res[1],
+                        'stat': fe_res[2]
+                    }
+            else:
+                if len(effects) < 2:
+                    raise RuntimeError(
+                        "At least two inputs are required for a 't' for 'F' "
+                        "second level contrast")
 
-            model.fit(effects, design_matrix=design_matrix)
+                design_matrix = pd.DataFrame(
+                    {'intercept': weights[weights != 0]})
 
-            maps = model.compute_contrast(
-                second_level_stat_type=contrast_type,
-                output_type='all')
+                model.fit(effects, design_matrix=design_matrix)
+
+                maps = model.compute_contrast(
+                    second_level_stat_type=contrast_type,
+                    output_type='all')
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
-                fname = fname_fmt(name, map_type)
-                maps[map_type].to_filename(fname)
-                map_list.append(fname)
+                map = maps.get(map_type)
+                if map:
+                    fname = fname_fmt(name, map_type)
+                    map.to_filename(fname)
+                    map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
