@@ -34,7 +34,9 @@ class MergeAll(IOBase):
             val = getattr(self.inputs, key)
             if self._check_lengths is True:
                 self._calculate_length(val)
-            outputs[key] = [elem for sublist in val for elem in sublist]
+            # Allow for empty inputs
+            if isdefined(val):
+                outputs[key] = [elem for sublist in val for elem in sublist]
         self._lengths = None
 
         return outputs
@@ -72,12 +74,14 @@ class CollateWithMetadata(SimpleInterface):
         self._results.update({'metadata': [], 'out': []})
         for key in self._fields:
             val = getattr(self.inputs, key)
-            if len(val) != n:
-                raise ValueError(f"List lengths must match metadata. Failing list: {key}")
-            for md, obj in zip(orig_metadata, val):
-                metadata = md.copy()
-                metadata.update(md_map.get(key, {}))
-                self._results['metadata'].append(metadata)
-                self._results['out'].append(obj)
+            # Allow for missing values 
+            if isdefined(val):
+                if len(val) != n:
+                    raise ValueError(f"List lengths must match metadata. Failing list: {key}")
+                for md, obj in zip(orig_metadata, val):
+                    metadata = md.copy()
+                    metadata.update(md_map.get(key, {}))
+                    self._results['metadata'].append(metadata)
+                    self._results['out'].append(obj)
 
         return runtime

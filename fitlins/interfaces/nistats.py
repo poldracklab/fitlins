@@ -214,27 +214,17 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                  'stat': contrast_type,
                  **out_ents})
 
-            # For now need to hard code that if this is a subject level,
-            # do FEMA, if it is a higher level do something else
-            # In practice, it doesn't matter as we just care about
-            # the effects + variances, not the stats at this level.
+            # For now hard-coding to do FEMA at the subject level
+            # Pass-through happens automatically as it can handle 1 input
             if self.inputs.level == 'Subject':
-                if len(effects) == 1:
-                    # Passthrough
-                    maps = {
-                        'effect_size': nb.load(effects[0]),
-                        'effect_variance': nb.load(variances[0])
-                        # Don't have access to previous stat map
-                    }
-                else:
-                    # Smoothing not supported
-                    fe_res = fixed_effects_img(
-                        effects, variances)
-                    maps = {
-                        'effect_size': fe_res[0],
-                        'effect_variance': fe_res[1],
-                        'stat': fe_res[2]
-                    }
+                # Smoothing not supported
+                fe_res = fixed_effects_img(
+                    effects, variances)
+                maps = {
+                    'effect_size': fe_res[0],
+                    'effect_variance': fe_res[1],
+                    'stat': fe_res[2]
+                }
             else:
                 if len(effects) < 2:
                     raise RuntimeError(
@@ -264,8 +254,12 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
         self._results['stat_maps'] = stat_maps
-        self._results['zscore_maps'] = zscore_maps
-        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
+
+        # These are "optional" as fixed effects do not support these (yet?)
+        if zscore_maps:
+            self._results['zscore_maps'] = zscore_maps
+        if pvalue_maps:
+            self._results['pvalue_maps'] = pvalue_maps
 
         return runtime
