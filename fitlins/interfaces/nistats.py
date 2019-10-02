@@ -22,7 +22,6 @@ def prepare_contrasts(contrasts, all_regressors):
     out_contrasts = []
     for contrast in contrasts:
         # Are any necessary values missing for contrast estimation?
-        # Will this trigger for fixed-effects model? Should this be allowed for a higher level model?
         missing = any([[n for n, v in row.items()
                         if v != 0 and n not in all_regressors]
                        for row in contrast['weights']])
