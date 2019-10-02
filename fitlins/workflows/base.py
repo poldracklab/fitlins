@@ -1,11 +1,21 @@
 from pathlib import Path
 import warnings
-
+from nipype.pipeline import engine as pe
+from nipype.interfaces import utility as niu
+# from nipype.interfaces import fsl
+from ..interfaces.bids import (
+    ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
+from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
+from ..interfaces.visualizations import (
+    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
+from ..interfaces.utils import MergeAll, CollateWithMetadata
+from ..interfaces.afni import AFNIMergeAll 
 
 def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
-                    base_dir=None, name='fitlins_wf'):
+                    base_dir=None, name='fitlins_wf',
+                    estimator=None):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
     from ..interfaces.bids import (
@@ -83,6 +93,10 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
 
+    if estimator == 'afni':
+        from ..interfaces.afni import FirstLevelModel
+    else:
+        from ..interfaces.nistats import FirstLevelModel
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
@@ -220,12 +234,18 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
-        collate = pe.Node(
-            MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                      'pvalue_maps', 'contrast_metadata'],
-                     check_lengths=(not drop_missing)),
-            name='collate_{}'.format(level),
-            run_without_submitting=True)
+        if estimator == "afni":
+            collate = pe.Node(
+                    AFNIMergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                                  'pvalue_maps', 'contrast_metadata']),
+                name='collate_{}'.format(level),
+                run_without_submitting=True)
+        else:
+            collate = pe.Node(
+                    MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                              'pvalue_maps', 'contrast_metadata']),
+                 name='collate_{}'.format(level),
+                 run_without_submitting=True)
 
         #
         # Plotting

@@ -131,6 +131,11 @@ def get_parser():
                          help='path where intermediate results should be stored')
     g_other.add_argument('--drop-missing', action='store_true', default=False,
                          help='drop missing inputs/contrasts in model fitting.')
+
+    g_other.add_argument("--estimator", action="store",type=str,
+        help="provide the name of the estimator you wish to use",
+        default="nistats", choices=["nistats", "afni"])
+
     return parser
 
 
@@ -232,6 +237,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
+        estimator=opts.estimator,
         )
 
     if opts.work_dir:
