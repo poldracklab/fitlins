@@ -30,7 +30,7 @@ def prepare_contrasts(contrasts, all_regressors):
             weights = np.array([
                 [row[col] if col in row else 0 for col in all_regressors]
                 for row in contrast['weights']
-                ])[0]
+                ])
 
             out_contrasts.append(
                 (contrast['name'], weights, contrast['type']))
@@ -189,9 +189,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
-        # XXX nistats should begin supporting mixed effects models soon
         input_variances = _flatten(self.inputs.variance_maps)
-        # input_variances = [None] * len(input_effects)
 
         filtered_effects = []
         filtered_variances = []
@@ -205,6 +203,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
+            weights = weights[0]
             effects = (np.array(filtered_effects)[weights != 0]).tolist()
             variances = (np.array(filtered_variances)[weights != 0]).tolist()
 
