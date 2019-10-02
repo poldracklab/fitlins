@@ -23,6 +23,10 @@
       "neuro"
     ],
     [
+      "workdir",
+      "/home/neuro"
+    ],
+    [
       "miniconda",
       {
         "create_env": "neuro",
