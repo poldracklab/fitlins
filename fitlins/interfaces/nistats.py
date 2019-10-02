@@ -168,14 +168,15 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
         from nistats.contrasts import fixed_effects_img
+        import nibabel as nb
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
 
-        # Maybe this should only be instantiate if it will be needed (e.g.
-        # if there are any 't' or `F` contrasts)
-        model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+        # Only initate for level higher than subject
+        if self.inputs.level != 'Subject':
+            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
         variance_maps = []
@@ -213,16 +214,22 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                  'stat': contrast_type,
                  **out_ents})
 
-            if contrast_type == 'FEMA':
+            # For now need to hard code that if this is a subject level,
+            # do FEMA, if it is a higher level do something else
+            # In practice, it doesn't matter as we just care about
+            # the effects + variances, not the stats at this level.
+            if self.inputs.level == 'Subject':
                 if len(effects) == 1:
+                    # Passthrough
                     maps = {
-                        'effect_size': effects[0],
-                        'effect_variance': variances[0]
+                        'effect_size': nb.load(effects[0]),
+                        'effect_variance': nb.load(variances[0])
                         # Don't have access to previous stat map
                     }
                 else:
+                    # Smoothing not supported
                     fe_res = fixed_effects_img(
-                        effects, variances, smoothing_fwhm=smoothing_fwhm)
+                        effects, variances)
                     maps = {
                         'effect_size': fe_res[0],
                         'effect_variance': fe_res[1],

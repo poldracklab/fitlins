@@ -209,9 +209,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
 
         level = 'l{:d}'.format(ix + 1)
 
-        if smoothing and smoothing_level in (step, level):
-            model.inputs.smoothing_fwhm = smoothing_fwhm
-
         # TODO: No longer used at higher level, suggesting we can simply return
         # entities from loader as a single list
         select_entities = pe.Node(
@@ -292,12 +289,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 SecondLevelModel(),
                 iterfield=['contrast_info'],
                 name='{}_model'.format(level))
-
+            model.inputs.level = step
             wf.connect([
                 (stage, model, [('effect_maps', 'effect_maps'),
                                 ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
+
+        if smoothing and smoothing_level in (step, level):
+            model.inputs.smoothing_fwhm = smoothing_fwhm
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
