@@ -115,7 +115,8 @@ def get_parser():
     g_other = parser.add_argument_group('Other options')
     g_other.add_argument('-w', '--work-dir', action='store', type=op.abspath,
                          help='path where intermediate results should be stored')
-
+    g_other.add_argument('--drop-missing', action='store_true', default=False,
+                         help='drop missing inputs/contrasts in model fitting.')
     return parser
 
 
@@ -180,7 +181,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
-        smoothing=opts.smoothing,
+        smoothing=opts.smoothing, drop_missing=opts.drop_missing,
         )
 
     if opts.work_dir:

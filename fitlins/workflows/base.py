@@ -5,7 +5,7 @@ import warnings
 def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     ignore=None, force_index=None,
-                    smoothing=None,
+                    smoothing=None, drop_missing=False,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
@@ -15,6 +15,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
+
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
@@ -83,7 +84,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     design_matrix = pe.MapNode(
-        DesignMatrix(),
+        DesignMatrix(drop_missing=drop_missing),
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
 
@@ -228,7 +229,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
             MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                      'pvalue_maps', 'contrast_metadata']),
+                      'pvalue_maps', 'contrast_metadata'],
+                     check_lengths=(not drop_missing)),
             name='collate_{}'.format(level),
             run_without_submitting=True)
 
