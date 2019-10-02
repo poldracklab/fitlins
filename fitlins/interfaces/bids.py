@@ -336,10 +336,6 @@ class LoadBIDSModel(SimpleInterface):
                         dense[imputable][0] = np.nanmean(vals[vals != 0])
                         imputed.append(imputable)
 
-                if np.isnan(dense.values).any():
-                    iflogger.warning('Unexpected NaNs found in design matrix; '
-                                     'regression may fail.')
-
                 dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
                 dense.to_hdf(dense_file, key='dense')
 

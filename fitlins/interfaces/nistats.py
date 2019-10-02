@@ -21,24 +21,33 @@ def prepare_contrasts(contrasts, all_regressors):
 
     out_contrasts = []
     for contrast in contrasts:
-        # Fill in zeros
-        weights = np.array([
-            [row[col] if col in row else 0 for col in all_regressors]
-            for row in contrast['weights']
-            ])
-        out_contrasts.append(
-            (contrast['name'], weights, contrast['type']))
+        # Are any necessary values missing for contrast estimation?
+        missing = any([[n for n, v in row.items()
+                        if v != 0 and n not in all_regressors]
+                       for row in contrast['weights']])
+        if not missing:
+            # Fill in zeros
+            weights = np.array([
+                [row[col] if col in row else 0 for col in all_regressors]
+                for row in contrast['weights']
+                ])
+
+            out_contrasts.append(
+                (contrast['name'], weights, contrast['type']))
 
     return out_contrasts
 
 
 class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
+
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import design_matrix as dm
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
+
+        drop_missing = bool(self.inputs.drop_missing)
 
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
@@ -50,9 +59,25 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
+
+            missing_columns = dense.isna().all()
+            if drop_missing:
+                # Remove columns with NaNs
+                dense = dense[dense.columns[missing_columns == False]]
+            elif missing_columns.any():
+                    missing_names = ', '.join(
+                        dense.columns[missing_columns].tolist())
+                    raise RuntimeError(
+                        f'The following columns are empty: {missing_names}. '
+                        'Use --drop-missing to drop before model fitting.')
+
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
                                    ('cosine_00' in column_names)) else 'cosine'
+
+            if dense.empty:
+                dense = None
+                column_names = None
         else:
             dense = None
             column_names = None
@@ -99,18 +124,20 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
                 self.inputs.contrast_info, mat.columns.tolist()):
-            maps = flm.compute_contrast(weights, contrast_type, output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents}
                 )
+            maps = flm.compute_contrast(
+                weights, contrast_type, output_type='all')
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
+
                 fname = fname_fmt(name, map_type)
                 maps[map_type].to_filename(fname)
                 map_list.append(fname)
@@ -142,6 +169,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
+
         model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
@@ -175,16 +203,20 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             weights = weights[0]
             effects = (np.array(filtered_effects)[weights != 0]).tolist()
             _variances = (np.array(filtered_variances)[weights != 0]).tolist()
-            design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
 
-            model.fit(effects, design_matrix=design_matrix)
-
-            maps = model.compute_contrast(second_level_stat_type=contrast_type,
-                                          output_type='all')
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
+
+            design_matrix = pd.DataFrame(
+                {'intercept': weights[weights != 0]})
+
+            model.fit(effects, design_matrix=design_matrix)
+
+            maps = model.compute_contrast(
+                second_level_stat_type=contrast_type,
+                output_type='all')
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
