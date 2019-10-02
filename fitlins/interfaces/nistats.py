@@ -167,7 +167,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
         from nistats.contrasts import fixed_effects_img
-        import nibabel as nb
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):

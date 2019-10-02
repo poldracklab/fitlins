@@ -74,7 +74,7 @@ class CollateWithMetadata(SimpleInterface):
         self._results.update({'metadata': [], 'out': []})
         for key in self._fields:
             val = getattr(self.inputs, key)
-            # Allow for missing values 
+            # Allow for missing values
             if isdefined(val):
                 if len(val) != n:
                     raise ValueError(f"List lengths must match metadata. Failing list: {key}")
