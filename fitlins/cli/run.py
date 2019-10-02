@@ -132,8 +132,8 @@ def get_parser():
     g_other.add_argument('--drop-missing', action='store_true', default=False,
                          help='drop missing inputs/contrasts in model fitting.')
 
-    g_other.add_argument("--estimator", action="store",type=str,
-        help="provide the name of the estimator you wish to use",
+    g_other.add_argument("--estimator", action="store", type=str,
+        help="estimator to use to fit the model",
         default="nistats", choices=["nistats", "afni"])
 
     return parser
