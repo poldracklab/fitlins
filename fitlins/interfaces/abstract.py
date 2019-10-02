@@ -14,6 +14,8 @@ from nipype.interfaces.base import BaseInterface, TraitedSpec, File, traits
 class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
     session_info = traits.Dict()
+    drop_missing = traits.Bool(
+            desc='Drop columns in design matrix with all missing values')
 
 
 class DesignMatrixOutputSpec(TraitedSpec):

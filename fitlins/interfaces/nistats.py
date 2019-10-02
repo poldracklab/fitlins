@@ -40,16 +40,14 @@ def prepare_contrasts(contrasts, all_regressors):
 
 class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
 
-    def __init__(self, drop_missing=False):
-        super(DesignMatrix, self).__init__()
-        self._drop_missing = drop_missing
-
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import design_matrix as dm
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
+
+        drop_missing = bool(self.inputs.drop_missing)
 
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
@@ -63,9 +61,9 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             dense = pd.read_hdf(info['dense'], key='dense')
 
             missing_columns = dense.isna().all()
-            if self._drop_missing:
+            if drop_missing:
                 # Remove columns with NaNs
-                dense = dense[dense.columns[missing_columns is False]]
+                dense = dense[dense.columns[missing_columns == False]]
             elif missing_columns.any():
                     missing_names = ', '.join(
                         dense.columns[missing_columns].tolist())
