@@ -215,7 +215,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             # Pass-through happens automatically as it can handle 1 input
             if self.inputs.level == 'Subject':
                 # Smoothing not supported
-                fe_res = fixed_effects_img(
+                fe_res = fixed_effects_img(effects, variances)
                     effects, variances)
                 maps = {
                     'effect_size': fe_res[0],
@@ -242,10 +242,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
-                map = maps.get(map_type)
-                if map:
+                if map_type in maps:
                     fname = fname_fmt(name, map_type)
-                    map.to_filename(fname)
+                    maps[map_type].to_filename(fname)
                     map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
