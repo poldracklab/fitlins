@@ -53,7 +53,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     getter = pe.Node(
         BIDSSelect(
             bids_dir=bids_dir, derivatives=derivatives,
-            selectors={'suffix': 'bold'}),
+            selectors={'suffix': 'bold', 'extensions': 'nii.gz'}),
         name='getter')
 
     if smoothing:
