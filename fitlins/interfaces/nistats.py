@@ -216,7 +216,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             if self.inputs.level == 'Subject':
                 # Smoothing not supported
                 fe_res = fixed_effects_img(effects, variances)
-                    effects, variances)
+
                 maps = {
                     'effect_size': fe_res[0],
                     'effect_variance': fe_res[1],
