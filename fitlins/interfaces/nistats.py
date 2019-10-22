@@ -172,10 +172,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
 
-        # Only initate for level higher than subject
-        if self.inputs.level != 'Subject':
-            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-
         effect_maps = []
         variance_maps = []
         stat_maps = []
@@ -199,7 +195,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
+        contrasts = prepare_contrasts(self.inputs.contrast_info, names)
+
+        # Only initate if any non-FEMA contrasts
+        if any([True for c in contrasts if c[1] != 'FEMA']):
+            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+
+        for name, weights, contrast_type in contrasts:
             # Need to add F-test support for intercept (more than one column)
             # Currently only taking 0th column as intercept (t-test)
             weights = weights[0]
@@ -213,7 +215,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
             # For now hard-coding to do FEMA at the subject level
             # Pass-through happens automatically as it can handle 1 input
-            if self.inputs.level == 'Subject':
+            if contrast_type == 'FEMA':
                 # Smoothing not supported
                 fe_res = fixed_effects_img(effects, variances)
 
