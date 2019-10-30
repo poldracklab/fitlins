@@ -191,17 +191,15 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             if _match(out_ents, m):
                 filtered_effects.append(eff)
                 names.append(m['contrast'])
-        cnames = set(names)
 
-        # Dummy code condition of input effects
+        # Dummy code contrast of input effects
+        design_matrix = pd.get_dummies(names)
+
         # Fit single model for all inputs
-        design_matrix = pd.DataFrame(
-            {n: [1 if c == n else 0 for c in names] for n in cnames})
-
         model.fit(filtered_effects, design_matrix=design_matrix)
 
         for name, weights, contrast_type in prepare_contrasts(
-          self.inputs.contrast_info, cnames):
+          self.inputs.contrast_info, design_matrix.columns.to_list()):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
