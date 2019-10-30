@@ -48,6 +48,18 @@
           ],
           "Weights": [0.5, 0.5],
           "Type": "t"
+        },
+        {
+          "Name": "any_words",
+          "ConditionList": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "Weights": [
+            [1, 0],
+            [0, 1]
+          ],
+          "Type": "F"
         }
       ]
     },
