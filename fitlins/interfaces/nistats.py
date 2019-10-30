@@ -208,7 +208,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                  **out_ents})
 
             maps = model.compute_contrast(
-                con_val=weights
+                con_val=weights,
+                contrast_type=contrast_type,
                 second_level_stat_type=contrast_type,
                 output_type='all')
 
