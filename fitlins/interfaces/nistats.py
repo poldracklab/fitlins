@@ -184,37 +184,31 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
-        # XXX nistats should begin supporting mixed effects models soon
-        # input_variances = _flatten(self.inputs.variance_maps)
-        input_variances = [None] * len(input_effects)
 
         filtered_effects = []
-        filtered_variances = []
         names = []
-        for m, eff, var in zip(stat_metadata, input_effects, input_variances):
+        for m, eff, var in zip(stat_metadata, input_effects):
             if _match(out_ents, m):
                 filtered_effects.append(eff)
-                filtered_variances.append(var)
                 names.append(m['contrast'])
+        cnames = set(names)
 
-        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
-            # Need to add F-test support for intercept (more than one column)
-            # Currently only taking 0th column as intercept (t-test)
-            weights = weights[0]
-            effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
+        # Dummy code condition of input effects
+        # Fit single model for all inputs
+        design_matrix = pd.DataFrame(
+            {n: [1 if c == n else 0 for c in names] for n in cnames})
 
+        model.fit(filtered_effects, design_matrix=design_matrix)
+
+        for name, weights, contrast_type in prepare_contrasts(
+          self.inputs.contrast_info, cnames):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            design_matrix = pd.DataFrame(
-                {'intercept': weights[weights != 0]})
-
-            model.fit(effects, design_matrix=design_matrix)
-
             maps = model.compute_contrast(
+                con_val=weights
                 second_level_stat_type=contrast_type,
                 output_type='all')
 
