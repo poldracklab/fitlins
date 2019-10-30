@@ -65,11 +65,11 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                 # Remove columns with NaNs
                 dense = dense[dense.columns[missing_columns == False]]
             elif missing_columns.any():
-                    missing_names = ', '.join(
-                        dense.columns[missing_columns].tolist())
-                    raise RuntimeError(
-                        f'The following columns are empty: {missing_names}. '
-                        'Use --drop-missing to drop before model fitting.')
+                missing_names = ', '.join(
+                    dense.columns[missing_columns].tolist())
+                raise RuntimeError(
+                    f'The following columns are empty: {missing_names}. '
+                    'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
