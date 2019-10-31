@@ -95,7 +95,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -187,7 +187,7 @@ jobs:
 
   test_packaging:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -239,7 +239,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
