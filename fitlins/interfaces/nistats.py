@@ -187,7 +187,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
         filtered_effects = []
         names = []
-        for m, eff, var in zip(stat_metadata, input_effects):
+        for m, eff in zip(stat_metadata, input_effects):
             if _match(out_ents, m):
                 filtered_effects.append(eff)
                 names.append(m['contrast'])
