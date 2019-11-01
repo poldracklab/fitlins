@@ -80,10 +80,10 @@ jobs:
           command: |
             datalad install -r ///labs/poldrack/ds003_fmriprep
             datalad update ds003_fmriprep/
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv
-            datalad get ds003_fmriprep/dataset_description.json
-            datalad get ds003_fmriprep/sub-*/*/*.json
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                        ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                        ds003_fmriprep/dataset_description.json \
+                        ds003_fmriprep/sub-*/*/*.json
       - run:
           name: Download a model for ds000003
           command: |
