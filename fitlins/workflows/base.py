@@ -54,7 +54,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         BIDSSelect(
             bids_dir=bids_dir, derivatives=derivatives,
             selectors={'suffix': 'bold',
-                       'extensions': ['nii.gz', 'nii', 'gii']}),
+                       'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
 
     if smoothing:
