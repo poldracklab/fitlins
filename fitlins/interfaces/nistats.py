@@ -103,6 +103,18 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         from nistats import first_level_model as level1
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
+        if isinstance(img, nb.dataobj_images.DataobjImage):
+            # Ugly hack to ensure that retrieved data isn't cast to float64 unless
+            # necessary to prevent an overflow
+            # For NIfTI-1 files, slope and inter are 32-bit floats, so this is
+            # "safe". For NIfTI-2 (including CIFTI-2), these fields are 64-bit,
+            # so include a check to make sure casting doesn't lose too much.
+            slope32 = np.float32(img.dataobj._slope)
+            inter32 = np.float32(img.dataobj._inter)
+            if max(np.abs(slope32 - img.dataobj._slope),
+                   np.abs(inter32 - img.dataobj._inter)) < 1e-7:
+                img.dataobj._slope = slope32
+                img.dataobj._inter = inter32
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
