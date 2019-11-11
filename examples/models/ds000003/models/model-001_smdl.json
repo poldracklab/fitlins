@@ -30,6 +30,7 @@
           "a_comp_cor_03", "a_comp_cor_04", "a_comp_cor_05"
         ]
       },
+      "AutoContrasts": ["trial_type.word", "trial_type.pseudoword"],
       "Contrasts": [
         {
           "Name": "word_gt_pseudo",
@@ -53,7 +54,21 @@
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["word_gt_pseudo", "task_vs_baseline"]
+      "AutoContrasts": ["word_gt_pseudo", "task_vs_baseline"],
+      "Contrasts":[
+        {
+          "Name": "any_words",
+          "ConditionList": [
+            "trial_type.word",
+            "trial_type.pseudoword"
+          ],
+          "Weights": [
+            [1, 0],
+            [0, 1]
+          ],
+          "Type": "F"
+        }
+      ]
     }
   ]
 }

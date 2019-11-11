@@ -65,11 +65,11 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                 # Remove columns with NaNs
                 dense = dense[dense.columns[missing_columns == False]]
             elif missing_columns.any():
-                    missing_names = ', '.join(
-                        dense.columns[missing_columns].tolist())
-                    raise RuntimeError(
-                        f'The following columns are empty: {missing_names}. '
-                        'Use --drop-missing to drop before model fitting.')
+                missing_names = ', '.join(
+                    dense.columns[missing_columns].tolist())
+                raise RuntimeError(
+                    f'The following columns are empty: {missing_names}. '
+                    'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
@@ -103,6 +103,18 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         from nistats import first_level_model as level1
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
+        if isinstance(img, nb.dataobj_images.DataobjImage):
+            # Ugly hack to ensure that retrieved data isn't cast to float64 unless
+            # necessary to prevent an overflow
+            # For NIfTI-1 files, slope and inter are 32-bit floats, so this is
+            # "safe". For NIfTI-2 (including CIFTI-2), these fields are 64-bit,
+            # so include a check to make sure casting doesn't lose too much.
+            slope32 = np.float32(img.dataobj._slope)
+            inter32 = np.float32(img.dataobj._inter)
+            if max(np.abs(slope32 - img.dataobj._slope),
+                   np.abs(inter32 - img.dataobj._inter)) < 1e-7:
+                img.dataobj._slope = slope32
+                img.dataobj._inter = inter32
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
@@ -184,37 +196,29 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
-        # XXX nistats should begin supporting mixed effects models soon
-        # input_variances = _flatten(self.inputs.variance_maps)
-        input_variances = [None] * len(input_effects)
 
         filtered_effects = []
-        filtered_variances = []
         names = []
-        for m, eff, var in zip(stat_metadata, input_effects, input_variances):
+        for m, eff in zip(stat_metadata, input_effects):
             if _match(out_ents, m):
                 filtered_effects.append(eff)
-                filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
-            # Need to add F-test support for intercept (more than one column)
-            # Currently only taking 0th column as intercept (t-test)
-            weights = weights[0]
-            effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
+        # Dummy code contrast of input effects
+        design_matrix = pd.get_dummies(names)
 
+        # Fit single model for all inputs
+        model.fit(filtered_effects, design_matrix=design_matrix)
+
+        for name, weights, contrast_type in prepare_contrasts(
+          self.inputs.contrast_info, design_matrix.columns.to_list()):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            design_matrix = pd.DataFrame(
-                {'intercept': weights[weights != 0]})
-
-            model.fit(effects, design_matrix=design_matrix)
-
             maps = model.compute_contrast(
+                second_level_contrast=weights,
                 second_level_stat_type=contrast_type,
                 output_type='all')
 
