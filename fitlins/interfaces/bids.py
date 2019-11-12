@@ -109,7 +109,8 @@ class ModelSpecLoader(SimpleInterface):
             if not isdefined(database_file):
                 database_file = None
             # model is not yet standardized, so validate=False
-            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False, database_file=database_file)
+            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False,
+                                     database_file=database_file)
 
             if not isdefined(models):
                 models = layout.get(suffix='smdl', return_type='file')
@@ -429,7 +430,8 @@ class BIDSSelect(SimpleInterface):
         database_file = self.inputs.database_file
         if not isdefined(database_file):
             database_file = None
-        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives, database_file=database_file)
+        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives,
+                            database_file=database_file)
 
         bold_files = []
         mask_files = []

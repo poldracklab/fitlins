@@ -97,7 +97,8 @@ def get_parser():
     g_bids.add_argument('--database_file', action='store', default=None,
                         help="Caution, this is an Expert level option subject to change!"
                              "Path to SQLite databse containing the index for this BIDS dataset."
-                             "If a value is passed and the file already exists, indexing is skipped.")
+                             "If a value is passed and the file already exists,"
+                             " indexing is skipped.")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM[:LEVEL:[TYPE]]",
@@ -136,7 +137,8 @@ def run_fitlins(argv=None):
     subject_list = None
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
-            opts.bids_dir, participant_label=opts.participant_label, database_file=opts.database_file)
+            opts.bids_dir, participant_label=opts.participant_label,
+            database_file=opts.database_file)
 
     ncpus = opts.n_cpus
     if ncpus < 1:
