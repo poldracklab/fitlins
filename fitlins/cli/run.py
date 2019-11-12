@@ -94,9 +94,9 @@ def get_parser():
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
-    g_bids.add_argument('--database_file', action='store', default=None,
-                        help="Caution, this is an Expert level option subject to change!"
-                             "Path to SQLite databse containing the index for this BIDS dataset."
+    g_bids.add_argument('--database-file', action='store', default=None,
+                        help="Caution, this is an Expert level option subject to change! "
+                             "Path to SQLite databse containing the index for this BIDS dataset. "
                              "If a value is passed and the file already exists,"
                              " indexing is skipped.")
 
