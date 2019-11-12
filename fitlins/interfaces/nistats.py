@@ -65,11 +65,11 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                 # Remove columns with NaNs
                 dense = dense[dense.columns[missing_columns == False]]
             elif missing_columns.any():
-                    missing_names = ', '.join(
-                        dense.columns[missing_columns].tolist())
-                    raise RuntimeError(
-                        f'The following columns are empty: {missing_names}. '
-                        'Use --drop-missing to drop before model fitting.')
+                missing_names = ', '.join(
+                    dense.columns[missing_columns].tolist())
+                raise RuntimeError(
+                    f'The following columns are empty: {missing_names}. '
+                    'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
@@ -103,6 +103,18 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         from nistats import first_level_model as level1
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
+        if isinstance(img, nb.dataobj_images.DataobjImage):
+            # Ugly hack to ensure that retrieved data isn't cast to float64 unless
+            # necessary to prevent an overflow
+            # For NIfTI-1 files, slope and inter are 32-bit floats, so this is
+            # "safe". For NIfTI-2 (including CIFTI-2), these fields are 64-bit,
+            # so include a check to make sure casting doesn't lose too much.
+            slope32 = np.float32(img.dataobj._slope)
+            inter32 = np.float32(img.dataobj._inter)
+            if max(np.abs(slope32 - img.dataobj._slope),
+                   np.abs(inter32 - img.dataobj._inter)) < 1e-7:
+                img.dataobj._slope = slope32
+                img.dataobj._inter = inter32
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
@@ -197,27 +209,25 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
         contrasts = prepare_contrasts(self.inputs.contrast_info, names)
 
-        # Only initate if any non-FEMA contrasts
+        # Only fit model if any non-FEMA contrasts at this level
         if any([True for c in contrasts if c[1] != 'FEMA']):
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+            design_matrix = pd.get_dummies(names)
+            # Fit single model for all inputs
+            model.fit(filtered_effects, design_matrix=design_matrix)
 
-        for name, weights, contrast_type in contrasts:
-            # Need to add F-test support for intercept (more than one column)
-            # Currently only taking 0th column as intercept (t-test)
-            weights = weights[0]
-            effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            variances = (np.array(filtered_variances)[weights != 0]).tolist()
-
+        for name, weights, contrast_type in prepare_contrasts(
+          self.inputs.contrast_info, names):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            # For now hard-coding to do FEMA at the subject level
             # Pass-through happens automatically as it can handle 1 input
             if contrast_type == 'FEMA':
                 # Smoothing not supported
-                fe_res = fixed_effects_img(effects, variances)
+                fe_res = fixed_effects_img(
+                    filtered_effects, filtered_variances)
 
                 maps = {
                     'effect_size': fe_res[0],
@@ -225,17 +235,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     'stat': fe_res[2]
                 }
             else:
-                if len(effects) < 2:
+                if len(filtered_effects) < 2:
                     raise RuntimeError(
                         "At least two inputs are required for a 't' for 'F' "
                         "second level contrast")
 
-                design_matrix = pd.DataFrame(
-                    {'intercept': weights[weights != 0]})
-
-                model.fit(effects, design_matrix=design_matrix)
-
                 maps = model.compute_contrast(
+                    second_level_contrast=weights,
                     second_level_stat_type=contrast_type,
                     output_type='all')
 

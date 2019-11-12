@@ -255,7 +255,7 @@ class LoadBIDSModel(SimpleInterface):
             TR = ents.pop('RepetitionTime', None)  # Required field in seconds
             if TR is None: # But is unreliable (for now?)
                 preproc_files = analysis.layout.get(
-                    extensions=['.nii', '.nii.gz'], **ents)
+                    extension=['.nii', '.nii.gz'], **ents)
                 if len(preproc_files) != 1:
                     raise ValueError('Too many BOLD files found')
 

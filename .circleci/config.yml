@@ -63,6 +63,8 @@ jobs:
       - image: markiewicz/datalad:0.0.1
     working_directory: /tmp/data
     steps:
+      - checkout:
+          path: /tmp/src
       - restore_cache:
           keys:
             - ds003-v0-{{ .Branch }}-
@@ -78,16 +80,15 @@ jobs:
           command: |
             datalad install -r ///labs/poldrack/ds003_fmriprep
             datalad update ds003_fmriprep/
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv
-            datalad get ds003_fmriprep/dataset_description.json
-            datalad get ds003_fmriprep/sub-*/*/*.json
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                        ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                        ds003_fmriprep/dataset_description.json \
+                        ds003_fmriprep/sub-*/*/*.json
       - run:
           name: Download a model for ds000003
           command: |
               mkdir -p ds003_models
-              curl -sSL https://raw.githubusercontent.com/effigies/BIDS-examples/enh/models/ds003/models/model-001_smdl.json \
-                -o ds003_models/model-001_smdl.json
+              cp /tmp/src/examples/models/ds000003/models/model-001_smdl.json ds003_models/
       - save_cache:
          key: ds003-v0-{{ .Branch }}-{{ .BuildNum }}
          paths:
@@ -95,7 +96,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -187,7 +188,7 @@ jobs:
 
   test_packaging:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -239,7 +240,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
