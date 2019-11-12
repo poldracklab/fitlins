@@ -81,7 +81,7 @@ class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
     bids_dir = Directory(exists=True,
                          mandatory=True,
                          desc='BIDS dataset root directory')
-    database_file = traits.File(exists=True,
+    database_file = traits.File(exists=False,
                                 desc='Optional path to bids database file.')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
@@ -147,7 +147,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directory')
     derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
-    database_file = traits.File(exists=True,
+    database_file = traits.File(exists=False,
                                 desc='Optional path to bids database file.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
@@ -405,7 +405,7 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directories')
     derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
-    database_file = traits.File(exists=True,
+    database_file = traits.File(exists=False,
                                 desc='Optional path to bids database file.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
