@@ -30,7 +30,7 @@
           "a_comp_cor_03", "a_comp_cor_04", "a_comp_cor_05"
         ]
       },
-      "AutoContrasts": ["trial_type.word", "trial_type.pseudoword"],
+      "DummyContrasts": ["trial_type.word", "trial_type.pseudoword"],
       "Contrasts": [
         {
           "Name": "word_gt_pseudo",
@@ -54,7 +54,7 @@
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["word_gt_pseudo", "task_vs_baseline"],
+      "DummyContrasts": ["word_gt_pseudo", "task_vs_baseline"],
       "Contrasts":[
         {
           "Name": "any_words",

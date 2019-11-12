@@ -51,11 +51,11 @@
     },
     {
       "Level": "subject",
-      "AutoContrasts": ["face_vs_scram"]
+      "DummyContrasts": ["face_vs_scram"]
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["face_vs_scram"]
+      "DummyContrasts": ["face_vs_scram"]
     }
   ]
 }

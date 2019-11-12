@@ -62,7 +62,7 @@
         },
         {
             "Level": "dataset",
-            "AutoContrasts": ["accept_vs_explode"]
+            "DummyContrasts": ["accept_vs_explode"]
         }
     ]
 }

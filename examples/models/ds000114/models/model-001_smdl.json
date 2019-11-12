@@ -81,7 +81,7 @@
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["session_diff"]
+      "DummyContrasts": ["session_diff"]
     }
   ]
 }
