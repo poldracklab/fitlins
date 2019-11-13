@@ -180,7 +180,7 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data:ro \
+            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -v /tmp/data/ds003_models:/models \
@@ -192,7 +192,7 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
-                --n-cpus 2 --database-file pybidsdb
+                --n-cpus 2 --database-file /scratch/pybidsdb
       - run:
           name: Combine coverage and submit
           command: |
