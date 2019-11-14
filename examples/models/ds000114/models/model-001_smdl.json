@@ -81,7 +81,10 @@
     },
     {
       "Level": "dataset",
-      "DummyContrasts": ["session_diff"]
+      "DummyContrasts": {
+        "Conditions": ["session_diff"],
+        "Type": "t"
+      }
     }
   ]
 }

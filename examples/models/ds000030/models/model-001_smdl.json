@@ -62,7 +62,10 @@
         },
         {
             "Level": "dataset",
-            "DummyContrasts": ["accept_vs_explode"]
+            "DummyContrasts": {
+              "Conditions": ["accept_vs_explode"],
+              "Type": "t"
+            }
         }
     ]
 }
