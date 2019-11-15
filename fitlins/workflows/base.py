@@ -5,7 +5,7 @@ import warnings
 def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     ignore=None, force_index=None,
-                    smoothing=None, drop_missing=False, database_file=None,
+                    smoothing=None, drop_missing=False, database_path=None,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
@@ -15,13 +15,29 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
+    from bids import BIDSLayout
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
-
+    
+    # if the database exists, load it, otherwise initialize it
+    if Path(database_path).exists():
+        layout = BIDSLayout.load_from_db(database_path)
+    else:
+        if database_path is None:
+            database_path = Path(base_dir) / 'dbcache'
+            reset_database=True
+        else:
+            reset_database=False
+        layout = BIDSLayout(bids_dir,
+                            derivatives=derivatives,
+                            ignore=ignore,
+                            validate=False,
+                            force_index=force_index,
+                            database_path=database_path,
+                            reset_database=reset_database)
+                            
     # Find the appropriate model file(s)
-    specs = ModelSpecLoader(bids_dir=bids_dir)
-    if database_file is not None:
-        specs.inputs.database_file = database_file
+    specs = ModelSpecLoader(database_path=database_path)
     if model is not None:
         specs.inputs.model = model
 
@@ -51,8 +67,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors['subject'] = participants
-    if database_file is not None:
-        loader.inputs.database_file = database_file
+    if database_path is not None:
+        loader.inputs.database_path = database_path
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
@@ -62,8 +78,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                        'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
 
-    if database_file is not None:
-        getter.inputs.database_file = database_file
+    if database_path is not None:
+        getter.inputs.database_path = database_path
     if smoothing:
         smoothing_params = smoothing.split(':', 2)
         # Convert old style and warn; this should turn into an (informative) error around 0.5.0
@@ -336,4 +352,4 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         if step == analysis_level:
             break
 
-    return wf
+    return wf, database_path

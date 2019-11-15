@@ -78,11 +78,8 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    bids_dir = Directory(exists=True,
-                         mandatory=True,
-                         desc='BIDS dataset root directory')
-    database_file = traits.File(exists=False,
-                                desc='Optional path to bids database file.')
+    database_path = Directory(exists=False,
+                                desc='Optional path to bids database directory.')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -105,12 +102,9 @@ class ModelSpecLoader(SimpleInterface):
         from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
-            database_file = self.inputs.database_file
-            if not isdefined(database_file):
-                database_file = None
+            database_path = self.inputs.database_path
             # model is not yet standardized, so validate=False
-            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False,
-                                     database_file=database_file)
+            layout = bids.BIDSLayout.load_from_db(database_path=database_path)
 
             if not isdefined(models):
                 models = layout.get(suffix='smdl', return_type='file')
@@ -148,8 +142,8 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directory')
     derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
-    database_file = traits.File(exists=False,
-                                desc='Optional path to bids database file.')
+    database_path = Directory(exists=False,
+                                desc='Optional path to bids database directory.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     force_index = InputMultiPath(
@@ -231,15 +225,18 @@ class LoadBIDSModel(SimpleInterface):
             re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
             # Iterate over empty tuple if undefined
             for ign in self.inputs.ignore or ()]
+        ignore = ignore or None
 
         # If empty, then None
         derivatives = self.inputs.derivatives or None
 
-        database_file = self.inputs.database_file
-        if not isdefined(database_file):
-            database_file = None
-        layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,
-                            ignore=ignore, derivatives=derivatives, database_file=database_file)
+        database_path = self.inputs.database_path
+        if not isdefined(database_path):
+            database_path = None
+        print("#####bids.py _run_interface 244#####")
+        print(ignore)
+        print("###########")
+        layout = BIDSLayout.load_from_db(database_path)
 
         selectors = self.inputs.selectors
 
@@ -406,8 +403,8 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
                          desc='BIDS dataset root directories')
     derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
-    database_file = traits.File(exists=False,
-                                desc='Optional path to bids database file.')
+    database_path = Directory(exists=False,
+                                desc='Optional path to bids database path.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -427,11 +424,10 @@ class BIDSSelect(SimpleInterface):
         from bids.layout import BIDSLayout
 
         derivatives = self.inputs.derivatives
-        database_file = self.inputs.database_file
-        if not isdefined(database_file):
-            database_file = None
-        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives,
-                            database_file=database_file)
+        database_path = self.inputs.database_path
+        if not isdefined(database_path):
+            database_path = None
+        layout = BIDSLayout.load_from_db(database_path=database_path)
 
         bold_files = []
         mask_files = []

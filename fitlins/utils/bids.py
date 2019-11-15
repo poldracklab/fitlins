@@ -37,7 +37,7 @@ class BIDSWarning(RuntimeWarning):
     pass
 
 
-def collect_participants(bids_dir, participant_label=None, strict=False, database_file=None):
+def collect_participants(bids_dir, participant_label=None, strict=False, database_path=None):
     """
     List the participants under the BIDS root and checks that participants
     designated with the participant_label argument exist in that folder.
@@ -72,7 +72,7 @@ def collect_participants(bids_dir, participant_label=None, strict=False, databas
 
 
     """
-    layout = BIDSLayout(bids_dir, database_file=database_file)
+    layout = BIDSLayout(bids_dir, database_path=database_path)
     all_participants = layout.get_subjects()
 
     # Error: bids_dir does not contain subjects

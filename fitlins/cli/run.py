@@ -94,11 +94,12 @@ def get_parser():
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
-    g_bids.add_argument('--database-file', action='store', default=None,
+    g_bids.add_argument('--database-path', action='store', default=None,
                         help="Caution, this is an Expert level option subject to change! "
-                             "Path to SQLite databse containing the index for this BIDS dataset. "
-                             "If a value is passed and the file already exists,"
-                             " indexing is skipped.")
+                             "Path to directory containing SQLite database indicies" 
+                             "for this BIDS dataset. "
+                             "If a value is passed and the file already exists, "
+                             "indexing is skipped.")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM[:LEVEL:[TYPE]]",
@@ -138,16 +139,16 @@ def run_fitlins(argv=None):
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
             opts.bids_dir, participant_label=opts.participant_label,
-            database_file=opts.database_file)
+            database_path=opts.database_path)
 
     ncpus = opts.n_cpus
     if ncpus < 1:
         ncpus = cpu_count()
 
     plugin_settings = {
-        'plugin': 'MultiProc',
+        'plugin': 'Linear',
         'plugin_args': {
-            'n_procs': ncpus,
+            'n_procs': 1,
             'raise_insufficient': False,
             'maxtasksperchild': 1,
         }
@@ -181,14 +182,14 @@ def run_fitlins(argv=None):
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
-    fitlins_wf = init_fitlins_wf(
+    fitlins_wf, database_path = init_fitlins_wf(
         opts.bids_dir, derivatives, deriv_dir,
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
-        database_file=opts.database_file,
+        database_path=opts.database_path,
         )
 
     if opts.work_dir:
@@ -203,7 +204,7 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout(opts.bids_dir, derivatives=derivatives, database_file=opts.database_file)
+    layout = BIDSLayout.load_from_db(database_path)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
