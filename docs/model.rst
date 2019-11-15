@@ -123,7 +123,7 @@ In this case, we can use an ``AutoContrast`` to make a very simple final step:
 
     {
       "Level": "Dataset",
-      "AutoContrasts": ["a_vs_b"]
+      "DummyContrasts": ["a_vs_b"]
     }
 
 This is equivalent to the more verbose:

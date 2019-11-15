@@ -51,11 +51,17 @@
     },
     {
       "Level": "subject",
-      "AutoContrasts": ["face_vs_scram"]
+      "DummyContrasts": {
+          "Conditions": ["face_vs_scram"],
+          "Type": "FEMA"
+      }
     },
     {
       "Level": "dataset",
-      "AutoContrasts": ["face_vs_scram"]
+      "DummyContrasts": {
+        "Conditions": ["face_vs_scram"],
+        "Type": "t"
+      }
     }
   ]
 }
