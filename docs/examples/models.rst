@@ -20,7 +20,7 @@ The ``Model.X`` section demonstrates selection of regressors for the design
 matrix, and ``Contrasts`` shows how to perform a simple contrast between
 two conditions.
 
-At the ``dataset`` level, the ``AutoContrasts`` option demonstrates taking
+At the ``dataset`` level, the ``DummyContrasts`` option demonstrates taking
 a simple mean at the group level.
 
 .. raw:: html
