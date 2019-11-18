@@ -141,9 +141,9 @@ def run_fitlins(argv=None):
         ncpus = cpu_count()
 
     plugin_settings = {
-        'plugin': 'Linear',
+        'plugin': 'MultiProc',
         'plugin_args': {
-            'n_procs': 1,
+            'n_procs': ncpus,
             'raise_insufficient': False,
             'maxtasksperchild': 1,
         }
