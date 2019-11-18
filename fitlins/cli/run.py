@@ -171,16 +171,20 @@ def run_fitlins(argv=None):
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     # Go ahead and initialize the layout database
-    if Path(opts.database_path).exists():
+    if opts.database_path is None:
+        database_path = Path(work_dir) / 'dbcache'
+        reset_database=True
+        make_layout = True
+    elif Path(opts.database_path).exists():
         layout = BIDSLayout.load(opts.database_path)
         database_path = opts.database_path
+        make_layout=False
     else:
-        if opts.database_path is None:
-            database_path = Path(work_dir) / 'dbcache'
-            reset_database=True
-        else:
-            database_path = opts.database_path
-            reset_database=False
+        database_path = opts.database_path
+        reset_database=False
+        make_layout = True
+
+    if make_layout:
         layout = BIDSLayout(opts.bids_dir,
                             derivatives=derivatives,
                             ignore=opts.ignore,
@@ -193,7 +197,7 @@ def run_fitlins(argv=None):
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
             opts.bids_dir, participant_label=opts.participant_label,
-            database_path=opts.database_path)
+            database_path=database_path)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
@@ -208,7 +212,7 @@ def run_fitlins(argv=None):
         participants=subject_list, base_dir=work_dir,
         force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
-        database_path=opts.database_path,
+        database_path=database_path,
         )
 
     if opts.work_dir:
