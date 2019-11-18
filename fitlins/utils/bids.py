@@ -72,7 +72,7 @@ def collect_participants(bids_dir, participant_label=None, strict=False, databas
 
 
     """
-    layout = BIDSLayout(bids_dir, database_path=database_path)
+    layout = BIDSLayout.load(database_path=database_path)
     all_participants = layout.get_subjects()
 
     # Error: bids_dir does not contain subjects

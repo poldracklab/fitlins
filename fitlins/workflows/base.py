@@ -18,23 +18,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     from bids import BIDSLayout
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
-    
     # if the database exists, load it, otherwise initialize it
-    if Path(database_path).exists():
-        layout = BIDSLayout.load_from_db(database_path)
-    else:
-        if database_path is None:
-            database_path = Path(base_dir) / 'dbcache'
-            reset_database=True
-        else:
-            reset_database=False
-        layout = BIDSLayout(bids_dir,
-                            derivatives=derivatives,
-                            ignore=ignore,
-                            validate=False,
-                            force_index=force_index,
-                            database_path=database_path,
-                            reset_database=reset_database)
+    layout = BIDSLayout.load(database_path)
                             
     # Find the appropriate model file(s)
     specs = ModelSpecLoader(database_path=database_path)
@@ -352,4 +337,4 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         if step == analysis_level:
             break
 
-    return wf, database_path
+    return wf

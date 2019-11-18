@@ -12,6 +12,7 @@ import os.path as op
 import time
 import logging
 import warnings
+from pathlib import Path
 from tempfile import mkdtemp
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -135,12 +136,6 @@ def run_fitlins(argv=None):
         # make it an explicit None
         opts.space = None
 
-    subject_list = None
-    if opts.participant_label is not None:
-        subject_list = bids.collect_participants(
-            opts.bids_dir, participant_label=opts.participant_label,
-            database_path=opts.database_path)
-
     ncpus = opts.n_cpus
     if ncpus < 1:
         ncpus = cpu_count()
@@ -153,12 +148,6 @@ def run_fitlins(argv=None):
             'maxtasksperchild': 1,
         }
     }
-
-    # Build main workflow
-    logger.log(25, INIT_MSG(
-        version=__version__,
-        subject_list=subject_list)
-    )
 
     model = default_path(opts.model, opts.bids_dir, 'model-default_smdl.json')
     if opts.model in (None, 'default') and not op.exists(model):
@@ -177,12 +166,42 @@ def run_fitlins(argv=None):
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
-
     bids.write_derivative_description(opts.bids_dir, deriv_dir)
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
-    fitlins_wf, database_path = init_fitlins_wf(
+    # Go ahead and initialize the layout database
+    if Path(opts.database_path).exists():
+        layout = BIDSLayout.load(opts.database_path)
+        database_path = opts.database_path
+    else:
+        if opts.database_path is None:
+            database_path = Path(work_dir) / 'dbcache'
+            reset_database=True
+        else:
+            database_path = opts.database_path
+            reset_database=False
+        layout = BIDSLayout(opts.bids_dir,
+                            derivatives=derivatives,
+                            ignore=opts.ignore,
+                            validate=False,
+                            force_index=opts.force_index,
+                            database_path=database_path,
+                            reset_database=reset_database)
+
+    subject_list = None
+    if opts.participant_label is not None:
+        subject_list = bids.collect_participants(
+            opts.bids_dir, participant_label=opts.participant_label,
+            database_path=opts.database_path)
+
+    # Build main workflow
+    logger.log(25, INIT_MSG(
+        version=__version__,
+        subject_list=subject_list)
+    )
+
+    fitlins_wf = init_fitlins_wf(
         opts.bids_dir, derivatives, deriv_dir,
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
@@ -204,7 +223,7 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout.load_from_db(database_path)
+    layout = BIDSLayout.load(database_path) 
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,

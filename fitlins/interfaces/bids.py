@@ -104,7 +104,7 @@ class ModelSpecLoader(SimpleInterface):
         if not isinstance(models, list):
             database_path = self.inputs.database_path
             # model is not yet standardized, so validate=False
-            layout = bids.BIDSLayout.load_from_db(database_path=database_path)
+            layout = bids.BIDSLayout.load(database_path=database_path)
 
             if not isdefined(models):
                 models = layout.get(suffix='smdl', return_type='file')
@@ -233,10 +233,7 @@ class LoadBIDSModel(SimpleInterface):
         database_path = self.inputs.database_path
         if not isdefined(database_path):
             database_path = None
-        print("#####bids.py _run_interface 244#####")
-        print(ignore)
-        print("###########")
-        layout = BIDSLayout.load_from_db(database_path)
+        layout = BIDSLayout.load(database_path)
 
         selectors = self.inputs.selectors
 
@@ -427,7 +424,7 @@ class BIDSSelect(SimpleInterface):
         database_path = self.inputs.database_path
         if not isdefined(database_path):
             database_path = None
-        layout = BIDSLayout.load_from_db(database_path=database_path)
+        layout = BIDSLayout.load(database_path=database_path)
 
         bold_files = []
         mask_files = []
