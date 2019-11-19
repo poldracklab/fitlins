@@ -79,7 +79,7 @@ def _ensure_model(model):
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
     database_path = Directory(exists=False,
-                                desc='Optional path to bids database directory.')
+                              desc='Optional path to bids database directory.')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -143,7 +143,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
     database_path = Directory(exists=False,
-                                desc='Optional path to bids database directory.')
+                              desc='Optional path to bids database directory.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
     force_index = InputMultiPath(
@@ -213,26 +213,8 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
-        import re
-
-        force_index = [
-            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
-            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
-            # Iterate over empty tuple if undefined
-            for ign in self.inputs.force_index or ()]
-        ignore = [
-            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
-            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
-            # Iterate over empty tuple if undefined
-            for ign in self.inputs.ignore or ()]
-        ignore = ignore or None
-
-        # If empty, then None
-        derivatives = self.inputs.derivatives or None
 
         database_path = self.inputs.database_path
-        if not isdefined(database_path):
-            database_path = None
         layout = BIDSLayout.load(database_path)
 
         selectors = self.inputs.selectors
@@ -258,7 +240,7 @@ class LoadBIDSModel(SimpleInterface):
 
             # Metadata is now included in entities
             TR = ents.pop('RepetitionTime', None)  # Required field in seconds
-            if TR is None: # But is unreliable (for now?)
+            if TR is None:  # But is unreliable (for now?)
                 preproc_files = analysis.layout.get(
                     extension=['.nii', '.nii.gz'], **ents)
                 if len(preproc_files) != 1:
@@ -401,7 +383,7 @@ class BIDSSelectInputSpec(BaseInterfaceInputSpec):
     derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
                                 desc='Derivative folders')
     database_path = Directory(exists=False,
-                                desc='Optional path to bids database path.')
+                              desc='Optional path to bids database path.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -420,7 +402,6 @@ class BIDSSelect(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.layout import BIDSLayout
 
-        derivatives = self.inputs.derivatives
         database_path = self.inputs.database_path
         if not isdefined(database_path):
             database_path = None

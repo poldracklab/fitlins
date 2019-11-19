@@ -88,7 +88,8 @@ def get_parser():
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym', ''],
                         default='MNI152NLin2009cAsym',
-                        help='registered space of input datasets. Empty value for no explicit space.')
+                        help='registered space of input datasets. '
+                             'Empty value for no explicit space.')
     g_bids.add_argument('--force-index', action='store', default=None,
                         help='regex pattern or string to include files')
     g_bids.add_argument('--ignore', action='store', default=None,
@@ -97,7 +98,7 @@ def get_parser():
                         help="use BOLD files with the provided description label")
     g_bids.add_argument('--database-path', action='store', default=None,
                         help="Caution, this is an Expert level option subject to change! "
-                             "Path to directory containing SQLite database indicies" 
+                             "Path to directory containing SQLite database indicies "
                              "for this BIDS dataset. "
                              "If a value is passed and the file already exists, "
                              "indexing is skipped.")
@@ -107,9 +108,10 @@ def get_parser():
                         help="Smooth BOLD series with FWHM mm kernel prior to fitting at LEVEL. "
                              "Optional analysis LEVEL (default: l1) may be specified numerically "
                              "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
-                             "Optional smoothing TYPE (default: iso) must be one of: `iso` (isotropic). "
-                             "e.g., `--smoothing 5:dataset:iso` will perform a 5mm FWHM isotropic "
-                             "smoothing on subject-level maps, before evaluating the dataset level.")
+                             "Optional smoothing TYPE (default: iso) must be one of:  "
+                             " `iso` (isotropic). e.g., `--smoothing 5:dataset:iso` will perform "
+                             "a 5mm FWHM isotropic smoothing on subject-level maps, "
+                             "before evaluating the dataset level.")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
@@ -173,15 +175,15 @@ def run_fitlins(argv=None):
     # Go ahead and initialize the layout database
     if opts.database_path is None:
         database_path = Path(work_dir) / 'dbcache'
-        reset_database=True
+        reset_database = True
         make_layout = True
     elif Path(opts.database_path).exists():
         layout = BIDSLayout.load(opts.database_path)
         database_path = opts.database_path
-        make_layout=False
+        make_layout = False
     else:
         database_path = opts.database_path
-        reset_database=False
+        reset_database = False
         make_layout = True
 
     if make_layout:
@@ -227,7 +229,7 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout.load(database_path) 
+    layout = BIDSLayout.load(database_path)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,

@@ -15,12 +15,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
-    from bids import BIDSLayout
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
-    # if the database exists, load it, otherwise initialize it
-    layout = BIDSLayout.load(database_path)
-                            
+
     # Find the appropriate model file(s)
     specs = ModelSpecLoader(database_path=database_path)
     if model is not None:
@@ -32,12 +29,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     if isinstance(model_dict, list):
         raise RuntimeError("Currently unable to run multiple models in parallel - "
                            "please specify model")
-
     #
     # Load and run the model
     #
-
-
     loader = pe.Node(
         LoadBIDSModel(bids_dir=bids_dir,
                       derivatives=derivatives,
