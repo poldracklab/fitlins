@@ -197,8 +197,8 @@ jobs:
           name: Run FitLins Database-file_exists
           no_output_timeout: 2h
           command: |
-            mkdir -p /tmp/ds003/work_dbf 
-            chmod 777 /tmp/ds003/work_dbf /tmp/ds003/derivatives
+            mkdir -p /tmp/ds003/work_dbf2 
+            chmod 777 /tmp/ds003/work_dbf2 /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
             docker run --rm -it -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
