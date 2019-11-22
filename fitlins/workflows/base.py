@@ -92,6 +92,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     l1_model = pe.MapNode(
         FirstLevelModel(),
         iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
+        mem_gb=3,
         name='l1_model')
 
     def _deindex(tsv):
