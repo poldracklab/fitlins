@@ -107,6 +107,8 @@ def get_parser():
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
                          help='maximum number of threads across all processes')
+    g_perfm.add_argument('--mem-gb', action='store', default=0, type=float,
+                         help='maximum amount of memory to allocate across all processes')
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
     g_perfm.add_argument('--reports-only', action='store_true', default=False,
@@ -146,6 +148,9 @@ def run_fitlins(argv=None):
             'maxtasksperchild': 1,
         }
     }
+
+    if opts.mem_gb:
+        plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
     # Build main workflow
     logger.log(25, INIT_MSG(
