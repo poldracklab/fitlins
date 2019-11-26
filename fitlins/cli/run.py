@@ -26,7 +26,7 @@ from ..workflows import init_fitlins_wf
 from ..utils import bids
 from ..viz.reports import build_report_dict, write_full_report
 
-logging.addLevelName(25, 'INFO')  # Add a new level between INFO and WARNING
+logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
 logger.setLevel(25)
 
@@ -72,7 +72,11 @@ def get_parser():
                         help='processing stage to be runa (see BIDS-Apps specification).')
 
     # optional arguments
-    parser.add_argument('-v', '--version', action='version', version=verstr)
+    parser.add_argument('--version', action='version', version=verstr)
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+                        help="increase log verbosity for each occurence, debug level is -vvv")
+    parser.add_argument('-q', '--quiet', action='count', default=0,
+                        help="decrease log verbosity for each occurence, debug level is -vvv")
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
     g_bids.add_argument('--participant-label', action='store', nargs='+', default=None,
@@ -116,6 +120,8 @@ def get_parser():
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
                          help='maximum number of threads across all processes')
+    g_perfm.add_argument('--mem-gb', action='store', default=0, type=float,
+                         help='maximum amount of memory to allocate across all processes')
     g_perfm.add_argument('--debug', action='store_true', default=False,
                          help='run debug version of workflow')
     g_perfm.add_argument('--reports-only', action='store_true', default=False,
@@ -130,10 +136,16 @@ def get_parser():
 
 
 def run_fitlins(argv=None):
+    from nipype import logging as nlogging
     warnings.showwarning = _warn_redirect
     opts = get_parser().parse_args(argv)
-    if opts.debug:
-        logger.setLevel(logging.DEBUG)
+
+    log_level = 25 + 5 * (opts.quiet - opts.verbose)
+    logger.setLevel(log_level)
+    nlogging.getLogger('nipype.workflow').setLevel(log_level)
+    nlogging.getLogger('nipype.interface').setLevel(log_level)
+    nlogging.getLogger('nipype.utils').setLevel(log_level)
+
     if not opts.space:
         # make it an explicit None
         opts.space = None
@@ -150,6 +162,9 @@ def run_fitlins(argv=None):
             'maxtasksperchild': 1,
         }
     }
+
+    if opts.mem_gb:
+        plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
     model = default_path(opts.model, opts.bids_dir, 'model-default_smdl.json')
     if opts.model in (None, 'default') and not op.exists(model):
