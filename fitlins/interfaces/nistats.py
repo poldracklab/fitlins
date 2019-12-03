@@ -178,7 +178,7 @@ def _match(query, metadata):
 class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
-        from nistats.contrasts import fixed_effects_img
+        from nistats.contrasts import compute_fixed_effects
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
@@ -226,7 +226,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             # Pass-through happens automatically as it can handle 1 input
             if contrast_type == 'FEMA':
                 # Smoothing not supported
-                fe_res = fixed_effects_img(
+                fe_res = compute_fixed_effects(
                     filtered_effects, filtered_variances)
 
                 maps = {
