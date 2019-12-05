@@ -207,11 +207,11 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
+        design_matrix = pd.get_dummies(names)
+
         # Only fit model if any non-FEMA contrasts at this level
         if any([c['type'] != 'FEMA' for c in self.inputs.contrast_info]):
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-            design_matrix = pd.get_dummies(names)
-            # Fit single model for all inputs
             model.fit(filtered_effects, design_matrix=design_matrix)
 
         contrasts = prepare_contrasts(
@@ -225,9 +225,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
             # Pass-through happens automatically as it can handle 1 input
             if type == 'FEMA':
+                # Filter effects and variances based on weights
+                ix = design_matrix.iloc[:, weights.astype('bool')].sum(axis=1)
                 # Smoothing not supported
                 fe_res = compute_fixed_effects(
-                    filtered_effects, filtered_variances)
+                    np.array(filtered_effects)[ix],
+                    np.array(filtered_variances)[ix]
+                    )
 
                 maps = {
                     'effect_size': fe_res[0],
