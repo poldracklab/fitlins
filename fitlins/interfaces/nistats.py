@@ -210,7 +210,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         contrasts = prepare_contrasts(self.inputs.contrast_info, names)
 
         # Only fit model if any non-FEMA contrasts at this level
-        if any([True for c in contrasts if c[1] != 'FEMA']):
+        if any([True for c in contrasts if c[2] != 'FEMA']):
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
             design_matrix = pd.get_dummies(names)
             # Fit single model for all inputs
