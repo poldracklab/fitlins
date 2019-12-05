@@ -101,8 +101,7 @@ def get_parser():
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
     g_bids.add_argument('--database-path', action='store', default=None,
-                        help="Caution, this is an Expert level option subject to change! "
-                             "Path to directory containing SQLite database indicies "
+                        help="Path to directory containing SQLite database indicies "
                              "for this BIDS dataset. "
                              "If a value is passed and the file already exists, "
                              "indexing is skipped.")
@@ -191,11 +190,6 @@ def run_fitlins(argv=None):
     if opts.database_path is None:
         database_path = Path(work_dir) / 'dbcache'
         reset_database = True
-        make_layout = True
-    elif Path(opts.database_path).exists():
-        layout = BIDSLayout.load(opts.database_path)
-        database_path = opts.database_path
-        make_layout = False
     else:
         database_path = opts.database_path
         reset_database = False
