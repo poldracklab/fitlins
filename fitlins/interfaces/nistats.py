@@ -216,8 +216,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             # Fit single model for all inputs
             model.fit(filtered_effects, design_matrix=design_matrix)
 
-        for name, weights, contrast_type in prepare_contrasts(
-          self.inputs.contrast_info, names):
+        for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
@@ -241,7 +240,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         "second level contrast")
 
                 maps = model.compute_contrast(
-                    second_level_contrast=weights,
                     second_level_stat_type=contrast_type,
                     output_type='all')
 
