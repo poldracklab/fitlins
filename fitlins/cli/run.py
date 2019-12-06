@@ -250,7 +250,6 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout.load(database_path)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
