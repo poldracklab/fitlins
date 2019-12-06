@@ -2,10 +2,10 @@ from pathlib import Path
 import warnings
 
 
-def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
+def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     ignore=None, force_index=None,
-                    smoothing=None, drop_missing=False, database_path=None,
+                    smoothing=None, drop_missing=False,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
@@ -33,8 +33,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     # Load and run the model
     #
     loader = pe.Node(
-        LoadBIDSModel(bids_dir=bids_dir,
-                      derivatives=derivatives,
+        LoadBIDSModel(database_path=database_path,
                       model=model_dict,
                       selectors={'desc': desc,
                                  'space': space}),
@@ -52,13 +51,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(
-            bids_dir=bids_dir, derivatives=derivatives,
+            database_path=database_path,
             selectors={'suffix': 'bold',
                        'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
 
-    if database_path is not None:
-        getter.inputs.database_path = database_path
     if smoothing:
         smoothing_params = smoothing.split(':', 2)
         # Convert old style and warn; this should turn into an (informative) error around 0.5.0
