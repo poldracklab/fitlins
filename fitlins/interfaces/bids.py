@@ -139,7 +139,7 @@ IMPUTATION_SNIPPET = """\
 class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
     database_path = Directory(exists=True,
                               mandatory=True,
-                              desc='Optional path to bids database directory.')
+                              desc='Path to bids database directory.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
 
