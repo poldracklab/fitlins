@@ -135,9 +135,22 @@ def get_parser():
 
 
 def run_fitlins(argv=None):
+    import re
     from nipype import logging as nlogging
     warnings.showwarning = _warn_redirect
     opts = get_parser().parse_args(argv)
+
+    force_index = [
+        # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+        re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+        # Iterate over empty tuple if undefined
+        for ign in opts.force_index or ()]
+    ignore = [
+        # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+        re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+        # Iterate over empty tuple if undefined
+        for ign in opts.ignore or ()]
+
 
     log_level = 25 + 5 * (opts.quiet - opts.verbose)
     logger.setLevel(log_level)
@@ -198,17 +211,16 @@ def run_fitlins(argv=None):
     if make_layout:
         layout = BIDSLayout(opts.bids_dir,
                             derivatives=derivatives,
-                            ignore=opts.ignore,
+                            ignore=ignore,
                             validate=False,
-                            force_index=opts.force_index,
+                            force_index=force_index,
                             database_path=database_path,
                             reset_database=reset_database)
 
     subject_list = None
     if opts.participant_label is not None:
         subject_list = bids.collect_participants(
-            opts.bids_dir, participant_label=opts.participant_label,
-            database_path=database_path)
+            layout, participant_label=opts.participant_label)
 
     # Build main workflow
     logger.log(25, INIT_MSG(
