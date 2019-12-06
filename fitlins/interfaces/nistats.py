@@ -135,7 +135,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         out_ents = self.inputs.contrast_info[0]['entities']
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
-                self.inputs.contrast_info, mat.columns.tolist()):
+              self.inputs.contrast_info, mat.columns):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
@@ -207,15 +207,18 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        design_matrix = pd.get_dummies(names)
+        mat = pd.get_dummies(names)
+        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
 
         # Only fit model if any non-FEMA contrasts at this level
-        if any([c['type'] != 'FEMA' for c in self.inputs.contrast_info]):
-            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-            model.fit(filtered_effects, design_matrix=design_matrix)
-
-        contrasts = prepare_contrasts(
-            self.inputs.contrast_info, design_matrix.columns)
+        if any([c[2] != 'FEMA' for c in contrasts]):
+            if len(filtered_effects) < 2:
+                raise RuntimeError(
+                    "At least two inputs are required for a 't' for 'F' "
+                    "second level contrast")
+            else:
+                model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+                model.fit(filtered_effects, design_matrix=mat)
 
         for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
@@ -226,28 +229,24 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             # Pass-through happens automatically as it can handle 1 input
             if contrast_type == 'FEMA':
                 # Filter effects and variances based on weights
-                ix = design_matrix.iloc[:, weights[0].astype('bool')].sum(axis=1)
-                # Smoothing not supported
-                fe_res = compute_fixed_effects(
+                ix = mat.iloc[:, weights[0].astype('bool')].sum(axis=1)
+
+                ffx_res = compute_fixed_effects(
                     np.array(filtered_effects)[ix],
                     np.array(filtered_variances)[ix]
                     )
 
                 maps = {
-                    'effect_size': fe_res[0],
-                    'effect_variance': fe_res[1],
-                    'stat': fe_res[2]
-                }
+                    'effect_size': ffx_res[0],
+                    'effect_variance': ffx_res[1],
+                    'stat': ffx_res[2]
+                    }
             else:
-                if len(filtered_effects) < 2:
-                    raise RuntimeError(
-                        "At least two inputs are required for a 't' for 'F' "
-                        "second level contrast")
-
                 maps = model.compute_contrast(
                     second_level_contrast=weights,
                     second_level_stat_type=contrast_type,
-                    output_type='all')
+                    output_type='all'
+                    )
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
@@ -264,7 +263,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         self._results['stat_maps'] = stat_maps
         self._results['contrast_metadata'] = contrast_metadata
 
-        # These are "optional" as fixed effects do not support these (yet?)
+        # These are "optional" as fixed effects do not support these
         if zscore_maps:
             self._results['zscore_maps'] = zscore_maps
         if pvalue_maps:
