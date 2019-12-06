@@ -220,7 +220,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
-                 'stat': type,
+                 'stat': contrast_type,
                  **out_ents})
 
             # Pass-through happens automatically as it can handle 1 input
