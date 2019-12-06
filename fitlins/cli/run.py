@@ -206,16 +206,15 @@ def run_fitlins(argv=None):
     else:
         database_path = opts.database_path
         reset_database = False
-        make_layout = True
 
-    if make_layout:
-        layout = BIDSLayout(opts.bids_dir,
-                            derivatives=derivatives,
-                            ignore=ignore,
-                            validate=False,
-                            force_index=force_index,
-                            database_path=database_path,
-                            reset_database=reset_database)
+
+    layout = BIDSLayout(opts.bids_dir,
+                        derivatives=derivatives,
+                        ignore=ignore,
+                        validate=False,
+                        force_index=force_index,
+                        database_path=database_path,
+                        reset_database=reset_database)
 
     subject_list = None
     if opts.participant_label is not None:
