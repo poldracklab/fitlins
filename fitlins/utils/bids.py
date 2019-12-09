@@ -37,7 +37,7 @@ class BIDSWarning(RuntimeWarning):
     pass
 
 
-def collect_participants(bids_dir, participant_label=None, strict=False):
+def collect_participants(layout, participant_label=None, strict=False):
     """
     List the participants under the BIDS root and checks that participants
     designated with the participant_label argument exist in that folder.
@@ -46,25 +46,25 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
 
     Requesting all subjects in a BIDS directory root:
 
-    >>> collect_participants('ds114')
+    >>> collect_participants(layout)
     ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
 
     Requesting two subjects, given their IDs:
 
-    >>> collect_participants('ds114', participant_label=['02', '04'])
+    >>> collect_participants(layout, participant_label=['02', '04'])
     ['02', '04']
 
     Requesting two subjects, given their IDs (works with 'sub-' prefixes):
 
-    >>> collect_participants('ds114', participant_label=['sub-02', 'sub-04'])
+    >>> collect_participants(layout, participant_label=['sub-02', 'sub-04'])
     ['02', '04']
 
     Requesting two subjects, but one does not exist:
 
-    >>> collect_participants('ds114', participant_label=['02', '14'])
+    >>> collect_participants(layout, participant_label=['02', '14'])
     ['02']
 
-    >>> collect_participants('ds114', participant_label=['02', '14'],
+    >>> collect_participants(layout, participant_label=['02', '14'],
     ...                      strict=True)  # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     fmriprep.utils.bids.BIDSError:
@@ -72,7 +72,6 @@ def collect_participants(bids_dir, participant_label=None, strict=False):
 
 
     """
-    layout = BIDSLayout(bids_dir)
     all_participants = layout.get_subjects()
 
     # Error: bids_dir does not contain subjects

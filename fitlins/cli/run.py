@@ -12,6 +12,7 @@ import os.path as op
 import time
 import logging
 import warnings
+from pathlib import Path
 from tempfile import mkdtemp
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -91,22 +92,29 @@ def get_parser():
     g_bids.add_argument('--space', action='store',
                         choices=['MNI152NLin2009cAsym', ''],
                         default='MNI152NLin2009cAsym',
-                        help='registered space of input datasets. Empty value for no explicit space.')
+                        help='registered space of input datasets. '
+                             'Empty value for no explicit space.')
     g_bids.add_argument('--force-index', action='store', default=None,
                         help='regex pattern or string to include files')
     g_bids.add_argument('--ignore', action='store', default=None,
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
+    g_bids.add_argument('--database-path', action='store', default=None,
+                        help="Path to directory containing SQLite database indicies "
+                             "for this BIDS dataset. "
+                             "If a value is passed and the file already exists, "
+                             "indexing is skipped.")
 
     g_prep = parser.add_argument_group('Options for preprocessing BOLD series')
     g_prep.add_argument('-s', '--smoothing', action='store', metavar="FWHM[:LEVEL:[TYPE]]",
                         help="Smooth BOLD series with FWHM mm kernel prior to fitting at LEVEL. "
                              "Optional analysis LEVEL (default: l1) may be specified numerically "
                              "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
-                             "Optional smoothing TYPE (default: iso) must be one of: `iso` (isotropic). "
-                             "e.g., `--smoothing 5:dataset:iso` will perform a 5mm FWHM isotropic "
-                             "smoothing on subject-level maps, before evaluating the dataset level.")
+                             "Optional smoothing TYPE (default: iso) must be one of:  "
+                             " `iso` (isotropic). e.g., `--smoothing 5:dataset:iso` will perform "
+                             "a 5mm FWHM isotropic smoothing on subject-level maps, "
+                             "before evaluating the dataset level.")
 
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n-cpus', action='store', default=0, type=int,
@@ -127,9 +135,22 @@ def get_parser():
 
 
 def run_fitlins(argv=None):
+    import re
     from nipype import logging as nlogging
     warnings.showwarning = _warn_redirect
     opts = get_parser().parse_args(argv)
+
+    force_index = [
+        # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+        re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+        # Iterate over empty tuple if undefined
+        for ign in opts.force_index or ()]
+    ignore = [
+        # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
+        re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
+        # Iterate over empty tuple if undefined
+        for ign in opts.ignore or ()]
+
 
     log_level = 25 + 5 * (opts.quiet - opts.verbose)
     logger.setLevel(log_level)
@@ -140,11 +161,6 @@ def run_fitlins(argv=None):
     if not opts.space:
         # make it an explicit None
         opts.space = None
-
-    subject_list = None
-    if opts.participant_label is not None:
-        subject_list = bids.collect_participants(
-            opts.bids_dir, participant_label=opts.participant_label)
 
     ncpus = opts.n_cpus
     if ncpus < 1:
@@ -161,12 +177,6 @@ def run_fitlins(argv=None):
 
     if opts.mem_gb:
         plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
-
-    # Build main workflow
-    logger.log(25, INIT_MSG(
-        version=__version__,
-        subject_list=subject_list)
-    )
 
     model = default_path(opts.model, opts.bids_dir, 'model-default_smdl.json')
     if opts.model in (None, 'default') and not op.exists(model):
@@ -185,13 +195,40 @@ def run_fitlins(argv=None):
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
-
     bids.write_derivative_description(opts.bids_dir, deriv_dir)
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
+    # Go ahead and initialize the layout database
+    if opts.database_path is None:
+        database_path = Path(work_dir) / 'dbcache'
+        reset_database = True
+    else:
+        database_path = opts.database_path
+        reset_database = False
+
+
+    layout = BIDSLayout(opts.bids_dir,
+                        derivatives=derivatives,
+                        ignore=ignore,
+                        validate=False,
+                        force_index=force_index,
+                        database_path=database_path,
+                        reset_database=reset_database)
+
+    subject_list = None
+    if opts.participant_label is not None:
+        subject_list = bids.collect_participants(
+            layout, participant_label=opts.participant_label)
+
+    # Build main workflow
+    logger.log(25, INIT_MSG(
+        version=__version__,
+        subject_list=subject_list)
+    )
+
     fitlins_wf = init_fitlins_wf(
-        opts.bids_dir, derivatives, deriv_dir,
+        database_path, deriv_dir,
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
@@ -211,7 +248,6 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    layout = BIDSLayout(opts.bids_dir, derivatives=derivatives)
     models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
