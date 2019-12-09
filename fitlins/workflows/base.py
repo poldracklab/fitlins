@@ -2,7 +2,7 @@ from pathlib import Path
 import warnings
 
 
-def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
+def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     ignore=None, force_index=None,
                     smoothing=None, drop_missing=False,
@@ -19,7 +19,7 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
-    specs = ModelSpecLoader(bids_dir=bids_dir)
+    specs = ModelSpecLoader(database_path=database_path)
     if model is not None:
         specs.inputs.model = model
 
@@ -29,14 +29,11 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     if isinstance(model_dict, list):
         raise RuntimeError("Currently unable to run multiple models in parallel - "
                            "please specify model")
-
     #
     # Load and run the model
     #
-
     loader = pe.Node(
-        LoadBIDSModel(bids_dir=bids_dir,
-                      derivatives=derivatives,
+        LoadBIDSModel(database_path=database_path,
                       model=model_dict,
                       selectors={'desc': desc,
                                  'space': space}),
@@ -48,11 +45,13 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors['subject'] = participants
+    if database_path is not None:
+        loader.inputs.database_path = database_path
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(
-            bids_dir=bids_dir, derivatives=derivatives,
+            database_path=database_path,
             selectors={'suffix': 'bold',
                        'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
