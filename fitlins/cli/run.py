@@ -232,7 +232,6 @@ def run_fitlins(argv=None):
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
-        force_index=opts.force_index, ignore=opts.ignore,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
         )
 

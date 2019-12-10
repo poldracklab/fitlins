@@ -4,7 +4,6 @@ import warnings
 
 def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
-                    ignore=None, force_index=None,
                     smoothing=None, drop_missing=False,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
@@ -39,10 +38,6 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                                  'space': space}),
         name='loader')
 
-    if ignore is not None:
-        loader.inputs.ignore = ignore
-    if force_index is not None:
-        loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors['subject'] = participants
     if database_path is not None:
