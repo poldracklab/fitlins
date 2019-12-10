@@ -56,6 +56,7 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
 
+
 class SecondLevelEstimatorOutputSpec(EstimatorOutputSpec):
     contrast_metadata = traits.List(traits.Dict)
 

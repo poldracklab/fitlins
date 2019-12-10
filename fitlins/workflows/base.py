@@ -290,6 +290,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 SecondLevelModel(),
                 iterfield=['contrast_info'],
                 name='{}_model'.format(level))
+
             wf.connect([
                 (stage, model, [('effect_maps', 'effect_maps'),
                                 ('variance_maps', 'variance_maps'),

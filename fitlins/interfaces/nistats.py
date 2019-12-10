@@ -211,14 +211,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
 
         # Only fit model if any non-FEMA contrasts at this level
-        if any([c[2] != 'FEMA' for c in contrasts]):
+        if any(c[2] != 'FEMA' for c in contrasts):
             if len(filtered_effects) < 2:
                 raise RuntimeError(
                     "At least two inputs are required for a 't' for 'F' "
                     "second level contrast")
-            else:
-                model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-                model.fit(filtered_effects, design_matrix=mat)
+            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+            model.fit(filtered_effects, design_matrix=mat)
 
         for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
