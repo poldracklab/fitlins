@@ -228,7 +228,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             # Pass-through happens automatically as it can handle 1 input
             if contrast_type == 'FEMA':
                 # Filter effects and variances based on weights
-                ix = mat.iloc[:, weights[0].astype('bool')].sum(axis=1)
+                ix = mat.iloc[:, weights[0].astype(bool)].sum(axis=1).astype(bool)
 
                 ffx_res = compute_fixed_effects(
                     np.array(filtered_effects)[ix],
