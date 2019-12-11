@@ -1,1 +1,1 @@
-nistats @ git+https://github.com/nistats/nistats.git@b69e127020df05aa8ba540f9a8d799e1dad3d602
+nistats @ git+https://github.com/nistats/nistats.git@e88a5f

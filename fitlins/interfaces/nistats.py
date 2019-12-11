@@ -135,7 +135,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         out_ents = self.inputs.contrast_info[0]['entities']
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
-                self.inputs.contrast_info, mat.columns.tolist()):
+              self.inputs.contrast_info, mat.columns):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
@@ -178,11 +178,11 @@ def _match(query, metadata):
 class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         from nistats import second_level_model as level2
+        from nistats.contrasts import compute_fixed_effects
+
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-
-        model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
         variance_maps = []
@@ -196,46 +196,76 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
+        input_variances = _flatten(self.inputs.variance_maps)
 
         filtered_effects = []
+        filtered_variances = []
         names = []
-        for m, eff in zip(stat_metadata, input_effects):
+        for m, eff, var in zip(stat_metadata, input_effects, input_variances):
             if _match(out_ents, m):
                 filtered_effects.append(eff)
+                filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        # Dummy code contrast of input effects
-        design_matrix = pd.get_dummies(names)
+        mat = pd.get_dummies(names)
+        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
 
-        # Fit single model for all inputs
-        model.fit(filtered_effects, design_matrix=design_matrix)
+        # Only fit model if any non-FEMA contrasts at this level
+        if any(c[2] != 'FEMA' for c in contrasts):
+            if len(filtered_effects) < 2:
+                raise RuntimeError(
+                    "At least two inputs are required for a 't' for 'F' "
+                    "second level contrast")
+            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+            model.fit(filtered_effects, design_matrix=mat)
 
-        for name, weights, contrast_type in prepare_contrasts(
-          self.inputs.contrast_info, design_matrix.columns.to_list()):
+        for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
 
-            maps = model.compute_contrast(
-                second_level_contrast=weights,
-                second_level_stat_type=contrast_type,
-                output_type='all')
+            # Pass-through happens automatically as it can handle 1 input
+            if contrast_type == 'FEMA':
+                # Filter effects and variances based on weights
+                ix = weights[0].astype(bool)
+
+                ffx_res = compute_fixed_effects(
+                    np.array(filtered_effects)[ix],
+                    np.array(filtered_variances)[ix]
+                    )
+
+                maps = {
+                    'effect_size': ffx_res[0],
+                    'effect_variance': ffx_res[1],
+                    'stat': ffx_res[2]
+                    }
+            else:
+                maps = model.compute_contrast(
+                    second_level_contrast=weights,
+                    second_level_stat_type=contrast_type,
+                    output_type='all'
+                    )
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
-                fname = fname_fmt(name, map_type)
-                maps[map_type].to_filename(fname)
-                map_list.append(fname)
+                if map_type in maps:
+                    fname = fname_fmt(name, map_type)
+                    maps[map_type].to_filename(fname)
+                    map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
         self._results['stat_maps'] = stat_maps
-        self._results['zscore_maps'] = zscore_maps
-        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
+
+        # These are "optional" as fixed effects do not support these
+        if zscore_maps:
+            self._results['zscore_maps'] = zscore_maps
+        if pvalue_maps:
+            self._results['pvalue_maps'] = pvalue_maps
 
         return runtime
