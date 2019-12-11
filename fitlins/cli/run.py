@@ -94,9 +94,9 @@ def get_parser():
                         default='MNI152NLin2009cAsym',
                         help='registered space of input datasets. '
                              'Empty value for no explicit space.')
-    g_bids.add_argument('--force-index', action='store', default=None,
+    g_bids.add_argument('--force-index', action='store', default=None, nargs='+',
                         help='regex pattern or string to include files')
-    g_bids.add_argument('--ignore', action='store', default=None,
+    g_bids.add_argument('--ignore', action='store', default=None, nargs='+',
                         help='regex pattern or string to ignore files')
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
@@ -206,7 +206,6 @@ def run_fitlins(argv=None):
     else:
         database_path = opts.database_path
         reset_database = False
-
 
     layout = BIDSLayout(opts.bids_dir,
                         derivatives=derivatives,
