@@ -393,7 +393,7 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {**self.inputs.selectors, 'desc': 'preproc', **ents}
+            selectors = {'desc': 'preproc', **self.inputs.selectors, **ents}
             bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
