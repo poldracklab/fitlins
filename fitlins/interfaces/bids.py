@@ -398,13 +398,13 @@ class BIDSSelect(SimpleInterface):
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
-                    "Could not find BOLD file in {} with entities {}"
-                    "".format(self.inputs.bids_dir, selectors))
+                    "Could not find BOLD file with entities {}"
+                    "".format(selectors))
             elif len(bold_file) > 1:
                 raise ValueError(
-                    "Non-unique BOLD file in {} with entities {}.\n"
+                    "Non-unique BOLD file with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(self.inputs.bids_dir, selectors,
+                    "".format(selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
                                       f.path,
