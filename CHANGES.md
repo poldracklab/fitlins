@@ -1,3 +1,32 @@
+0.6.0 (December 11, 2019)
+=========================
+
+New feature release in the 0.6.x series.
+
+This release respects recent changes to the BIDS-StatsModels draft
+specification to support fixed-effects meta-analysis (FEMA) contrasts,
+and renames "AutoContrasts" to "DummyContrasts".
+
+Provisional support for F-tests has been added.
+
+Additional rearchitecting by Dylan Nielson provides significant speedups
+for large datasets by caching BIDS layout information.
+
+* SPEC: Add fixed effects (FEMA) contrasts (https://github.com/poldracklab/fitlins/pull/191)
+* SPEC: Change AutoContrasts to DummyContrasts (https://github.com/poldracklab/fitlins/pull/197)
+* FIX: Don't pass ignore and force index to `init_fitlins_wf` (https://github.com/poldracklab/fitlins/pull/202)
+* FIX: BIDSelect confusion between Nifti and JSON (https://github.com/poldracklab/fitlins/pull/193)
+* FIX: Set `smoothing_fwhm` after creating next level. (https://github.com/poldracklab/fitlins/pull/190)
+* FIX: Recognize cosine columns without underscores (https://github.com/poldracklab/fitlins/pull/185)
+* ENH: Update logging levels (https://github.com/poldracklab/fitlins/pull/198)
+* ENH: Add option to load BIDS layouts from database file (https://github.com/poldracklab/fitlins/pull/187)
+* ENH: Add memory estimate for first-level models, enable memory management (https://github.com/poldracklab/fitlins/pull/199)
+* ENH: Avoid casting BOLD data to float64 if possible (https://github.com/poldracklab/fitlins/pull/196)
+* ENH: Add F-tests (https://github.com/poldracklab/fitlins/pull/195)
+* ENH: Drop missing model inputs (https://github.com/poldracklab/fitlins/pull/183)
+* RF: Abstract interfaces to simplify swappability (https://github.com/poldracklab/fitlins/pull/188)
+
+
 0.5.1 (September 23, 2019)
 ==========================
 
