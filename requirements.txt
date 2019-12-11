@@ -1,1 +1,1 @@
-nistats @ git+https://github.com/bthirion/nistats.git@explicit_fixed_effects#egg=nistats
+nistats @ git+https://github.com/nistats/nistats.git@e88a5f
