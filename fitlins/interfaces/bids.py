@@ -231,7 +231,7 @@ class LoadBIDSModel(SimpleInterface):
             TR = ents.pop('RepetitionTime', None)  # Required field in seconds
             if TR is None:  # But is unreliable (for now?)
                 preproc_files = analysis.layout.get(
-                    extension=['.nii', '.nii.gz'], **ents)
+                    extension=['.nii', '.nii.gz'], desc='preproc', **ents)
                 if len(preproc_files) != 1:
                     raise ValueError('Too many BOLD files found')
 
@@ -393,18 +393,18 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {**self.inputs.selectors, **ents}
+            selectors = {'desc': 'preproc', **self.inputs.selectors, **ents}
             bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
                     "Could not find BOLD file in {} with entities {}"
-                    "".format(self.inputs.bids_dir, selectors))
+                    "".format(layout.root, selectors))
             elif len(bold_file) > 1:
                 raise ValueError(
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(self.inputs.bids_dir, selectors,
+                    "".format(layout.root, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
                                       f.path,
