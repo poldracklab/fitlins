@@ -1,3 +1,11 @@
+0.6.1 (December 12, 2019)
+=========================
+
+Hotfix release.
+
+* FIX: Add desc=preproc as filter when finding preproc BOLD files (https://github.com/poldracklab/fitlins/pull/204)
+
+
 0.6.0 (December 11, 2019)
 =========================
 
