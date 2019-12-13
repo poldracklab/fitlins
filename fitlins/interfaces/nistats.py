@@ -227,12 +227,14 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
             # Pass-through happens automatically as it can handle 1 input
             if contrast_type == 'FEMA':
-                # Filter effects and variances based on weights
-                ix = weights[0].astype(bool)
+                # Index design identity matrix on non-zero contrasts weights
+                con_ix = weights[0].astype(bool)
+                # Index of all input files "involved" with that contrast
+                dm_ix = mat.iloc[:, con_ix].any(axis=1)
 
                 ffx_res = compute_fixed_effects(
-                    np.array(filtered_effects)[ix],
-                    np.array(filtered_variances)[ix]
+                    np.array(filtered_effects)[dm_ix],
+                    np.array(filtered_variances)[dm_ix]
                     )
 
                 maps = {
