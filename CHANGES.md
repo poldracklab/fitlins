@@ -1,3 +1,11 @@
+0.6.2 (December 13, 2019)
+=========================
+
+Hotfix release.
+
+* FIX: FEMA input index should filter on rows, not columns. (https://github.com/poldracklab/fitlins/pull/207)
+
+
 0.6.1 (December 12, 2019)
 =========================
 
