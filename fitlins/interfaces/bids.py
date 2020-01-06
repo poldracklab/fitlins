@@ -7,7 +7,7 @@ import numpy as np
 import nibabel as nb
 
 from nipype import logging
-from nipype.utils.filemanip import makedirs, copyfile
+from nipype.utils.filemanip import copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
     InputMultiPath, OutputMultiPath, File, Directory,
@@ -505,7 +505,7 @@ class BIDSDataSink(IOBase):
             out_fname = os.path.join(
                 base_dir, layout.build_path(
                     ents, path_patterns, validate=False))
-            makedirs(os.path.dirname(out_fname), exist_ok=True)
+            os.makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)
             out_files.append(out_fname)
