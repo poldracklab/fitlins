@@ -1,1 +1,2 @@
 nistats @ git+https://github.com/nistats/nistats.git@e88a5f
+seaborn @ git+https://github.com/mwaskom/seaborn.git@065d3c1ed58b029d61913cca8fc315cc985ffc91
