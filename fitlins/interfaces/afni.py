@@ -555,7 +555,7 @@ def parse_afni_ext(nifti_file):
         vtype = type_mapping[attribute.attrib["ni_type"]]
         vname = attribute.attrib["atr_name"]
         vcount = attribute.attrib["ni_dimen"]
-        vval = attribute.text.replace('"\n "', "")
+        vval = attribute.text.strip('\n "').replace('"\n "','')
         # Create a string object equivalent to what is observed when
         # parsing an AFNI ".HEAD" file.
         tmp = "type = {vtype}\nname = {vname}\ncount = {vcount}\n{vval}\n"
