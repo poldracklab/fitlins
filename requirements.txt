@@ -1,0 +1,1 @@
+pybids @ git+https://github.com/bids-standard/pybids.git@69362e716cc1f7433b282ba0949da9e5ddce513d
