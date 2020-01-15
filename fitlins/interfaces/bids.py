@@ -232,7 +232,11 @@ class LoadBIDSModel(SimpleInterface):
         design_info = []
         contrast_info = []
         warnings = []
-        for sparse, dense, ents in step.get_design_matrix():
+        for node in step.get_nodes():
+            sparse = node.get_design_matrix(mode='sparse')
+            dense = node.get_design_matrix(mode='dense')
+            ents = node.entities.copy()
+
             info = {}
 
             # Metadata is now included in entities
