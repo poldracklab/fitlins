@@ -210,7 +210,6 @@ def run_fitlins(argv=None):
     layout = BIDSLayout(opts.bids_dir,
                         derivatives=derivatives,
                         ignore=ignore,
-                        validate=False,
                         force_index=force_index,
                         database_path=database_path,
                         reset_database=reset_database)

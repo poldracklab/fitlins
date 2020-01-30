@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from gzip import GzipFile
 import json
@@ -103,11 +104,18 @@ class ModelSpecLoader(SimpleInterface):
         models = self.inputs.model
         if not isinstance(models, list):
             database_path = self.inputs.database_path
-            # model is not yet standardized, so validate=False
             layout = bids.BIDSLayout.load(database_path=database_path)
 
             if not isdefined(models):
-                models = layout.get(suffix='smdl', return_type='file')
+                # model is not yet standardized, so validate=False
+                # Ignore all subject directories and .git/ and .datalad/ directories
+                small_layout = bids.BIDSLayout(
+                    layout.root, derivatives=[d.root for d in layout.derivatives.values()],
+                    validate=False,
+                    ignore=[re.compile(r'sub-'),
+                            re.compile(r'\.(git|datalad)')])
+                # PyBIDS can double up, so find unique models
+                models = list(set(small_layout.get(suffix='smdl', return_type='file')))
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
