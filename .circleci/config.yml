@@ -31,13 +31,13 @@ jobs:
               --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" .
       - run:
           name: Verify executable can be run
-          command: docker run --rm -it poldracklab/fitlins:latest --help
+          command: docker run --rm poldracklab/fitlins:latest --help
       - run:
           name: Check version
           command: |
             THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
             THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
-            DOCKERVERSION=$(docker run --rm -it poldracklab/fitlins:latest --version \
+            DOCKERVERSION=$(docker run --rm poldracklab/fitlins:latest --version \
                            | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
             echo "$THISVERSION"
             echo "$DOCKERVERSION"
@@ -160,7 +160,7 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data:ro \
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -v /tmp/data/ds003_models:/models \
@@ -180,7 +180,7 @@ jobs:
             mkdir -p /tmp/ds003/work_dbf 
             chmod 777 /tmp/ds003/work_dbf /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data \
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work_dbf:/scratch \
                 -v /tmp/data/ds003_models:/models \
@@ -200,7 +200,7 @@ jobs:
             mkdir -p /tmp/ds003/work_dbf2 
             chmod 777 /tmp/ds003/work_dbf2 /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data \
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work_dbf2:/scratch \
                 -v /tmp/data/ds003_models:/models \
