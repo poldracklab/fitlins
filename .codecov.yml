@@ -1,2 +1,4 @@
+fixes:
+  - "/src/fitlins/::"
 ignore:
   - "fitlins/_version.py"

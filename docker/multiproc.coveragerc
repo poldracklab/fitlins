@@ -1,6 +1,11 @@
 [run]
 branch = True
-source = /opt/miniconda-latest/envs/neuro/lib/python3.6/site-packages/fitlins
+source = fitlins
 omit =
     */tests/*
 concurrency = multiprocessing
+
+[paths]
+source =
+    fitlins/
+    */fitlin

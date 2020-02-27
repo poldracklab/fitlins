@@ -208,15 +208,26 @@ jobs:
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
+          name: Combine coverage
+          no_output_timeout: 10m
+          command: |
+            docker run --rm -it \
+                -v /tmp/ds003:/scratch \
+                -e COVERAGE_RCFILE=/src/fitlins/docker/multiproc.coveragerc \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                coverage combine /scratch/work*/.coverage.*
+            # Convert to XML to freeze
+            docker run --rm -it \
+                -v /tmp/ds003:/scratch \
+                -e COVERAGE_RCFILE=/src/fitlins/docker/multiproc.coveragerc \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                coverage xml
+      - run:
           name: Combine coverage and submit
           command: |
               pyenv local 3.6.3
-              python -m coverage combine \
-                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.* \
-                /tmp/ds003/work_dbf*/.coverage.*
-              sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
-              python -m coverage xml
               python -m codecov --file coverage.xml --flags ds003 -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
