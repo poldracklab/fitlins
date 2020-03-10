@@ -97,9 +97,9 @@ class FirstLevelModel(FirstLevelModel):
         # dataset axes must be mapped:
         axis_mapping = {
             # mean scaling each voxel with respect to time
-            0: (0),
+            0: (-1),
             # mean scaling each time point with respect to all voxels
-            1: (1, 2, 3),
+            1: (0, 1, 2),
             # scaling with respect to voxels  and time, which is known as grand mean scaling
             (0, 1): None,
         }
@@ -555,7 +555,7 @@ def parse_afni_ext(nifti_file):
         vtype = type_mapping[attribute.attrib["ni_type"]]
         vname = attribute.attrib["atr_name"]
         vcount = attribute.attrib["ni_dimen"]
-        vval = attribute.text.strip('\n "').replace('"\n "', "")
+        vval = attribute.text.strip('\n "').replace('"\n "','')
         # Create a string object equivalent to what is observed when
         # parsing an AFNI ".HEAD" file.
         tmp = "type = {vtype}\nname = {vname}\ncount = {vcount}\n{vval}\n"
