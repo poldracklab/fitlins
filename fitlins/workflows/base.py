@@ -114,14 +114,14 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_ortho.png'
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_ortho.png'
     design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}.tsv'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_statmap.nii.gz'
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_statmap.nii.gz'
 
     # Set up general interfaces
     #
