@@ -1,4 +1,4 @@
-from scipy.lingalg import inv
+from np.lingalg import inv
 from scipy import corrcoef
 
 
@@ -18,10 +18,17 @@ class Diagnostics:
         pass
 
     @staticmethod
-    def _check_vif(dm):
-        cc = corrcoef(dm.as_matrix(), rowvar=False)
-        VIF = inv(cc)
-        return VIF.diagonal()
+    def _check_vif(df):
+        cc = corrcoef(df.as_matrix(), rowvar=False)
+        vif = inv(cc).diagonal()
+        warn = df.columns[vif > 5].tolist()
+        if warn:
+            warn = "The following variables have a variance" \
+                   "inflation factor > 5, indicating high multicolinearity: " \
+                    f"{', '.join(df.columns[[0, 1]])}"
+        else:
+            warn = ""
+        return {'result': vif, 'message': warn}
 
     def run(self, dm, checks=True, plots=False):
         results = {}
