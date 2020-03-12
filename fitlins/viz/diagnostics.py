@@ -15,17 +15,19 @@ class Diagnostics:
 
     @staticmethod
     def _check_covariance(dm):
-        pass
+        corrs = dm.corr()
+
+        return {'result': corrs}
 
     @staticmethod
-    def _check_vif(df):
-        cc = corrcoef(df.as_matrix(), rowvar=False)
+    def _check_vif(dm):
+        cc = corrcoef(dm.as_matrix(), rowvar=False)
         vif = inv(cc).diagonal()
-        warn = df.columns[vif > 5].tolist()
+        warn = dm.columns[vif > 5].tolist()
         if warn:
             warn = "The following variables have a variance" \
                    "inflation factor > 5, indicating high multicolinearity: " \
-                    f"{', '.join(df.columns[[0, 1]])}"
+                    f"{', '.join(warn)}"
         else:
             warn = ""
         return {'result': vif, 'message': warn}
