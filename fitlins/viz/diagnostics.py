@@ -1,3 +1,7 @@
+from scipy.lingalg import inv
+from scipy import corrcoef
+
+
 class Diagnostics:
     """ Warnings and plots generated from a first-level design matrix """
 
@@ -12,6 +16,12 @@ class Diagnostics:
     @staticmethod
     def _check_covariance(dm):
         pass
+
+    @staticmethod
+    def _check_vif(dm):
+        cc = corrcoef(dm.as_matrix(), rowvar=False)
+        VIF = inv(cc)
+        return VIF.diagonal()
 
     def run(self, dm, checks=True, plots=False):
         results = {}
