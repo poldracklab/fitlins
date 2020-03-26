@@ -124,6 +124,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
             smoothing_fwhm = None
 
         flm = level1.FirstLevelModel(
+            minimize_memory=False,
             mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
