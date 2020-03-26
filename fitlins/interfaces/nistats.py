@@ -122,9 +122,17 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
+
         flm = level1.FirstLevelModel(
             mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
+
+        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+
+        # Save model level images
+        for output in ['r_squared', 'residuals']:
+            fname = fname_fmt('model', output)
+            getattr(flm, output)()[0].to_filename(fname)
 
         effect_maps = []
         variance_maps = []
@@ -133,7 +141,6 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         pvalue_maps = []
         contrast_metadata = []
         out_ents = self.inputs.contrast_info[0]['entities']
-        fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
         for name, weights, contrast_type in prepare_contrasts(
               self.inputs.contrast_info, mat.columns):
             contrast_metadata.append(
