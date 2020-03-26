@@ -133,7 +133,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         # Save model level images
         model_maps = []
         model_metadata = []
-        for output in ['r_squared', 'residuals']:
+        for output in ['r_square', 'residuals']:
             model_metadata.append(
                 {'contrast': 'model',
                  'stat': output,
