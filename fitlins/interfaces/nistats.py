@@ -127,11 +127,18 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
             mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
         flm.fit(img, design_matrices=mat)
 
+        out_ents = self.inputs.contrast_info[0]['entities']
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Save model level images
         model_maps = []
-        for output in ['r_square', 'residuals']:
+        model_metadata = []
+        for output in ['r_squared', 'residuals']:
+            model_metadata.append(
+                {'contrast': 'model',
+                 'stat': output,
+                 **out_ents}
+                )
             fname = fname_fmt('model', output)
             getattr(flm, output)()[0].to_filename(fname)
 
@@ -141,7 +148,6 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        out_ents = self.inputs.contrast_info[0]['entities']
         for name, weights, contrast_type in prepare_contrasts(
               self.inputs.contrast_info, mat.columns):
             contrast_metadata.append(
@@ -169,6 +175,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
         self._results['model_maps'] = model_maps
+        self._results['model_metadata'] = model_metadata
 
         return runtime
 
