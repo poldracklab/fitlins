@@ -115,7 +115,10 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
         'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_statmap.nii.gz'
-
+    model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'stat-{stat<rsquare|residuals>}_statmap.nii.gz'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
@@ -257,6 +260,12 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             run_without_submitting=True,
             name='ds_{}_contrast_maps'.format(level))
 
+        ds_model_maps = pe.Node(
+            BIDSDataSink(base_directory=out_dir,
+                         path_patterns=model_map_pattern),
+            run_without_submitting=True,
+            name='ds_{}_contrast_maps'.format(level))
+
         ds_contrast_plots = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_plot_pattern),
@@ -315,7 +324,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             (collate, plot_contrasts, [('stat_maps', 'data')]),
             (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
                                                  ('metadata', 'entities')]),
-            (model, ds_contrast_maps, [('model_maps', 'in_file'),
+            (model, ds_model_maps, [('model_maps', 'in_file'),
                                        ('model_metadata', 'entities')]),
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),

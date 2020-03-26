@@ -135,7 +135,6 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         model_metadata = []
         for output in ['r_square', 'residuals']:
             model_metadata.append(
-                {'contrast': 'model',
                  'stat': output,
                  **out_ents}
                 )
