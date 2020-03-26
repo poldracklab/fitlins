@@ -315,6 +315,8 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             (collate, plot_contrasts, [('stat_maps', 'data')]),
             (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
                                                  ('metadata', 'entities')]),
+            (model, ds_contrast_maps, [('model_maps', 'in_file'),
+                                       ('model_metadata', 'entities')]),
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
 
