@@ -130,7 +130,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Save model level images
-        for output in ['r_squared', 'residuals']:
+        model_maps = []
+        for output in ['r_square', 'residuals']:
             fname = fname_fmt('model', output)
             getattr(flm, output)()[0].to_filename(fname)
 
@@ -167,6 +168,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         self._results['zscore_maps'] = zscore_maps
         self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
+        self._results['model_maps'] = model_maps
 
         return runtime
 
