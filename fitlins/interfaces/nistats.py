@@ -140,7 +140,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                  **out_ents}
                 )
             fname = fname_fmt('model', output)
-            getattr(flm, output)()[0].to_filename(fname)
+            getattr(flm, output)[0].to_filename(fname)
 
         effect_maps = []
         variance_maps = []
