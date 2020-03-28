@@ -276,7 +276,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             collate_mm = pe.Node(
                 MergeAll(['model_maps', 'model_metadata'],
                          check_lengths=(not drop_missing)),
-                name='collate_{}'.format(level),
+                name='collate_mm_{}'.format(level),
                 run_without_submitting=True)
 
             wf.connect([
