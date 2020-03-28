@@ -273,6 +273,12 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 run_without_submitting=True,
                 name='ds_{}_model_maps'.format(level))
 
+            collate_mm = pe.Node(
+                MergeAll(['model_maps', 'model_metadata'],
+                         check_lengths=(not drop_missing)),
+                name='collate_{}'.format(level),
+                run_without_submitting=True)
+
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
@@ -286,8 +292,10 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 (select_entities, ds_corr, [('out', 'entities')]),
                 (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
                 (plot_corr, ds_corr,  [('figure', 'in_file')]),
-                (model, ds_model_maps, [('model_maps', 'in_file'),
-                                        ('model_metadata', 'entities')]),
+                (model, collate_mm, [('model_maps', 'in_file'),
+                                     ('model_metadata', 'entities')]),
+                (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
+                                             ('model_metadata', 'entities')]),
             ])
 
         #  Set up higher levels
