@@ -141,6 +141,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                 )
             fname = fname_fmt('model', output)
             getattr(flm, output)[0].to_filename(fname)
+            model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
@@ -234,6 +235,21 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     "second level contrast")
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
             model.fit(filtered_effects, design_matrix=mat)
+
+            # Save model level images
+            model_maps = []
+            model_metadata = []
+            for output in ['r_square', 'residuals']:
+                model_metadata.append(
+                    {'stat': output,
+                     **out_ents}
+                    )
+                fname = fname_fmt('model', output)
+                getattr(model, output)[0].to_filename(fname)
+                model_maps.append(fname)
+
+            self._results['model_maps'] = model_maps
+            self._results['model_metadata'] = model_metadata
 
         for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
