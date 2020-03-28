@@ -260,12 +260,6 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             run_without_submitting=True,
             name='ds_{}_contrast_maps'.format(level))
 
-        ds_model_maps = pe.Node(
-            BIDSDataSink(base_directory=out_dir,
-                         path_patterns=model_map_pattern),
-            run_without_submitting=True,
-            name='ds_{}_model_maps'.format(level))
-
         ds_contrast_plots = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_plot_pattern),
@@ -273,6 +267,12 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
+            ds_model_maps = pe.Node(
+                BIDSDataSink(base_directory=out_dir,
+                             path_patterns=model_map_pattern),
+                run_without_submitting=True,
+                name='ds_{}_model_maps'.format(level))
+
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
@@ -286,6 +286,8 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 (select_entities, ds_corr, [('out', 'entities')]),
                 (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
                 (plot_corr, ds_corr,  [('figure', 'in_file')]),
+                (model, ds_model_maps, [('model_maps', 'in_file'),
+                                        ('model_metadata', 'entities')]),
             ])
 
         #  Set up higher levels
@@ -324,8 +326,6 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             (collate, plot_contrasts, [('stat_maps', 'data')]),
             (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
                                                  ('metadata', 'entities')]),
-            (model, ds_model_maps, [('model_maps', 'in_file'),
-                                    ('model_metadata', 'entities')]),
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
 
