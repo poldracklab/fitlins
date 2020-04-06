@@ -42,6 +42,8 @@ class EstimatorOutputSpec(TraitedSpec):
     zscore_maps = traits.List(File)
     pvalue_maps = traits.List(File)
     contrast_metadata = traits.List(traits.Dict)
+    model_maps = traits.List(File)
+    model_metadata = traits.List(traits.Dict)
 
 
 class FirstLevelEstimatorInterface(BaseInterface):
