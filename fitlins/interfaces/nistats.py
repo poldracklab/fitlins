@@ -134,13 +134,16 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         # Save model level images
         model_maps = []
         model_metadata = []
-        for output in ['r_square']:
+        for param in ['r_square', 'logL']:
             model_metadata.append(
-                {'stat': output,
+                {'stat': param,
                  **out_ents}
                 )
-            fname = fname_fmt('model', output)
-            getattr(flm, output)[0].to_filename(fname)
+            fname = fname_fmt('model', param)
+            output = flm._get_voxelwise_model_attribute(
+                param, result_as_time_series=False)[0]
+
+            output.to_filename(fname)
             model_maps.append(fname)
 
         effect_maps = []

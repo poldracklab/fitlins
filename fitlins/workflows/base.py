@@ -118,7 +118,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'stat-{stat<rSquare>}_statmap.nii.gz'
+        'stat-{stat<rSquare|logL>}_statmap.nii.gz'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
