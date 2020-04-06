@@ -134,17 +134,50 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         # Save model level images
         model_maps = []
         model_metadata = []
-        for param in ['r_square', 'logL']:
-            model_metadata.append(
-                {'stat': param,
-                 **out_ents}
-                )
-            fname = fname_fmt('model', param)
-            output = flm._get_voxelwise_model_attribute(
-                param, result_as_time_series=False)[0]
 
-            output.to_filename(fname)
-            model_maps.append(fname)
+        # R-square
+        model_metadata.append(
+            {'stat': 'r_square',
+             **out_ents}
+            )
+        fname = fname_fmt('model', 'r_square')
+        flm.r_square()[0].to_filename(fname)
+        model_maps.append(fname)
+
+        # Manually compute log-likelihood
+
+        def _get_voxelwise_logL(flm):
+            """
+            Returns
+            -------
+            output : list
+                a list of Nifti1Image(s)
+            """
+
+            output = []
+            for design_matrix, labels, results in zip(self.design_matrices_,
+                                                      self.labels_,
+                                                      self.results_
+                                                      ):
+
+                voxelwise_attribute = np.zeros((1, len(labels)))
+
+                for label_ in results:
+                    label_mask = labels == label_
+                    voxelwise_attribute[:, label_mask] = getattr(results[label_],
+                                                                 'logL')
+
+                output.append(self.masker_.inverse_transform(voxelwise_attribute))
+
+                return output
+
+        model_metadata.append(
+            {'stat': 'logL',
+             **out_ents}
+            )
+        fname = fname_fmt('model', 'logL')
+        _get_voxelwise_logL(flm)[0].to_filename(fname)
+        model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
