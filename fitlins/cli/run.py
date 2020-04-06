@@ -12,6 +12,7 @@ import os.path as op
 import time
 import logging
 import warnings
+from copy import deepcopy
 from pathlib import Path
 from tempfile import mkdtemp
 from argparse import ArgumentParser
@@ -23,7 +24,7 @@ from bids.analysis import auto_model, Analysis
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
-from ..utils import bids
+from ..utils import bids, config
 from ..viz.reports import build_report_dict, write_full_report
 
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
@@ -232,12 +233,11 @@ def run_fitlins(argv=None):
         participants=subject_list, base_dir=work_dir,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
         )
+    fitlins_wf.config = deepcopy(config.get_fitlins_config()._sections)
 
     if opts.work_dir:
         # dump crashes in working directory (non /tmp)
         fitlins_wf.config['execution']['crashdump_dir'] = opts.work_dir
-    # easy to read crashfiles
-    fitlins_wf.config['execution']['crashfile_format'] = 'txt'
     retcode = 0
     if not opts.reports_only:
         try:
