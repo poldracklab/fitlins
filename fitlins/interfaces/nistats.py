@@ -141,7 +141,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
              **out_ents}
             )
         fname = fname_fmt('model', 'r_square')
-        flm.r_square()[0].to_filename(fname)
+        flm.r_square[0].to_filename(fname)
         model_maps.append(fname)
 
         # Manually compute log-likelihood
@@ -169,7 +169,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
 
                 output.append(self.masker_.inverse_transform(voxelwise_attribute))
 
-                return output
+            return output
 
         model_metadata.append(
             {'stat': 'logL',
