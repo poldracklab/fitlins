@@ -155,9 +155,9 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
             """
 
             output = []
-            for design_matrix, labels, results in zip(self.design_matrices_,
-                                                      self.labels_,
-                                                      self.results_
+            for design_matrix, labels, results in zip(flm.design_matrices_,
+                                                      flm.labels_,
+                                                      flm.results_
                                                       ):
 
                 voxelwise_attribute = np.zeros((1, len(labels)))
@@ -167,7 +167,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                     voxelwise_attribute[:, label_mask] = getattr(results[label_],
                                                                  'logL')
 
-                output.append(self.masker_.inverse_transform(voxelwise_attribute))
+                output.append(flm.masker_.inverse_transform(voxelwise_attribute))
 
             return output
 
