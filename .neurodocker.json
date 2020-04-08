@@ -83,7 +83,7 @@
     ],
     [
       "run",
-      "echo \"$VERSION\" > /src/fitlins/VERSION"
+      "echo \"$VERSION\" > /src/fitlins/VERSION && sed -i -e 's/crashfile_format = pklz/crashfile_format = txt/' /src/fitlins/fitlins/data/nipype.cfg"
     ],
     [
       "miniconda",
