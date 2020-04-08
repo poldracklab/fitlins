@@ -38,6 +38,33 @@ def prepare_contrasts(contrasts, all_regressors):
     return out_contrasts
 
 
+def _get_voxelwise_logL(flm):
+    """
+    Given a FirstLevelModel, computed voxel wise log-likelihood map
+    Returns
+    -------
+    output : list
+        a list of Nifti1Image(s)
+    """
+
+    output = []
+    for design_matrix, labels, results in zip(flm.design_matrices_,
+                                              flm.labels_,
+                                              flm.results_
+                                              ):
+
+        voxelwise_attribute = np.zeros((1, len(labels)))
+
+        for label_ in results:
+            label_mask = labels == label_
+            voxelwise_attribute[:, label_mask] = getattr(results[label_],
+                                                         'logL')
+
+        output.append(flm.masker_.inverse_transform(voxelwise_attribute))
+
+    return output
+
+
 class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
 
     def _run_interface(self, runtime):
@@ -132,52 +159,21 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Save model level images
+        model_attr = {
+            'r_square': flm.r_square[0],
+            'log_likelihood': _get_voxelwise_logL(flm)[0]
+        }
+
         model_maps = []
         model_metadata = []
-
-        # R-square
-        model_metadata.append(
-            {'stat': 'r_square',
-             **out_ents}
-            )
-        fname = fname_fmt('model', 'r_square')
-        flm.r_square[0].to_filename(fname)
-        model_maps.append(fname)
-
-        # Manually compute log-likelihood
-
-        def _get_voxelwise_logL(flm):
-            """
-            Returns
-            -------
-            output : list
-                a list of Nifti1Image(s)
-            """
-
-            output = []
-            for design_matrix, labels, results in zip(flm.design_matrices_,
-                                                      flm.labels_,
-                                                      flm.results_
-                                                      ):
-
-                voxelwise_attribute = np.zeros((1, len(labels)))
-
-                for label_ in results:
-                    label_mask = labels == label_
-                    voxelwise_attribute[:, label_mask] = getattr(results[label_],
-                                                                 'logL')
-
-                output.append(flm.masker_.inverse_transform(voxelwise_attribute))
-
-            return output
-
-        model_metadata.append(
-            {'stat': 'logL',
-             **out_ents}
-            )
-        fname = fname_fmt('model', 'logL')
-        _get_voxelwise_logL(flm)[0].to_filename(fname)
-        model_maps.append(fname)
+        for attr, img in model_attr.items():
+            model_metadata.append(
+                {'stat': attr,
+                 **out_ents}
+                )
+            fname = fname_fmt('model', attr)
+            img.to_filename(fname)
+            model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
