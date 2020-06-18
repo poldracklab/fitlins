@@ -6,6 +6,111 @@ import json
 import shutil
 import numpy as np
 import nibabel as nb
+import typing as ty
+
+import attr
+import pydra
+from pydra.engine.core import TaskBase
+from pydra.engine.specs import BaseSpec, SpecInfo, Directory, File
+
+InputSpecInfo = lambda *fields: SpecInfo(name="Inputs", fields=fields, bases=(BaseSpec,))
+OutputSpecInfo = lambda *fields: SpecInfo(name="Outputs", fields=fields, bases=(BaseSpec,))
+
+class ModelSpecLoaderTask(TaskBase):
+    input_spec = InputSpecInfo(
+        ("database_path", Directory, {"help_string": "Path to BIDS database"}),
+        ("model", ty.Union[ty.Literal["default"], ty.List[File]], {"help_string": "Model filename"}),
+        ("selectors", ty.Dict[str, ty.Any], {"help_string": "Model specification(s) as Python dictionaries"}),
+    )
+    output_spec = OutputSpecInfo(
+        ("model_spec",
+         ty.List[ty.Dict[str, ty.Any]],
+         {"help_string": 'Model specification(s) as Python dictionaries'})
+    )
+
+    def _run_task(self):
+        import bids
+        from bids.analysis import auto_model
+        models = self.inputs.model
+        if not isinstance(models, list):
+            database_path = self.inputs.database_path
+            layout = bids.BIDSLayout.load(database_path=database_path)
+
+            if not isdefined(models):
+                # model is not yet standardized, so validate=False
+                # Ignore all subject directories and .git/ and .datalad/ directories
+                small_layout = bids.BIDSLayout(
+                    layout.root, derivatives=[d.root for d in layout.derivatives.values()],
+                    validate=False,
+                    ignore=[re.compile(r'sub-'),
+                            re.compile(r'\.(git|datalad)')])
+                # PyBIDS can double up, so find unique models
+                models = list(set(small_layout.get(suffix='smdl', return_type='file')))
+                if not models:
+                    raise ValueError("No models found")
+            elif models == 'default':
+                models = auto_model(layout)
+
+        models = [_ensure_model(m) for m in models]
+
+        if self.inputs.selectors:
+            # This is almost certainly incorrect
+            models = [model for model in models
+                      if all(val in model['input'].get(key, [val])
+                             for key, val in self.inputs.selectors.items())]
+
+        self.output_ = {"model_spec": models}
+
+@pydra.mark.task
+def initialize_db(
+        bids_dir: str,
+        derivatives: ty.List[str],
+        ignore: ty.List,
+        force_index: ty.List,
+        database_path: str,
+        reset_database: bool) -> {"database_path": File}:
+    from bids import BIDSLayout
+    BIDSLayout(bids_dir, derivatives=derivatives, ignore=ignore, force_index=force_index,
+               database_path=database_path, reset_database=reset_database)
+    return database_path
+
+@pydra.mark.task
+def load_model_spec(
+        database_path: attr.ib(Directory, {"help_string": "Path to BIDS database"}),
+        model: attr.ib(ty.Union[ty.Literal["default"], ty.List[File]], {"help_string": "Model filename"}),
+        selectors: attr.ib(ty.Dict[str, ty.Any], {"help_string": "Model specification(s) as Python dictionaries"}),
+        ) -> {"model_spec": attr.ib(ty.List[ty.Dict[str, ty.Any]], {"help_string": 'Model specification(s) as Python dictionaries'})}:
+    import bids
+    from bids.analysis import auto_model
+    models = model
+    if not isinstance(models, list):
+        database_path = database_path
+        layout = bids.BIDSLayout.load(database_path=database_path)
+
+        if not isdefined(models):
+            # model is not yet standardized, so validate=False
+            # Ignore all subject directories and .git/ and .datalad/ directories
+            small_layout = bids.BIDSLayout(
+                layout.root, derivatives=[d.root for d in layout.derivatives.values()],
+                validate=False,
+                ignore=[re.compile(r'sub-'),
+                        re.compile(r'\.(git|datalad)')])
+            # PyBIDS can double up, so find unique models
+            models = list(set(small_layout.get(suffix='smdl', return_type='file')))
+            if not models:
+                raise ValueError("No models found")
+        elif models == 'default':
+            models = auto_model(layout)
+
+    models = [_ensure_model(m) for m in models]
+
+    if selectors:
+        # This is almost certainly incorrect
+        models = [model for model in models
+                  if all(val in model['input'].get(key, [val])
+                         for key, val in selectors.items())]
+
+    return {"model_spec": models}
 
 from nipype import logging
 from nipype.utils.filemanip import copyfile
