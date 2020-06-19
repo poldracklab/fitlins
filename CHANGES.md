@@ -1,3 +1,76 @@
+0.6.2 (December 13, 2019)
+=========================
+
+Hotfix release.
+
+* FIX: FEMA input index should filter on rows, not columns. (https://github.com/poldracklab/fitlins/pull/207)
+
+
+0.6.1 (December 12, 2019)
+=========================
+
+Hotfix release.
+
+* FIX: Add desc=preproc as filter when finding preproc BOLD files (https://github.com/poldracklab/fitlins/pull/204)
+
+
+0.6.0 (December 11, 2019)
+=========================
+
+New feature release in the 0.6.x series.
+
+This release respects recent changes to the BIDS-StatsModels draft
+specification to support fixed-effects meta-analysis (FEMA) contrasts,
+and renames "AutoContrasts" to "DummyContrasts".
+
+Provisional support for F-tests has been added.
+
+Additional rearchitecting by Dylan Nielson provides significant speedups
+for large datasets by caching BIDS layout information.
+
+* SPEC: Add fixed effects (FEMA) contrasts (https://github.com/poldracklab/fitlins/pull/191)
+* SPEC: Change AutoContrasts to DummyContrasts (https://github.com/poldracklab/fitlins/pull/197)
+* FIX: Don't pass ignore and force index to `init_fitlins_wf` (https://github.com/poldracklab/fitlins/pull/202)
+* FIX: BIDSelect confusion between Nifti and JSON (https://github.com/poldracklab/fitlins/pull/193)
+* FIX: Set `smoothing_fwhm` after creating next level. (https://github.com/poldracklab/fitlins/pull/190)
+* FIX: Recognize cosine columns without underscores (https://github.com/poldracklab/fitlins/pull/185)
+* ENH: Update logging levels (https://github.com/poldracklab/fitlins/pull/198)
+* ENH: Add option to load BIDS layouts from database file (https://github.com/poldracklab/fitlins/pull/187)
+* ENH: Add memory estimate for first-level models, enable memory management (https://github.com/poldracklab/fitlins/pull/199)
+* ENH: Avoid casting BOLD data to float64 if possible (https://github.com/poldracklab/fitlins/pull/196)
+* ENH: Add F-tests (https://github.com/poldracklab/fitlins/pull/195)
+* ENH: Drop missing model inputs (https://github.com/poldracklab/fitlins/pull/183)
+* RF: Abstract interfaces to simplify swappability (https://github.com/poldracklab/fitlins/pull/188)
+
+
+0.5.1 (September 23, 2019)
+==========================
+
+Bug fix release to work with PyBIDS 0.9.4+.
+
+* FIX: Expand entity whitelist (https://github.com/poldracklab/fitlins/pull/182)
+* FIX: Don't validate generated paths (https://github.com/poldracklab/fitlins/pull/180)
+
+
+0.5.0 (July 03, 2019)
+=====================
+
+This release features significant improvements to reporting and documentation,
+including a Jupyter notebook to demonstrate usage. Example models are now in
+the main branch of the repository, and annotated in the documentation.
+
+* FIX: Smoothing level, check length  (https://github.com/poldracklab/fitlins/pull/157)
+* FIX: mask parameter to FirstLevelModel is deprecated for mask_img (https://github.com/poldracklab/fitlins/pull/158)
+* ENH: Add ds000117 model (https://github.com/poldracklab/fitlins/pull/163)
+* ENH: Move to single-page report (https://github.com/poldracklab/fitlins/pull/161)
+* ENH: Add task-vs-baseline contrast to ds003 (https://github.com/poldracklab/fitlins/pull/160)
+* ENH: Reporting cleanups (https://github.com/poldracklab/fitlins/pull/155)
+* DOC: Curate reports and models (https://github.com/poldracklab/fitlins/pull/153)
+* DOC: Add example running through DS003 (https://github.com/poldracklab/fitlins/pull/152)
+* MAINT: BIDSLayout.get() parameter "extensions" deprecated (https://github.com/poldracklab/fitlins/pull/167)
+* MAINT: Update pybids dependency, package name (https://github.com/poldracklab/fitlins/pull/166)
+
+
 0.4.0 (May 10, 2019)
 ====================
 

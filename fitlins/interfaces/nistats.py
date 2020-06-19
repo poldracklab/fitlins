@@ -3,10 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 
-from nipype.interfaces.base import (
-    LibraryBaseInterface, SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    File, traits, isdefined
-    )
+from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
+
+from .abstract import (
+    DesignMatrixInterface, FirstLevelEstimatorInterface, SecondLevelEstimatorInterface)
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -22,48 +22,60 @@ def prepare_contrasts(contrasts, all_regressors):
 
     out_contrasts = []
     for contrast in contrasts:
-        # Fill in zeros
-        weights = np.array([
-            [row[col] if col in row else 0 for col in all_regressors]
-            for row in contrast['weights']
-            ])
-        out_contrasts.append(
-            (contrast['name'], weights, contrast['type']))
+        # Are any necessary values missing for contrast estimation?
+        missing = any([[n for n, v in row.items()
+                        if v != 0 and n not in all_regressors]
+                       for row in contrast['weights']])
+        if not missing:
+            # Fill in zeros
+            weights = np.array([
+                [row[col] if col in row else 0 for col in all_regressors]
+                for row in contrast['weights']
+                ])
+
+            out_contrasts.append(
+                (contrast['name'], weights, contrast['type']))
 
     return out_contrasts
 
 
-class FirstLevelModelInputSpec(BaseInterfaceInputSpec):
-    bold_file = File(exists=True, mandatory=True)
-    mask_file = File(exists=True)
-    session_info = traits.Dict()
-    contrast_info = traits.List(traits.Dict)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+def _get_voxelwise_logL(flm):
+    """
+    Given a FirstLevelModel, computed voxel wise log-likelihood map
+    Returns
+    -------
+    output : list
+        a list of Nifti1Image(s)
+    """
+
+    output = []
+    for design_matrix, labels, results in zip(flm.design_matrices_,
+                                              flm.labels_,
+                                              flm.results_
+                                              ):
+
+        voxelwise_attribute = np.zeros((1, len(labels)))
+
+        for label_ in results:
+            label_mask = labels == label_
+            voxelwise_attribute[:, label_mask] = getattr(results[label_],
+                                                         'logL')
+
+        output.append(flm.masker_.inverse_transform(voxelwise_attribute))
+
+    return output
 
 
-class FirstLevelModelOutputSpec(TraitedSpec):
-    effect_maps = traits.List(File)
-    variance_maps = traits.List(File)
-    stat_maps = traits.List(File)
-    zscore_maps = traits.List(File)
-    pvalue_maps = traits.List(File)
-    contrast_metadata = traits.List(traits.Dict)
-    design_matrix = File()
-
-
-class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
-    input_spec = FirstLevelModelInputSpec
-    output_spec = FirstLevelModelOutputSpec
+class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
 
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import design_matrix as dm
-        from nistats import first_level_model as level1
-        from nistats.contrasts import compute_contrast
-
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         vols = img.shape[3]
+
+        drop_missing = bool(self.inputs.drop_missing)
 
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
@@ -75,8 +87,25 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
 
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
+
+            missing_columns = dense.isna().all()
+            if drop_missing:
+                # Remove columns with NaNs
+                dense = dense[dense.columns[missing_columns == False]]
+            elif missing_columns.any():
+                missing_names = ', '.join(
+                    dense.columns[missing_columns].tolist())
+                raise RuntimeError(
+                    f'The following columns are empty: {missing_names}. '
+                    'Use --drop-missing to drop before model fitting.')
+
             column_names = dense.columns.tolist()
-            drift_model = None if 'cosine_00' in column_names else 'cosine'
+            drift_model = None if (('cosine00' in column_names) |
+                                   ('cosine_00' in column_names)) else 'cosine'
+
+            if dense.empty:
+                dense = None
+                column_names = None
         else:
             dense = None
             column_names = None
@@ -93,6 +122,38 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         mat.to_csv('design.tsv', sep='\t')
         self._results['design_matrix'] = os.path.join(runtime.cwd,
                                                       'design.tsv')
+        return runtime
+
+def dscalar_from_dtseries(img, data):
+    header = deepcopy(img.header)
+    header.matrix.pop(0)
+    header.matrix[0].AppliesToMatrixDimension = 0
+    header.matrix[0].IndicesMapToDataType = "CIFTI_INDEX_TYPE_SCALAR"
+    return img.__class__(data, header=header)
+
+
+def dscalar_from_dscalar(img, data):
+    return img.__class__(data, header=img.header)
+
+
+class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, SimpleInterface):
+    def _run_interface(self, runtime):
+        import nibabel as nb
+        from nistats import first_level_model as level1
+        mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
+        img = nb.load(self.inputs.bold_file)
+        if isinstance(img, nb.dataobj_images.DataobjImage):
+            # Ugly hack to ensure that retrieved data isn't cast to float64 unless
+            # necessary to prevent an overflow
+            # For NIfTI-1 files, slope and inter are 32-bit floats, so this is
+            # "safe". For NIfTI-2 (including CIFTI-2), these fields are 64-bit,
+            # so include a check to make sure casting doesn't lose too much.
+            slope32 = np.float32(img.dataobj._slope)
+            inter32 = np.float32(img.dataobj._inter)
+            if max(np.abs(slope32 - img.dataobj._slope),
+                   np.abs(inter32 - img.dataobj._inter)) < 1e-7:
+                img.dataobj._slope = slope32
+                img.dataobj._inter = inter32
 
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
@@ -104,8 +165,28 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
             labels, estimates = level1.run_glm(img.get_fdata(), mat.values)
         else:
             flm = level1.FirstLevelModel(
+                minimize_memory=False,
                 mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
             flm.fit(img, design_matrices=mat)
+
+        out_ents = self.inputs.contrast_info[0]['entities']
+
+        # Save model level images
+        model_attr = {
+            'r_square': flm.r_square[0],
+            'log_likelihood': _get_voxelwise_logL(flm)[0]
+        }
+
+        model_maps = []
+        model_metadata = []
+        for attr, img in model_attr.items():
+            model_metadata.append(
+                {'stat': attr,
+                 **out_ents}
+                )
+            fname = fname_fmt('model', attr)
+            img.to_filename(fname)
+            model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
@@ -113,41 +194,33 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        out_ents = self.inputs.contrast_info[0]['entities']
         for name, weights, contrast_type in prepare_contrasts(
-                self.inputs.contrast_info, mat.columns.tolist()):
-            if isinstance(img, nb.Cifti2Image):
-                contrast = compute_contrast(labels, estimates, weights,
-                                            contrast_type=contrast_type)
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
-                output_types = ['z_score', 'stat', 'p_value', 'effect_size',
-                                'effect_variance']
-                for output_type_ in output_types:
-                    estimate_ = getattr(contrast, output_type_)()
-                    # Prepare the returned images
-                    newheader = deepcopy(img.header)
-                    newheader.matrix.pop(0)
-                    newheader.matrix[0].AppliesToMatrixDimension = 0
-                    newheader.matrix[0].IndicesMapToDataType = \
-                        "CIFTI_INDEX_TYPE_SCALAR"
-                    newimg = nb.Cifti2Image(estimate_, header=newheader)
-                    fname = fname_fmt(name, output_type_)
-                    newimg.to_filename(fname)
-            else:
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
-                maps = flm.compute_contrast(weights, contrast_type,
-                                            output_type='all')
+              self.inputs.contrast_info, mat.columns):
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents}
-            )
+                )
+            if isinstance(img, nb.Cifti2Image):
+                fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
+                contrast = compute_contrast(labels, estimates, weights,
+                                            contrast_type=contrast_type)
+                maps = {
+                    map_type: dscalar_from_dtseries(img, getattr(contrast, map_type)())
+                    for map_type in ['z_score', 'stat', 'p_value', 'effect_size', 'effect_variance']
+                    }
+
+            else:
+                fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+                maps = flm.compute_contrast(weights, contrast_type,
+                                            output_type='all')
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
+
                 fname = fname_fmt(name, map_type)
                 maps[map_type].to_filename(fname)
                 map_list.append(fname)
@@ -158,26 +231,10 @@ class FirstLevelModel(NistatsBaseInterface, SimpleInterface):
         self._results['zscore_maps'] = zscore_maps
         self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
+        self._results['model_maps'] = model_maps
+        self._results['model_metadata'] = model_metadata
 
         return runtime
-
-
-class SecondLevelModelInputSpec(BaseInterfaceInputSpec):
-    effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
-    variance_maps = traits.List(traits.List(File(exists=True)))
-    stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
-    contrast_info = traits.List(traits.Dict, mandatory=True)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-
-
-class SecondLevelModelOutputSpec(TraitedSpec):
-    effect_maps = traits.List(File)
-    variance_maps = traits.List(File)
-    stat_maps = traits.List(File)
-    zscore_maps = traits.List(File)
-    pvalue_maps = traits.List(File)
-    contrast_metadata = traits.List(traits.Dict)
-    contrast_matrix = File()
 
 
 def _flatten(x):
@@ -191,20 +248,17 @@ def _match(query, metadata):
     return True
 
 
-class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
-    input_spec = SecondLevelModelInputSpec
-    output_spec = SecondLevelModelOutputSpec
-
+class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
-        from nistats import second_level_model as level2
         import nibabel as nb
+        from nistats import second_level_model as level2
         from nistats import first_level_model as level1
-        from nistats.contrasts import compute_contrast
+        from nistats.contrasts import (compute_contrast, compute_fixed_effects,
+                                       _compute_fixed_effects_params)
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-        model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
 
         effect_maps = []
         variance_maps = []
@@ -217,9 +271,7 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
-        # XXX nistats should begin supporting mixed effects models soon
-        # input_variances = _flatten(self.inputs.variance_maps)
-        input_variances = [None] * len(input_effects)
+        input_variances = _flatten(self.inputs.variance_maps)
 
         filtered_effects = []
         filtered_variances = []
@@ -230,60 +282,100 @@ class SecondLevelModel(NistatsBaseInterface, SimpleInterface):
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        for name, weights, contrast_type in prepare_contrasts(self.inputs.contrast_info, names):
-            # Need to add F-test support for intercept (more than one column)
-            # Currently only taking 0th column as intercept (t-test)
-            weights = weights[0]
-            effects = (np.array(filtered_effects)[weights != 0]).tolist()
-            _variances = (np.array(filtered_variances)[weights != 0]).tolist()
-            design_matrix = pd.DataFrame({'intercept': weights[weights != 0]})
+        mat = pd.get_dummies(names)
+        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
 
-            if isinstance(effects[0], nb.Cifti2Image):
+        is_cifti = filtered_effects[0].endswith('dscalar.nii')
+        if is_cifti:
+            fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
+        else:
+            fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+
+        # Only fit model if any non-FEMA contrasts at this level
+        if any(c[2] != 'FEMA' for c in contrasts):
+            if len(filtered_effects) < 2:
+                raise RuntimeError(
+                    "At least two inputs are required for a 't' for 'F' "
+                    "second level contrast")
+            if is_cifti:
                 effect_data = np.array([nb.load(effect).get_fdata()
-                                        for effect in effects])
+                                        for effect in filtered_effects])
                 labels, estimates = level1.run_glm(effect_data, design_matrix,
                                                    noise_model='ols')
-                contrast = compute_contrast(labels, estimates, weights,
-                                            contrast_type=contrast_type)
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
-                output_types = ['z_score', 'stat', 'p_value', 'effect_size',
-                                'effect_variance']
-                for output_type_ in output_types:
-                    estimate_ = getattr(contrast, output_type_)()
-                    # Prepare the returned images
-                    newheader = deepcopy(nb.load(effects[0]).header)
-                    newheader.matrix.pop(0)
-                    newheader.matrix[0].AppliesToMatrixDimension = 0
-                    newheader.matrix[0].IndicesMapToDataType = \
-                        "CIFTI_INDEX_TYPE_SCALAR"
-                    newimg = nb.Cifti2Image(estimate_, header=newheader)
-                    fname = fname_fmt(name, output_type_)
-                    newimg.to_filename(fname)
             else:
-                model.fit(effects, design_matrix=design_matrix)
-                maps = model.compute_contrast(second_level_stat_type=contrast_type,
-                                              output_type='all')
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
+                model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+                model.fit(filtered_effects, design_matrix=mat)
 
+        for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
                  'stat': contrast_type,
                  **out_ents})
+
+            # Pass-through happens automatically as it can handle 1 input
+            if contrast_type == 'FEMA':
+                # Index design identity matrix on non-zero contrasts weights
+                con_ix = weights[0].astype(bool)
+                # Index of all input files "involved" with that contrast
+                dm_ix = mat.iloc[:, con_ix].any(axis=1)
+
+                contrast_imgs = np.array(filtered_effects)[dm_ix],
+                variance_imgs = np.array(filtered_variances)[dm_ix]
+                if cifti:
+                    ffx_cont, ffx_var, ffx_t = _compute_fixed_effects_params(
+                        np.array([nb.load(fname).get_fdata() for fname in contrast_imgs]),
+                        np.array([nb.load(fname).get_fdata() for fname in variance_imgs]),
+                        precision_weighted=False)
+                    img = nb.load(filtered_effects[0])
+                    maps = {
+                        'effect_size': dscalar_from_dscalar(img, ffx_cont),
+                        'effect_variance': dscalar_from_dscalar(img, ffx_var),
+                        'stat': dscalar_from_dscalar(img, ffx_t)
+                        }
+
+                else:
+                    ffx_res = compute_fixed_effects(contrast_imgs, variance_imgs)
+                    maps = {
+                        'effect_size': ffx_res[0],
+                        'effect_variance': ffx_res[1],
+                        'stat': ffx_res[2]
+                        }
+            else:
+                if cifti:
+                    contrast = compute_contrast(labels, estimates, weights,
+                                                contrast_type=contrast_type)
+                    img = nb.load(filtered_effects[0])
+                    maps = {
+                        map_type: dscalar_from_dscalar(img, getattr(contrast, map_type)())
+                        for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
+                                         'effect_variance']
+                        }
+                else:
+                    maps = model.compute_contrast(
+                        second_level_contrast=weights,
+                        second_level_stat_type=contrast_type,
+                        output_type='all'
+                        )
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
                                        ('z_score', zscore_maps),
                                        ('p_value', pvalue_maps),
                                        ('stat', stat_maps)):
-                fname = fname_fmt(name, map_type)
-                maps[map_type].to_filename(fname)
-                map_list.append(fname)
+                if map_type in maps:
+                    fname = fname_fmt(name, map_type)
+                    maps[map_type].to_filename(fname)
+                    map_list.append(fname)
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps
         self._results['stat_maps'] = stat_maps
-        self._results['zscore_maps'] = zscore_maps
-        self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
+
+        # These are "optional" as fixed effects do not support these
+        if zscore_maps:
+            self._results['zscore_maps'] = zscore_maps
+        if pvalue_maps:
+            self._results['pvalue_maps'] = pvalue_maps
 
         return runtime

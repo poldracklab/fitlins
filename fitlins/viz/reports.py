@@ -45,11 +45,11 @@ def build_report_dict(deriv_dir, work_dir, analysis):
     wd_layout = BIDSLayout(
         Path(work_dir) / 'reportlets' / 'fitlins',
         validate=False)
-    all_pngs = fl_layout.get(extensions='.png')
+    all_pngs = fl_layout.get(extension='.png')
     fig_dirs = set(
         (png.dirname, tuple(ent for ent in png.entities.items()
                             if ent[0] not in ('suffix', 'contrast')))
-        for png in fl_layout.get(extensions='.png'))
+        for png in fl_layout.get(extension='.png'))
 
     report = {
         'dataset': {
@@ -67,7 +67,8 @@ def build_report_dict(deriv_dir, work_dir, analysis):
         report['steps'].append(report_step)
         for _, _, ents in step.get_design_matrix():
             contrasts = step.get_contrasts(**ents)[0]
-            for key in ('datatype', 'desc', 'suffix'):
+            for key in ('datatype', 'desc', 'suffix', 'extension',
+                        'RepetitionTime', 'SkullStripped', 'TaskName'):
                 ents.pop(key, None)
 
             analysis = {
@@ -75,21 +76,25 @@ def build_report_dict(deriv_dir, work_dir, analysis):
                     key: val
                     for key, val in ents.items()
                     if key in ('subject', 'session', 'task', 'run') and val},
-                'contrasts': [
-                    {'name': displayify(contrast.name),
-                     'glassbrain': fl_layout.get(contrast=snake_to_camel(contrast.name),
-                                                 suffix='ortho', extensions='png', **ents)[0].path}
-                    for contrast in contrasts]
+                'contrasts': []
                 }
 
+            for contrast in contrasts:
+                glassbrain = fl_layout.get(
+                    contrast=snake_to_camel(contrast.name),
+                    suffix='ortho', extension='png', **ents)
+                analysis['contrasts'].append(
+                    {'name': displayify(contrast.name),
+                     'glassbrain': glassbrain[0].path if glassbrain else None}
+                )
             report_step['analyses'].append(analysis)
 
             # Space doesn't apply to design/contrast matrices
             ents.pop('space', None)
-            design_matrix = fl_layout.get(suffix='design', extensions='svg', **ents)
-            correlation_matrix = fl_layout.get(suffix='corr', extensions='svg', **ents)
-            contrast_matrix = fl_layout.get(suffix='contrasts', extensions='svg', **ents)
-            warning = wd_layout.get(extensions='.html', suffix='snippet', **ents)
+            design_matrix = fl_layout.get(suffix='design', extension='svg', **ents)
+            correlation_matrix = fl_layout.get(suffix='corr', extension='svg', **ents)
+            contrast_matrix = fl_layout.get(suffix='contrasts', extension='svg', **ents)
+            warning = wd_layout.get(extension='.html', suffix='snippet', **ents)
             if design_matrix:
                 analysis['design_matrix'] = design_matrix[0].path
             if correlation_matrix:
@@ -118,6 +123,8 @@ def write_full_report(report_dict, run_context, deriv_dir):
     tpl = env.get_template('data/full_report.tpl')
 
     model = snake_to_camel(report_dict['model']['name'])
-    target_file = op.join(deriv_dir, fl_layout.build_path({'model': model}, PATH_PATTERNS))
+    target_file = op.join(
+        deriv_dir, fl_layout.build_path(
+            {'model': model}, PATH_PATTERNS, validate=False))
     html = tpl.render(deroot({**report_dict, **run_context}, op.dirname(target_file)))
     Path(target_file).write_text(html)

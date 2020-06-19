@@ -1,25 +1,24 @@
 from pathlib import Path
 import warnings
-from nipype.pipeline import engine as pe
-from nipype.interfaces import utility as niu
-# from nipype.interfaces import fsl
-from ..interfaces.bids import (
-    ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-from ..interfaces.nistats import FirstLevelModel, SecondLevelModel
-from ..interfaces.visualizations import (
-    DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
-from ..interfaces.utils import MergeAll, CollateWithMetadata
 
 
-def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
+def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
-                    ignore=None, force_index=None,
-                    smoothing=None,
+                    smoothing=None, drop_missing=False,
                     base_dir=None, name='fitlins_wf'):
+    from nipype.pipeline import engine as pe
+    from nipype.interfaces import utility as niu
+    from ..interfaces.bids import (
+        ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
+    from ..interfaces.nistats import DesignMatrix, FirstLevelModel, SecondLevelModel
+    from ..interfaces.visualizations import (
+        DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
+    from ..interfaces.utils import MergeAll, CollateWithMetadata
+
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
     # Find the appropriate model file(s)
-    specs = ModelSpecLoader(bids_dir=bids_dir)
+    specs = ModelSpecLoader(database_path=database_path)
     if model is not None:
         specs.inputs.model = model
 
@@ -29,34 +28,27 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     if isinstance(model_dict, list):
         raise RuntimeError("Currently unable to run multiple models in parallel - "
                            "please specify model")
-
     #
     # Load and run the model
     #
-
     loader = pe.Node(
-        LoadBIDSModel(bids_dir=bids_dir,
-                      derivatives=derivatives,
-                      model=model_dict),
+        LoadBIDSModel(database_path=database_path,
+                      model=model_dict,
+                      selectors={'desc': desc,
+                                 'space': space}),
         name='loader')
 
-    if ignore is not None:
-        loader.inputs.ignore = ignore
-    if force_index is not None:
-        loader.inputs.force_index = force_index
     if participants is not None:
         loader.inputs.selectors['subject'] = participants
-    if space is not None:
-        loader.inputs.selectors['space'] = space
+    if database_path is not None:
+        loader.inputs.database_path = database_path
 
     # Select preprocessed BOLD series to analyze
     getter = pe.Node(
         BIDSSelect(
-            bids_dir=bids_dir, derivatives=derivatives,
-            selectors={
-                'suffix': 'bold',
-                'desc': desc,
-                'space': space}),
+            database_path=database_path,
+            selectors={'suffix': 'bold',
+                       'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
 
     if smoothing:
@@ -86,9 +78,15 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                                              for step in model_dict['Steps']):
             raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
+    design_matrix = pe.MapNode(
+        DesignMatrix(drop_missing=drop_missing),
+        iterfield=['session_info', 'bold_file'],
+        name='design_matrix')
+
     l1_model = pe.MapNode(
         FirstLevelModel(),
-        iterfield=['session_info', 'contrast_info', 'bold_file', 'mask_file'],
+        iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
+        mem_gb=3,
         name='l1_model')
 
     def _deindex(tsv):
@@ -109,15 +107,18 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_ortho.png'
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_ortho.png'
     design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}.tsv'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F>}_statmap.nii.gz'
-
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_statmap.nii.gz'
+    model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
+        '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
+        'stat-{stat<rSquare|logLikelihood>}_statmap.nii.gz'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
@@ -183,12 +184,16 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, l1_model, [('design_info', 'session_info')]),
-        (getter, l1_model, [('mask_files', 'mask_file')]),
-        (l1_model, plot_design, [('design_matrix', 'data')]),
-        (l1_model, deindex_tsv, [('design_matrix', 'tsv')]),
+        (loader, design_matrix, [('design_info', 'session_info')]),
+        (getter, design_matrix, [('bold_files', 'bold_file')]),
+        (getter, l1_model, [('bold_files', 'bold_file'),
+                            ('mask_files', 'mask_file')]),
+        (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
+        (design_matrix, plot_design, [('design_matrix', 'data')]),
+        (design_matrix, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
+        (design_matrix, plot_corr,  [('design_matrix', 'data')]),
+        (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
         (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
-        (getter, l1_model, [('bold_files', 'bold_file')]),
         ])
 
     stage = None
@@ -202,9 +207,6 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         #
 
         level = 'l{:d}'.format(ix + 1)
-
-        if smoothing and smoothing_level in (step, level):
-            model.inputs.smoothing_fwhm = smoothing_fwhm
 
         # TODO: No longer used at higher level, suggesting we can simply return
         # entities from loader as a single list
@@ -223,7 +225,8 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
             MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                      'pvalue_maps', 'contrast_metadata']),
+                      'pvalue_maps', 'contrast_metadata'],
+                     check_lengths=(not drop_missing)),
             name='collate_{}'.format(level),
             run_without_submitting=True)
 
@@ -264,6 +267,18 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
             name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
+            ds_model_maps = pe.Node(
+                BIDSDataSink(base_directory=out_dir,
+                             path_patterns=model_map_pattern),
+                run_without_submitting=True,
+                name='ds_{}_model_maps'.format(level))
+
+            collate_mm = pe.Node(
+                MergeAll(['model_maps', 'model_metadata'],
+                         check_lengths=(not drop_missing)),
+                name='collate_mm_{}'.format(level),
+                run_without_submitting=True)
+
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
@@ -273,12 +288,14 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
                 (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
-                (model, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
-                (model, plot_corr,  [('design_matrix', 'data')]),
                 (select_entities, ds_l1_contrasts, [('out', 'entities')]),
                 (select_entities, ds_corr, [('out', 'entities')]),
                 (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
                 (plot_corr, ds_corr,  [('figure', 'in_file')]),
+                (model, collate_mm, [('model_maps', 'model_maps'),
+                                     ('model_metadata', 'model_metadata')]),
+                (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
+                                             ('model_metadata', 'entities')]),
             ])
 
         #  Set up higher levels
@@ -293,6 +310,9 @@ def init_fitlins_wf(bids_dir, derivatives, out_dir, analysis_level, space,
                                 ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
+
+        if smoothing and smoothing_level in (step, level):
+            model.inputs.smoothing_fwhm = smoothing_fwhm
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),

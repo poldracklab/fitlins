@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from gzip import GzipFile
 import json
@@ -7,7 +8,7 @@ import numpy as np
 import nibabel as nb
 
 from nipype import logging
-from nipype.utils.filemanip import makedirs, copyfile
+from nipype.utils.filemanip import copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
     InputMultiPath, OutputMultiPath, File, Directory,
@@ -19,7 +20,8 @@ from ..utils import snake_to_camel
 
 iflogger = logging.getLogger('nipype.interface')
 
-ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space'}
+ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space',
+                    'acquisition', 'reconstruction', 'echo'}
 
 
 def bids_split_filename(fname):
@@ -77,9 +79,8 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    bids_dir = Directory(exists=True,
-                         mandatory=True,
-                         desc='BIDS dataset root directory')
+    database_path = Directory(exists=False,
+                              desc='Path to bids database')
     model = traits.Either('default', InputMultiPath(File(exists=True)),
                           desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
@@ -102,11 +103,19 @@ class ModelSpecLoader(SimpleInterface):
         from bids.analysis import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
-            # model is not yet standardized, so validate=False
-            layout = bids.BIDSLayout(self.inputs.bids_dir, validate=False)
+            database_path = self.inputs.database_path
+            layout = bids.BIDSLayout.load(database_path=database_path)
 
             if not isdefined(models):
-                models = layout.get(suffix='smdl', return_type='file')
+                # model is not yet standardized, so validate=False
+                # Ignore all subject directories and .git/ and .datalad/ directories
+                small_layout = bids.BIDSLayout(
+                    layout.root, derivatives=[d.root for d in layout.derivatives.values()],
+                    validate=False,
+                    ignore=[re.compile(r'sub-'),
+                            re.compile(r'\.(git|datalad)')])
+                # PyBIDS can double up, so find unique models
+                models = list(set(small_layout.get(suffix='smdl', return_type='file')))
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
@@ -136,19 +145,11 @@ IMPUTATION_SNIPPET = """\
 
 
 class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
-    bids_dir = Directory(exists=True,
-                         mandatory=True,
-                         desc='BIDS dataset root directory')
-    derivatives = traits.Either(traits.Bool, InputMultiPath(Directory(exists=True)),
-                                desc='Derivative folders')
+    database_path = Directory(exists=True,
+                              mandatory=True,
+                              desc='Path to bids database directory.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
-    force_index = InputMultiPath(
-        traits.Str,
-        desc='Patterns to select sub-directories of BIDS root')
-    ignore = InputMultiPath(
-        traits.Str,
-        desc='Patterns to ignore sub-directories of BIDS root')
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
@@ -210,29 +211,13 @@ class LoadBIDSModel(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.analysis import Analysis
         from bids.layout import BIDSLayout
-        import re
 
-        force_index = [
-            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
-            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
-            # Iterate over empty tuple if undefined
-            for ign in self.inputs.force_index or ()]
-        ignore = [
-            # If entry looks like `/<pattern>/`, treat `<pattern>` as a regex
-            re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
-            # Iterate over empty tuple if undefined
-            for ign in self.inputs.ignore or ()]
-
-        # If empty, then None
-        derivatives = self.inputs.derivatives or None
-
-        layout = BIDSLayout(self.inputs.bids_dir, force_index=force_index,
-                            ignore=ignore, derivatives=derivatives)
+        layout = BIDSLayout.load(database_path=self.inputs.database_path)
 
         selectors = self.inputs.selectors
 
         analysis = Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, desc='preproc', **selectors)
+        analysis.setup(drop_na=False, **selectors)
         self._load_level1(runtime, analysis)
         self._load_higher_level(runtime, analysis)
 
@@ -250,9 +235,24 @@ class LoadBIDSModel(SimpleInterface):
         for sparse, dense, ents in step.get_design_matrix():
             info = {}
 
+            # Metadata is now included in entities
+            TR = ents.pop('RepetitionTime', None)  # Required field in seconds
+            if TR is None:  # But is unreliable (for now?)
+                preproc_files = analysis.layout.get(
+                    extension=['.nii', '.nii.gz'], desc='preproc', **ents)
+                if len(preproc_files) != 1:
+                    raise ValueError('Too many BOLD files found')
+
+                fname = preproc_files[0].path
+                TR = analysis.layout.get_metadata(fname)['RepetitionTime']
+
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
+
+            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
+            ents.pop('TaskName', None)
+
             if step.level in ('session', 'subject', 'dataset'):
                 ents.pop('run', None)
             if step.level in ('subject', 'dataset'):
@@ -263,7 +263,7 @@ class LoadBIDSModel(SimpleInterface):
             if space is None:
                 spaces = analysis.layout.get_spaces(
                     suffix='bold',
-                    extensions=['.nii', '.nii.gz'])
+                    extension=['.nii', '.nii.gz'])
                 if spaces:
                     spaces = sorted(spaces)
                     space = spaces[0]
@@ -273,17 +273,6 @@ class LoadBIDSModel(SimpleInterface):
                             'Selecting the first (ordered lexicographically): %s'
                             % (', '.join(spaces), space))
                 ents['space'] = space
-            preproc_files = analysis.layout.get(suffix='bold',
-                                                extensions=['.nii', '.nii.gz'],
-                                                **ents)
-            if len(preproc_files) != 1:
-                raise ValueError('Too many BOLD files found')
-
-            fname = preproc_files[0].path
-
-            # Required field in seconds
-            TR = analysis.layout.get_metadata(fname, suffix='bold',
-                                              full_search=True)['RepetitionTime']
 
             ent_string = '_'.join('{}-{}'.format(key, val)
                                   for key, val in ents.items())
@@ -320,10 +309,6 @@ class LoadBIDSModel(SimpleInterface):
                         # Impute the mean non-zero, non-NaN value
                         dense[imputable][0] = np.nanmean(vals[vals != 0])
                         imputed.append(imputable)
-
-                if np.isnan(dense.values).any():
-                    iflogger.warning('Unexpected NaNs found in design matrix; '
-                                     'regression may fail.')
 
                 dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
                 dense.to_hdf(dense_file, key='dense')
@@ -389,11 +374,9 @@ class LoadBIDSModel(SimpleInterface):
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
-    bids_dir = Directory(exists=True,
-                         mandatory=True,
-                         desc='BIDS dataset root directories')
-    derivatives = traits.Either(True, InputMultiPath(Directory(exists=True)),
-                                desc='Derivative folders')
+    database_path = Directory(exists=True,
+                              mandatory=True,
+                              desc='Path to bids database.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
     selectors = traits.Dict(desc='Additional selectors to be applied',
                             usedefault=True)
@@ -412,25 +395,24 @@ class BIDSSelect(SimpleInterface):
     def _run_interface(self, runtime):
         from bids.layout import BIDSLayout
 
-        derivatives = self.inputs.derivatives
-        layout = BIDSLayout(self.inputs.bids_dir, derivatives=derivatives)
+        layout = BIDSLayout.load(database_path=self.inputs.database_path)
 
         bold_files = []
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {**self.inputs.selectors, **ents}
-            bold_file = layout.get(extensions=['.nii', '.nii.gz'], **selectors)
+            selectors = {'desc': 'preproc', **self.inputs.selectors, **ents}
+            bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
                     "Could not find BOLD file in {} with entities {}"
-                    "".format(self.inputs.bids_dir, selectors))
+                    "".format(layout.root, selectors))
             elif len(bold_file) > 1:
                 raise ValueError(
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(self.inputs.bids_dir, selectors,
+                    "".format(layout.root, selectors,
                               "\n\t".join(
                                   '{} ({})'.format(
                                       f.path,
@@ -441,7 +423,8 @@ class BIDSSelect(SimpleInterface):
             bold_ents = layout.parse_file_entities(bold_file[0].path)
             bold_ents['suffix'] = 'mask'
             bold_ents['desc'] = 'brain'
-            mask_file = layout.get(extensions=['.nii', '.nii.gz'], **bold_ents)
+            bold_ents['extension'] = ['.nii', '.nii.gz']
+            mask_file = layout.get(**bold_ents)
             bold_ents.pop('suffix')
             bold_ents.pop('desc')
 
@@ -528,8 +511,9 @@ class BIDSDataSink(IOBase):
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
-                base_dir, layout.build_path(ents, path_patterns))
-            makedirs(os.path.dirname(out_fname), exist_ok=True)
+                base_dir, layout.build_path(
+                    ents, path_patterns, validate=False))
+            os.makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)
             out_files.append(out_fname)

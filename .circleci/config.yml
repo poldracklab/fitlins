@@ -31,13 +31,13 @@ jobs:
               --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" .
       - run:
           name: Verify executable can be run
-          command: docker run --rm -it poldracklab/fitlins:latest --help
+          command: docker run --rm poldracklab/fitlins:latest --help
       - run:
           name: Check version
           command: |
             THISVERSION=$( python3 -c 'import fitlins; print(fitlins.__version__)' )
             THISVERSION="${CIRCLE_TAG:-$THISVERSION}"
-            DOCKERVERSION=$(docker run --rm -it poldracklab/fitlins:latest --version \
+            DOCKERVERSION=$(docker run --rm poldracklab/fitlins:latest --version \
                            | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
             echo "$THISVERSION"
             echo "$DOCKERVERSION"
@@ -63,6 +63,8 @@ jobs:
       - image: markiewicz/datalad:0.0.1
     working_directory: /tmp/data
     steps:
+      - checkout:
+          path: /tmp/src
       - restore_cache:
           keys:
             - ds003-v0-{{ .Branch }}-
@@ -78,14 +80,15 @@ jobs:
           command: |
             datalad install -r ///labs/poldrack/ds003_fmriprep
             datalad update ds003_fmriprep/
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv
+            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                        ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                        ds003_fmriprep/dataset_description.json \
+                        ds003_fmriprep/sub-*/*/*.json
       - run:
           name: Download a model for ds000003
           command: |
               mkdir -p ds003_models
-              curl -sSL https://raw.githubusercontent.com/effigies/BIDS-examples/enh/models/ds003/models/model-001_smdl.json \
-                -o ds003_models/model-001_smdl.json
+              cp /tmp/src/examples/models/ds000003/models/model-001_smdl.json ds003_models/
       - save_cache:
          key: ds003-v0-{{ .Branch }}-{{ .BuildNum }}
          paths:
@@ -93,7 +96,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -138,7 +141,7 @@ jobs:
           command: |
               pyenv install 3.6.3
               pyenv local 3.6.3
-              python -m pip install -U coverage codecov
+              python -m pip install -U "coverage<5" codecov
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -157,7 +160,7 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -it -v /tmp/data/ds003_fmriprep:/data:ro \
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -v /tmp/data/ds003_models:/models \
@@ -169,14 +172,55 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
-                --n-cpus 2
+                --n-cpus 2 --mem-gb 4 -vv
+      - run:
+          name: Run FitLins Database-file
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/ds003/work_dbf 
+            chmod 777 /tmp/ds003/work_dbf /tmp/ds003/derivatives
+            export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
+                -v /tmp/ds003/derivatives:/out \
+                -v /tmp/ds003/work_dbf:/scratch \
+                -v /tmp/data/ds003_models:/models \
+                -e COVERAGE_FILE=/scratch/.coverage.database-file \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                coverage run \
+                --rcfile /src/fitlins/docker/multiproc.coveragerc \
+                $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
+                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --n-cpus 2 --database-path /out/pybidsdb -vv
+      - run:
+          name: Run FitLins Database-file_exists
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/ds003/work_dbf2 
+            chmod 777 /tmp/ds003/work_dbf2 /tmp/ds003/derivatives
+            export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
+            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
+                -v /tmp/ds003/derivatives:/out \
+                -v /tmp/ds003/work_dbf2:/scratch \
+                -v /tmp/data/ds003_models:/models \
+                -e COVERAGE_FILE=/scratch/.coverage.database-file \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                coverage run \
+                --rcfile /src/fitlins/docker/multiproc.coveragerc \
+                $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
+                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
           name: Combine coverage and submit
           command: |
               pyenv local 3.6.3
               python -m coverage combine \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.*
+                /tmp/ds003/work/.coverage.* \
+                /tmp/ds003/work_dbf*/.coverage.*
               sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
               python -m coverage xml
               python -m codecov --file coverage.xml --flags ds003 -e CIRCLE_JOB
@@ -185,7 +229,7 @@ jobs:
 
   test_packaging:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:
@@ -237,7 +281,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: python:latest
+      - image: python:3.7.4
     working_directory: /tmp/src/fitlins
     steps:
       - run:

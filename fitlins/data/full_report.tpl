@@ -101,7 +101,11 @@ summary.heading-2 {
         <h3>{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</h3>
         {% for contrast in analysis.contrasts %}
         <h4>{{ contrast.name }}</h4>
+        {% if contrast.glassbrain is none %}
+        <p> Missing contrast skipped (used: <code>--drop-missing</code>) </p>
+        {% else %}
         <img src="{{ contrast.glassbrain }}" />
+        {% endif %}
         {% endfor %}
         {% endfor %}
         {% endfor %}
