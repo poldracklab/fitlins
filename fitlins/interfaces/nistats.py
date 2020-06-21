@@ -219,7 +219,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                     map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
                     for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
                                      'effect_variance']
-                    }
+                }
 
             else:
                 fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
@@ -341,7 +341,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         'effect_size': dscalar_from_cifti(img, ffx_cont, "effect_size"),
                         'effect_variance': dscalar_from_cifti(img, ffx_var, "effect_variance"),
                         'stat': dscalar_from_cifti(img, ffx_t, "stat")
-                        }
+                    }
 
                 else:
                     ffx_res = compute_fixed_effects(contrast_imgs, variance_imgs)
@@ -349,7 +349,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         'effect_size': ffx_res[0],
                         'effect_variance': ffx_res[1],
                         'stat': ffx_res[2]
-                        }
+                    }
             else:
                 if is_cifti:
                     contrast = compute_contrast(labels, estimates, weights,
@@ -359,13 +359,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
                         for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
                                          'effect_variance']
-                        }
+                    }
                 else:
                     maps = model.compute_contrast(
                         second_level_contrast=weights,
                         second_level_stat_type=contrast_type,
                         output_type='all'
-                        )
+                    )
 
             for map_type, map_list in (('effect_size', effect_maps),
                                        ('effect_variance', variance_maps),
