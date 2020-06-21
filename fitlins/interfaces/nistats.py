@@ -72,7 +72,15 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         from nistats import design_matrix as dm
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
-        vols = img.shape[3]
+        if isinstance(img, nb.Cifti2Image):
+            vols = img.shape[0]
+        elif isinstance(img, nb.Nifti1Image):
+            vols = img.shape[3]
+        elif isinstance(img, nb.GiftiImage):
+            vols = len(img.darrays)
+        else:
+            raise ValueError(
+                f"Unknown image type ({img.__class__.__name__}) <{self.inputs.bold_file}>")
 
         drop_missing = bool(self.inputs.drop_missing)
 
