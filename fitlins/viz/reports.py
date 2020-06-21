@@ -65,10 +65,12 @@ def build_report_dict(deriv_dir, work_dir, analysis):
     for step in analysis.steps:
         report_step = {'name': step.level, 'analyses': []}
         report['steps'].append(report_step)
-        for _, _, ents in step.get_design_matrix():
-            contrasts = step.get_contrasts(**ents)[0]
-            for key in ('datatype', 'desc', 'suffix', 'extension',
-                        'RepetitionTime', 'SkullStripped', 'TaskName'):
+        for coll in step.get_collections():
+            ents = coll.entities.copy()
+            contrasts = step.get_contrasts(coll)
+            for key in ('datatype', 'desc', 'suffix', 'extension'):
+                ents.pop(key, None)
+            for key in analysis.layout.get_entities(metadata=True):
                 ents.pop(key, None)
 
             analysis = {

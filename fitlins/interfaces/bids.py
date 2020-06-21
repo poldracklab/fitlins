@@ -232,7 +232,18 @@ class LoadBIDSModel(SimpleInterface):
         design_info = []
         contrast_info = []
         warnings = []
-        for sparse, dense, ents in step.get_design_matrix():
+        for coll in step.get_collections():
+            sparse = dense = None
+            try:
+                sparse = coll.to_df(include_dense=False)
+            except ValueError:
+                pass
+            try:
+                dense = coll.to_df(include_sparse=False, sampling_rate="TR")
+            except ValueError:
+                pass
+            ents = coll.entities.copy()
+
             info = {}
 
             # Metadata is now included in entities
@@ -320,7 +331,7 @@ class LoadBIDSModel(SimpleInterface):
             info['dense'] = str(dense_file) if dense_file else None
             info['repetition_time'] = TR
 
-            contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
+            contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
             for con in contrasts:
                 con['weights'] = con['weights'].to_dict('records')
                 # Ugly hack. This should be taken care of on the pybids side.
@@ -351,11 +362,11 @@ class LoadBIDSModel(SimpleInterface):
     def _load_higher_level(self, runtime, analysis):
         for step in analysis.steps[1:]:
             contrast_info = []
-            for contrasts in step.get_contrasts():
-                if all([c.weights.empty for c in contrasts]):
+            for coll in step.get_collections():
+                contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
+                if all(c['weights'].empty for c in contrasts):
                     continue
 
-                contrasts = [dict(c._asdict()) for c in contrasts]
                 for contrast in contrasts:
                     contrast['weights'] = contrast['weights'].to_dict('records')
                     # Ugly hack. This should be taken care of on the pybids side.
