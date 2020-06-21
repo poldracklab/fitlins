@@ -29,7 +29,7 @@ class DesignMatrixInterface(BaseInterface):
 
 class FirstLevelEstimatorInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
-    mask_file = File(exists=True)
+    mask_file = traits.Either(File(exists=True), None)
     design_matrix = File(exists=True, mandatory=True)
     contrast_info = traits.List(traits.Dict)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
