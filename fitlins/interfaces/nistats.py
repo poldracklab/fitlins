@@ -151,6 +151,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import first_level_model as level1
+        from nistats.contrasts import compute_contrast
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
         if isinstance(img, nb.dataobj_images.DataobjImage):
