@@ -49,7 +49,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             selectors={'suffix': 'bold',
                        'desc': desc,
                        'space': space,
-                       'extension': ['nii.gz', 'nii', 'gii']}),
+                       'extension': ['.nii', '.nii.gz', '.dtseries.nii', '.func.gii']}),
         name='getter')
 
     if smoothing:

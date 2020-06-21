@@ -274,7 +274,7 @@ class LoadBIDSModel(SimpleInterface):
             if space is None:
                 spaces = analysis.layout.get_spaces(
                     suffix='bold',
-                    extension=['.nii', '.nii.gz'])
+                    extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
                 if spaces:
                     spaces = sorted(spaces)
                     space = spaces[0]
