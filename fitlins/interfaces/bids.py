@@ -257,12 +257,13 @@ class LoadBIDSModel(SimpleInterface):
                 fname = preproc_files[0].path
                 TR = analysis.layout.get_metadata(fname)['RepetitionTime']
 
+            # Ignore metadata entities
+            entity_whitelist = analysis.layout.get_entities(metadata=False)
+            ents = {key: ents[key] for key in ents if key in entity_whitelist}
+
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
-
-            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
-            ents.pop('TaskName', None)
 
             if step.level in ('session', 'subject', 'dataset'):
                 ents.pop('run', None)
@@ -412,7 +413,7 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {'desc': 'preproc', **self.inputs.selectors, **ents}
+            selectors = {'desc': 'preproc', **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
