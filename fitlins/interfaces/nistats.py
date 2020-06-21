@@ -98,7 +98,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             missing_columns = dense.isna().all()
             if drop_missing:
                 # Remove columns with NaNs
-                dense = dense[dense.columns[missing_columns == False]]
+                dense = dense[dense.columns[~missing_columns]]
             elif missing_columns.any():
                 missing_names = ', '.join(
                     dense.columns[missing_columns].tolist())
@@ -130,6 +130,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         self._results['design_matrix'] = os.path.join(runtime.cwd,
                                                       'design.tsv')
         return runtime
+
 
 def dscalar_from_cifti(img, data, name):
     import numpy as np
@@ -216,7 +217,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                                             contrast_type=contrast_type)
                 maps = {
                     map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
-                    for map_type in ['z_score', 'stat', 'p_value', 'effect_size', 'effect_variance']
+                    for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
+                                     'effect_variance']
                     }
 
             else:
@@ -309,8 +311,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             if is_cifti:
                 effect_data = np.array([nb.load(effect).get_fdata()
                                         for effect in filtered_effects])
-                labels, estimates = level1.run_glm(effect_data, design_matrix,
-                                                   noise_model='ols')
+                labels, estimates = level1.run_glm(effect_data, mat, noise_model='ols')
             else:
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=mat)
@@ -330,7 +331,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
                 contrast_imgs = np.array(filtered_effects)[dm_ix],
                 variance_imgs = np.array(filtered_variances)[dm_ix]
-                if cifti:
+                if is_cifti:
                     ffx_cont, ffx_var, ffx_t = _compute_fixed_effects_params(
                         np.array([nb.load(fname).get_fdata() for fname in contrast_imgs]),
                         np.array([nb.load(fname).get_fdata() for fname in variance_imgs]),
@@ -350,7 +351,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         'stat': ffx_res[2]
                         }
             else:
-                if cifti:
+                if is_cifti:
                     contrast = compute_contrast(labels, estimates, weights,
                                                 contrast_type=contrast_type)
                     img = nb.load(filtered_effects[0])
