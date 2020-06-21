@@ -1,4 +1,3 @@
-from copy import deepcopy
 import os
 import numpy as np
 import pandas as pd
@@ -124,16 +123,20 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                                                       'design.tsv')
         return runtime
 
-def dscalar_from_dtseries(img, data):
-    header = deepcopy(img.header)
-    header.matrix.pop(0)
-    header.matrix[0].AppliesToMatrixDimension = 0
-    header.matrix[0].IndicesMapToDataType = "CIFTI_INDEX_TYPE_SCALAR"
-    return img.__class__(data, header=header)
-
-
-def dscalar_from_dscalar(img, data):
-    return img.__class__(data, header=img.header)
+def dscalar_from_cifti(img, data, name):
+    import numpy as np
+    import nibabel as nb
+    scalar_axis = nb.cifti2.ScalarAxis(np.atleast_1d(name))
+    axes = [nb.cifti2.cifti2_axes.from_index_mapping(mim) for mim in img.header.matrix]
+    if len(axes) != 2:
+        raise ValueError(f"Can't generate dscalar CIFTI-2 from header with axes {axes}")
+    header = nb.cifti2.cifti2_axes.to_header(
+        axis if isinstance(axis, nb.cifti2.BrainModelAxis) else scalar_axis
+        for axis in axes)
+    new_img = nb.Cifti2Image(data.reshape(header.matrix.get_data_shape()), header=header,
+                             nifti_header=img.nifti_header)
+    new_img.nifti_header.set_intent('ConnDenseScalar')
+    return new_img
 
 
 class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, SimpleInterface):
@@ -206,7 +209,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                 contrast = compute_contrast(labels, estimates, weights,
                                             contrast_type=contrast_type)
                 maps = {
-                    map_type: dscalar_from_dtseries(img, getattr(contrast, map_type)())
+                    map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
                     for map_type in ['z_score', 'stat', 'p_value', 'effect_size', 'effect_variance']
                     }
 
@@ -328,9 +331,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         precision_weighted=False)
                     img = nb.load(filtered_effects[0])
                     maps = {
-                        'effect_size': dscalar_from_dscalar(img, ffx_cont),
-                        'effect_variance': dscalar_from_dscalar(img, ffx_var),
-                        'stat': dscalar_from_dscalar(img, ffx_t)
+                        'effect_size': dscalar_from_cifti(img, ffx_cont, "effect_size"),
+                        'effect_variance': dscalar_from_cifti(img, ffx_var, "effect_variance"),
+                        'stat': dscalar_from_cifti(img, ffx_t, "stat")
                         }
 
                 else:
@@ -346,7 +349,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                                                 contrast_type=contrast_type)
                     img = nb.load(filtered_effects[0])
                     maps = {
-                        map_type: dscalar_from_dscalar(img, getattr(contrast, map_type)())
+                        map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
                         for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
                                          'effect_variance']
                         }
