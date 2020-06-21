@@ -184,21 +184,18 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         out_ents = self.inputs.contrast_info[0]['entities']
 
         # Save model level images
-        model_attr = {
-            'r_square': flm.r_square[0],
-            'log_likelihood': _get_voxelwise_logL(flm)[0]
-        }
+        # model_attr = {
+        #     'r_square': flm.r_square[0],
+        #     'log_likelihood': _get_voxelwise_logL(flm)[0]
+        # }
 
-        model_maps = []
-        model_metadata = []
-        for attr, img in model_attr.items():
-            model_metadata.append(
-                {'stat': attr,
-                 **out_ents}
-                )
-            fname = fname_fmt('model', attr)
-            img.to_filename(fname)
-            model_maps.append(fname)
+        # model_maps = []
+        # model_metadata = []
+        # for attr, img in model_attr.items():
+        #     model_metadata.append{'stat': attr, **out_ents})
+        #     fname = fname_fmt('model', attr)
+        #     img.to_filename(fname)
+        #     model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
@@ -243,8 +240,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         self._results['zscore_maps'] = zscore_maps
         self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
-        self._results['model_maps'] = model_maps
-        self._results['model_metadata'] = model_metadata
+        # self._results['model_maps'] = model_maps
+        # self._results['model_metadata'] = model_metadata
 
         return runtime
 
