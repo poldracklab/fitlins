@@ -34,8 +34,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     loader = pe.Node(
         LoadBIDSModel(database_path=database_path,
                       model=model_dict,
-                      selectors={'desc': desc,
-                                 'space': space}),
+                      selectors={'desc': None, 'space': None}),
         name='loader')
 
     if participants is not None:
@@ -48,6 +47,8 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         BIDSSelect(
             database_path=database_path,
             selectors={'suffix': 'bold',
+                       'desc': desc,
+                       'space': space,
                        'extension': ['nii.gz', 'nii', 'gii']}),
         name='getter')
 

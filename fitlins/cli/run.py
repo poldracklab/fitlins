@@ -91,7 +91,6 @@ def get_parser():
     g_bids.add_argument('--derivative-label', action='store', type=str,
                         help='execution label to append to derivative directory name')
     g_bids.add_argument('--space', action='store',
-                        choices=['MNI152NLin2009cAsym', ''],
                         default='MNI152NLin2009cAsym',
                         help='registered space of input datasets. '
                              'Empty value for no explicit space.')
@@ -162,6 +161,9 @@ def run_fitlins(argv=None):
     if not opts.space:
         # make it an explicit None
         opts.space = None
+    if not opts.desc_label:
+        # make it an explicit None
+        opts.desc_label = None
 
     ncpus = opts.n_cpus
     if ncpus < 1:
@@ -252,9 +254,7 @@ def run_fitlins(argv=None):
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
 
-    selectors = {'desc': opts.desc_label}
-    if opts.space is not None:
-        selectors['space'] = opts.space
+    selectors = {'desc': None, 'space': None}
     if subject_list is not None:
         selectors['subject'] = subject_list
 
