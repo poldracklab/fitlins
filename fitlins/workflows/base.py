@@ -34,7 +34,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     loader = pe.Node(
         LoadBIDSModel(database_path=database_path,
                       model=model_dict,
-                      selectors={'desc': None, 'space': None}),
+                      selectors={'desc': desc, 'space': space}),
         name='loader')
 
     if participants is not None:
