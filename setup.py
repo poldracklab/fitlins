@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-""" fitlins setup script """
+import sys
+import os
+
 from setuptools import setup
+import versioneer
 
-if __name__ == '__main__':
-    """ Install entry-point """
-    import versioneer
-    from fitlins.__about__ import __version__, DOWNLOAD_URL
+# Give setuptools a hint to complain if it's too old a version
+# 30.3.0 allows us to put most metadata in setup.cfg
+# Should match pyproject.toml
+SETUP_REQUIRES = ['setuptools >= 30.3.0']
+# This enables setuptools to install wheel on-the-fly
+SETUP_REQUIRES += ['wheel'] if 'bdist_wheel' in sys.argv else []
 
-    cmdclass = versioneer.get_cmdclass()
-
-    setup(
-        name='fitlins',
-        version=__version__,
-        cmdclass=cmdclass,
-        download_url=DOWNLOAD_URL,
-    )
+if __name__ == "__main__":
+    setup(name='fitlins',
+          setup_requires=SETUP_REQUIRES,
+          version=versioneer.get_version(),
+          cmdclass=versioneer.get_cmdclass())
