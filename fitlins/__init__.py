@@ -18,6 +18,10 @@ else:
 
 from .__about__ import __version__
 
-import bids
-bids.config.set_option('extension_initial_dot', True)
-del bids
+try:
+    import bids
+except ImportError:
+    pass
+else:
+    bids.config.set_option('extension_initial_dot', True)
+    del bids
