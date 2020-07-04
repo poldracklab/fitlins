@@ -254,7 +254,7 @@ def run_fitlins(argv=None):
                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S %z'),
                    }
 
-    selectors = {'desc': None, 'space': None}
+    selectors = {'desc': opts.desc_label, 'space': opts.space}
     if subject_list is not None:
         selectors['subject'] = subject_list
 
