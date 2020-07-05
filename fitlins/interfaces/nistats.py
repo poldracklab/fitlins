@@ -135,6 +135,13 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 def dscalar_from_cifti(img, data, name):
     import numpy as np
     import nibabel as nb
+
+    # Clear old CIFTI-2 extensions from NIfTI header and set intent
+    nifti_header = img.nifti_header.copy()
+    nifti_header.extensions.clear()
+    nifti_header.set_intent('ConnDenseScalar')
+
+    # Create CIFTI-2 header
     scalar_axis = nb.cifti2.ScalarAxis(np.atleast_1d(name))
     axes = [nb.cifti2.cifti2_axes.from_index_mapping(mim) for mim in img.header.matrix]
     if len(axes) != 2:
@@ -142,9 +149,9 @@ def dscalar_from_cifti(img, data, name):
     header = nb.cifti2.cifti2_axes.to_header(
         axis if isinstance(axis, nb.cifti2.BrainModelAxis) else scalar_axis
         for axis in axes)
+
     new_img = nb.Cifti2Image(data.reshape(header.matrix.get_data_shape()), header=header,
-                             nifti_header=img.nifti_header)
-    new_img.nifti_header.set_intent('ConnDenseScalar')
+                             nifti_header=nifti_header)
     return new_img
 
 
