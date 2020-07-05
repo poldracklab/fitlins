@@ -46,8 +46,8 @@ def bids_split_filename(fname):
         file extension of fname
     """
     special_extensions = [
-        ".R.surf.gii", ".L.surf.gii",
-        ".R.func.gii", ".L.func.gii",
+        ".surf.gii", ".func.gii",
+        ".dtseries.nii", ".dscalar.nii",
         ".nii.gz", ".tsv.gz",
         ]
 
@@ -502,6 +502,7 @@ class BIDSDataSink(IOBase):
     output_spec = BIDSDataSinkOutputSpec
 
     _always_run = True
+    _extension_map = {".nii": ".nii.gz"}
 
     def _list_outputs(self):
         from bids.layout import BIDSLayout
@@ -519,6 +520,8 @@ class BIDSDataSink(IOBase):
                                      self.inputs.in_file):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
+            ext = bids_split_filename(in_file)[2]
+            ents['extension'] = self._extension_map.get(ext, ext)
 
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 

@@ -104,22 +104,23 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_' \
-        '{suffix<design|corr|contrasts>}.svg'
+        '{suffix<design|corr|contrasts>}{extension<.svg>|.svg}'
     contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_ortho.png'
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_ortho{extension<.png>|.png}'
     design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
-        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}.tsv'
+        '[_rec-{reconstruction}][_run-{run}][_echo-{echo}]_{suffix<design>}{extension<.tsv>|.tsv}'
     contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_statmap.nii.gz'
+        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_' \
+        'statmap{extension<.nii.gz|.dscalar.nii>}'
     model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'stat-{stat<rSquare|logLikelihood>}_statmap.nii.gz'
+        'stat-{stat<rSquare|logLikelihood>}_statmap{extension<.nii.gz|.dscalar.nii>}'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
