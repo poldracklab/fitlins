@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
@@ -113,12 +114,68 @@ class GlassBrainPlot(Visualization):
         vmax = self.inputs.vmax
         if not isdefined(vmax):
             vmax = None
-            abs_data = np.abs(data.get_fdata())
+            abs_data = np.abs(data.get_fdata(dtype=np.float32))
             pctile99 = np.percentile(abs_data, 99.99)
             if abs_data.max() - pctile99 > 10:
                 vmax = pctile99
-        nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
-                             display_mode='lyrz', axes=None,
-                             vmax=vmax, threshold=self.inputs.threshold,
-                             cmap=self.inputs.colormap,
-                             output_file=out_name)
+        if isinstance(data, nb.Cifti2Image):
+            plot_dscalar(data, vmax=vmax, threshold=self.inputs.threshold,
+                         cmap=self.inputs.colormap, output_file=out_name)
+        else:
+            nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
+                                 display_mode='lyrz', axes=None,
+                                 vmax=vmax, threshold=self.inputs.threshold,
+                                 cmap=self.inputs.colormap,
+                                 output_file=out_name)
+
+
+def plot_dscalar(img, colorbar=True, plot_abs=False,
+                 vmax=None, threshold=None, cmap='cold_hot', output_file=None):
+    import matplotlib as mpl
+    from matplotlib import pyplot as plt
+    subcort, ltexture, rtexture = decompose_dscalar(img)
+    fig = plt.figure(figsize=(11, 9))
+    ax1 = plt.subplot2grid((3, 2), (0, 0), projection='3d')
+    ax2 = plt.subplot2grid((3, 2), (0, 1), projection='3d')
+    ax3 = plt.subplot2grid((3, 2), (1, 0), projection='3d')
+    ax4 = plt.subplot2grid((3, 2), (1, 1), projection='3d')
+    ax5 = plt.subplot2grid((3, 2), (2, 0), colspan=2)
+    lsurf = nb.load('/home/cjmarkie/Downloads/Conte69.L.inflated.32k_fs_LR.surf.gii').agg_data()
+    rsurf = nb.load('/home/cjmarkie/Downloads/Conte69.R.inflated.32k_fs_LR.surf.gii').agg_data()
+    kwargs = {'threshold': None if threshold == 'auto' else threshold,
+              'colorbar': False, 'plot_abs': plot_abs, 'cmap': cmap, 'vmax': vmax}
+    nlp.plot_surf_stat_map(lsurf, ltexture, view='lateral', axes=ax1, **kwargs)
+    nlp.plot_surf_stat_map(rsurf, rtexture, view='medial', axes=ax2, **kwargs)
+    nlp.plot_surf_stat_map(lsurf, ltexture, view='medial', axes=ax3, **kwargs)
+    nlp.plot_surf_stat_map(rsurf, rtexture, view='lateral', axes=ax4, **kwargs)
+    nlp.plot_glass_brain(subcort, display_mode='lyrz', axes=ax5, **kwargs)
+    if colorbar:
+        data = img.get_fdata(dtype=np.float32)
+        if vmax is None:
+            vmax = max(-data.min(), data.max())
+        norm = mpl.colors.Normalize(vmin=-vmax if data.min() < 0 else 0, vmax=vmax)
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        fig.colorbar(sm, ax=fig.axes, location='right', aspect=50)
+    if output_file:
+        fig.savefig(output_file)
+        plt.close(fig)
+
+
+def decompose_dscalar(img):
+    data = img.get_fdata(dtype=np.float32)
+    ax = img.header.get_axis(1)
+    vol = np.zeros(ax.volume_shape, dtype=np.float32)
+    vox_indices = tuple(ax.voxel[ax.volume_mask].T)
+    vol[vox_indices] = data[:, ax.volume_mask]
+    subcort = nb.Nifti1Image(vol, ax.affine)
+
+    surfs = {}
+    for name, indices, brainmodel in ax.iter_structures():
+        if not name.startswith('CIFTI_STRUCTURE_CORTEX_'):
+            continue
+        hemi = name.split('_')[3].lower()
+        texture = np.zeros(brainmodel.vertex.max() + 1, dtype=np.float32)
+        texture[brainmodel.vertex] = data[:, indices]
+        surfs[hemi] = texture
+
+    return subcort, surfs['left'], surfs['right']
