@@ -336,7 +336,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 # Index of all input files "involved" with that contrast
                 dm_ix = mat.iloc[:, con_ix].any(axis=1)
 
-                contrast_imgs = np.array(filtered_effects)[dm_ix],
+                contrast_imgs = np.array(filtered_effects)[dm_ix]
                 variance_imgs = np.array(filtered_variances)[dm_ix]
                 if is_cifti:
                     ffx_cont, ffx_var, ffx_t = _compute_fixed_effects_params(
