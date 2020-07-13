@@ -1,1 +1,1 @@
-git+https://github.com/effigies/pybids.git@fix/load_time_variables
+git+https://github.com/bids-standard/pybids.git@master
