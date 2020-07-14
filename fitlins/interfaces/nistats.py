@@ -316,9 +316,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     "At least two inputs are required for a 't' for 'F' "
                     "second level contrast")
             if is_cifti:
-                effect_data = np.array([nb.load(effect).get_fdata()
-                                        for effect in filtered_effects])
-                labels, estimates = level1.run_glm(effect_data, mat, noise_model='ols')
+                effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
+                                          for effect in filtered_effects])
+                labels, estimates = level1.run_glm(effect_data, mat.values, noise_model='ols')
             else:
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=mat)
@@ -340,8 +340,10 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 variance_imgs = np.array(filtered_variances)[dm_ix]
                 if is_cifti:
                     ffx_cont, ffx_var, ffx_t = _compute_fixed_effects_params(
-                        np.array([nb.load(fname).get_fdata() for fname in contrast_imgs]),
-                        np.array([nb.load(fname).get_fdata() for fname in variance_imgs]),
+                        np.squeeze([nb.load(fname).get_fdata(dtype='f4')
+                                    for fname in contrast_imgs]),
+                        np.squeeze([nb.load(fname).get_fdata(dtype='f4')
+                                    for fname in variance_imgs]),
                         precision_weighted=False)
                     img = nb.load(filtered_effects[0])
                     maps = {
