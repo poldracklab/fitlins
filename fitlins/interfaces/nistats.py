@@ -38,31 +38,14 @@ def prepare_contrasts(contrasts, all_regressors):
     return out_contrasts
 
 
-def _get_voxelwise_logL(flm):
-    """
-    Given a FirstLevelModel, computed voxel wise log-likelihood map
-    Returns
-    -------
-    output : list
-        a list of Nifti1Image(s)
-    """
+def _get_voxelwise_stat(labels, results, stat):
+    voxelwise_attribute = np.zeros((1, len(labels)))
 
-    output = []
-    for design_matrix, labels, results in zip(flm.design_matrices_,
-                                              flm.labels_,
-                                              flm.results_
-                                              ):
+    for label_ in results:
+        label_mask = labels == label_
+        voxelwise_attribute[:, label_mask] = getattr(results[label_], stat)
 
-        voxelwise_attribute = np.zeros((1, len(labels)))
-
-        for label_ in results:
-            label_mask = labels == label_
-            voxelwise_attribute[:, label_mask] = getattr(results[label_],
-                                                         'logL')
-
-        output.append(flm.masker_.inverse_transform(voxelwise_attribute))
-
-    return output
+    return voxelwise_attribute
 
 
 class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface):
@@ -162,6 +145,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         from nistats.contrasts import compute_contrast
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
+
+        is_cifti = isinstance(img, nb.Cifti2Image)
         if isinstance(img, nb.dataobj_images.DataobjImage):
             # Ugly hack to ensure that retrieved data isn't cast to float64 unless
             # necessary to prevent an overflow
@@ -181,29 +166,40 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-        if isinstance(img, nb.Cifti2Image):
-            labels, estimates = level1.run_glm(img.get_fdata(), mat.values)
+        if is_cifti:
+            fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
+            labels, estimates = level1.run_glm(img.get_fdata(dtype='f4'), mat.values)
+            model_attr = {
+                'r_square': dscalar_from_cifti(img,
+                                               _get_voxelwise_stat(labels, estimates, 'r_square'),
+                                               'r_square'),
+                'log_likelihood': dscalar_from_cifti(img,
+                                                     _get_voxelwise_stat(labels, estimates, 'logL'),
+                                                     'log_likelihood')
+            }
         else:
+            fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
             flm = level1.FirstLevelModel(
                 minimize_memory=False,
                 mask_img=mask_file, smoothing_fwhm=smoothing_fwhm)
             flm.fit(img, design_matrices=mat)
+            model_attr = {
+                'r_square': flm.r_square[0],
+                'log_likelihood': flm.masker_.inverse_transform(
+                    _get_voxelwise_stat(flm.labels_[0], flm.results_[0], 'logL'))
+            }
 
         out_ents = self.inputs.contrast_info[0]['entities']
 
         # Save model level images
-        # model_attr = {
-        #     'r_square': flm.r_square[0],
-        #     'log_likelihood': _get_voxelwise_logL(flm)[0]
-        # }
 
-        # model_maps = []
-        # model_metadata = []
-        # for attr, img in model_attr.items():
-        #     model_metadata.append{'stat': attr, **out_ents})
-        #     fname = fname_fmt('model', attr)
-        #     img.to_filename(fname)
-        #     model_maps.append(fname)
+        model_maps = []
+        model_metadata = []
+        for attr, img in model_attr.items():
+            model_metadata.append({'stat': attr, **out_ents})
+            fname = fname_fmt('model', attr)
+            img.to_filename(fname)
+            model_maps.append(fname)
 
         effect_maps = []
         variance_maps = []
@@ -218,8 +214,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                  'stat': contrast_type,
                  **out_ents}
                 )
-            if isinstance(img, nb.Cifti2Image):
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
+            if is_cifti:
                 contrast = compute_contrast(labels, estimates, weights,
                                             contrast_type=contrast_type)
                 maps = {
@@ -229,7 +224,6 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                 }
 
             else:
-                fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
                 maps = flm.compute_contrast(weights, contrast_type,
                                             output_type='all')
 
@@ -249,8 +243,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         self._results['zscore_maps'] = zscore_maps
         self._results['pvalue_maps'] = pvalue_maps
         self._results['contrast_metadata'] = contrast_metadata
-        # self._results['model_maps'] = model_maps
-        # self._results['model_metadata'] = model_metadata
+        self._results['model_maps'] = model_maps
+        self._results['model_metadata'] = model_metadata
 
         return runtime
 
