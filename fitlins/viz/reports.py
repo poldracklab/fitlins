@@ -65,13 +65,15 @@ def build_report_dict(deriv_dir, work_dir, analysis):
     for step in analysis.steps:
         report_step = {'name': step.level, 'analyses': []}
         report['steps'].append(report_step)
-        for _, _, ents in step.get_design_matrix():
-            contrasts = step.get_contrasts(**ents)[0]
-            for key in ('datatype', 'desc', 'suffix', 'extension',
-                        'RepetitionTime', 'SkullStripped', 'TaskName'):
+        for coll in step.get_collections():
+            ents = coll.entities.copy()
+            contrasts = step.get_contrasts(coll)
+            for key in ('datatype', 'desc', 'suffix', 'extension'):
+                ents.pop(key, None)
+            for key in analysis.layout.get_entities(metadata=True):
                 ents.pop(key, None)
 
-            analysis = {
+            analysis_dict = {
                 'entities': {
                     key: val
                     for key, val in ents.items()
@@ -83,11 +85,11 @@ def build_report_dict(deriv_dir, work_dir, analysis):
                 glassbrain = fl_layout.get(
                     contrast=snake_to_camel(contrast.name),
                     suffix='ortho', extension='png', **ents)
-                analysis['contrasts'].append(
+                analysis_dict['contrasts'].append(
                     {'name': displayify(contrast.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
-            report_step['analyses'].append(analysis)
+            report_step['analyses'].append(analysis_dict)
 
             # Space doesn't apply to design/contrast matrices
             ents.pop('space', None)
@@ -96,18 +98,18 @@ def build_report_dict(deriv_dir, work_dir, analysis):
             contrast_matrix = fl_layout.get(suffix='contrasts', extension='svg', **ents)
             warning = wd_layout.get(extension='.html', suffix='snippet', **ents)
             if design_matrix:
-                analysis['design_matrix'] = design_matrix[0].path
+                analysis_dict['design_matrix'] = design_matrix[0].path
             if correlation_matrix:
-                analysis['correlation_matrix'] = correlation_matrix[0].path
+                analysis_dict['correlation_matrix'] = correlation_matrix[0].path
             if contrast_matrix:
-                analysis['contrast_matrix'] = contrast_matrix[0].path
+                analysis_dict['contrast_matrix'] = contrast_matrix[0].path
             if warning:
-                analysis['warning'] = Path(warning[0].path).read_text()
+                analysis_dict['warning'] = Path(warning[0].path).read_text()
 
     # Get subjects hackily
     report['subjects'] = sorted({
-        analysis['entities']['subject']
-        for analysis in report['steps'][0]['analyses']})
+        analysis_dict['entities']['subject']
+        for analysis_dict in report['steps'][0]['analyses']})
 
     return report
 

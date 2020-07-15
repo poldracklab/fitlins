@@ -46,8 +46,8 @@ def bids_split_filename(fname):
         file extension of fname
     """
     special_extensions = [
-        ".R.surf.gii", ".L.surf.gii",
-        ".R.func.gii", ".L.func.gii",
+        ".surf.gii", ".func.gii",
+        ".dtseries.nii", ".dscalar.nii",
         ".nii.gz", ".tsv.gz",
         ]
 
@@ -232,7 +232,18 @@ class LoadBIDSModel(SimpleInterface):
         design_info = []
         contrast_info = []
         warnings = []
-        for sparse, dense, ents in step.get_design_matrix():
+        for coll in step.get_collections():
+            sparse = dense = None
+            try:
+                sparse = coll.to_df(include_dense=False)
+            except ValueError:
+                pass
+            try:
+                dense = coll.to_df(include_sparse=False, sampling_rate="TR")
+            except ValueError:
+                pass
+            ents = coll.entities.copy()
+
             info = {}
 
             # Metadata is now included in entities
@@ -246,12 +257,13 @@ class LoadBIDSModel(SimpleInterface):
                 fname = preproc_files[0].path
                 TR = analysis.layout.get_metadata(fname)['RepetitionTime']
 
+            # Ignore metadata entities
+            entity_whitelist = analysis.layout.get_entities(metadata=False)
+            ents = {key: ents[key] for key in ents if key in entity_whitelist}
+
             # ents is now pretty populous
             ents.pop('suffix', None)
             ents.pop('datatype', None)
-
-            ents.pop('SkullStripped', None)  # Required by spec, but don't complain if missing
-            ents.pop('TaskName', None)
 
             if step.level in ('session', 'subject', 'dataset'):
                 ents.pop('run', None)
@@ -263,7 +275,7 @@ class LoadBIDSModel(SimpleInterface):
             if space is None:
                 spaces = analysis.layout.get_spaces(
                     suffix='bold',
-                    extension=['.nii', '.nii.gz'])
+                    extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
                 if spaces:
                     spaces = sorted(spaces)
                     space = spaces[0]
@@ -320,7 +332,7 @@ class LoadBIDSModel(SimpleInterface):
             info['dense'] = str(dense_file) if dense_file else None
             info['repetition_time'] = TR
 
-            contrasts = [dict(c._asdict()) for c in step.get_contrasts(**ents)[0]]
+            contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
             for con in contrasts:
                 con['weights'] = con['weights'].to_dict('records')
                 # Ugly hack. This should be taken care of on the pybids side.
@@ -351,11 +363,11 @@ class LoadBIDSModel(SimpleInterface):
     def _load_higher_level(self, runtime, analysis):
         for step in analysis.steps[1:]:
             contrast_info = []
-            for contrasts in step.get_contrasts():
-                if all([c.weights.empty for c in contrasts]):
+            for coll in step.get_collections():
+                contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
+                if all(c['weights'].empty for c in contrasts):
                     continue
 
-                contrasts = [dict(c._asdict()) for c in contrasts]
                 for contrast in contrasts:
                     contrast['weights'] = contrast['weights'].to_dict('records')
                     # Ugly hack. This should be taken care of on the pybids side.
@@ -401,7 +413,7 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {'desc': 'preproc', **self.inputs.selectors, **ents}
+            selectors = {'desc': 'preproc', **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
@@ -490,6 +502,7 @@ class BIDSDataSink(IOBase):
     output_spec = BIDSDataSinkOutputSpec
 
     _always_run = True
+    _extension_map = {".nii": ".nii.gz"}
 
     def _list_outputs(self):
         from bids.layout import BIDSLayout
@@ -507,6 +520,8 @@ class BIDSDataSink(IOBase):
                                      self.inputs.in_file):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
+            ext = bids_split_filename(in_file)[2]
+            ents['extension'] = self._extension_map.get(ext, ext)
 
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
