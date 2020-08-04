@@ -1,3 +1,4 @@
+from pkg_resources import resource_filename
 import numpy as np
 import pandas as pd
 import nibabel as nb
@@ -140,8 +141,9 @@ def plot_dscalar(img, colorbar=True, plot_abs=False,
     ax3 = plt.subplot2grid((3, 2), (1, 0), projection='3d')
     ax4 = plt.subplot2grid((3, 2), (1, 1), projection='3d')
     ax5 = plt.subplot2grid((3, 2), (2, 0), colspan=2)
-    lsurf = nb.load('/home/cjmarkie/Downloads/Conte69.L.inflated.32k_fs_LR.surf.gii').agg_data()
-    rsurf = nb.load('/home/cjmarkie/Downloads/Conte69.R.inflated.32k_fs_LR.surf.gii').agg_data()
+    surf_fmt = 'data/conte69/tpl-conte69_hemi-{hemi}_space-fsLR_den-32k_inflated.surf.gii'.format
+    lsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='L'))).agg_data()
+    rsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='R'))).agg_data()
     kwargs = {'threshold': None if threshold == 'auto' else threshold,
               'colorbar': False, 'plot_abs': plot_abs, 'cmap': cmap, 'vmax': vmax}
     nlp.plot_surf_stat_map(lsurf, ltexture, view='lateral', axes=ax1, **kwargs)
