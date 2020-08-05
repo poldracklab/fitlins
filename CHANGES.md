@@ -1,3 +1,25 @@
+0.7.0 (August 05, 2020)
+=======================
+
+New feature release in the 0.7.x series. This is an accumulation of changes over
+several months.
+
+This release requires PyBIDS 0.12 and includes some *quite provisional* CIFTI-2 support
+as well as log-likelihood and R^2 maps for assessing goodness of fit.
+
+* FIX: Downgrade Sphinx to <3.0 (https://github.com/poldracklab/fitlins/pull/226)
+* FIX: Validate BIDS datasets except when searching for models (https://github.com/poldracklab/fitlins/pull/214)
+* FIX: Blacklist coverage >=5 (https://github.com/poldracklab/fitlins/pull/209)
+* ENH: Bundle Conte69 surfaces (https://github.com/poldracklab/fitlins/pull/249)
+* ENH: Add CIFTI-2 support (https://github.com/poldracklab/fitlins/pull/239)
+* ENH: Add logL as model output (https://github.com/poldracklab/fitlins/pull/230)
+* ENH: Save model level output (r-squared) (https://github.com/poldracklab/fitlins/pull/224)
+* ENH: Add FEMA as key value to stat `path_pattern` (https://github.com/poldracklab/fitlins/pull/220)
+* RF: Accept nipype configurations from users (https://github.com/poldracklab/fitlins/pull/229)
+* MNT: Update requirements (https://github.com/poldracklab/fitlins/pull/225)
+* MNT: Bump pybids to 0.10.2 (https://github.com/poldracklab/fitlins/pull/216)
+* CI: Improve outputs (https://github.com/poldracklab/fitlins/pull/218)
+
 0.6.2 (December 13, 2019)
 =========================
 
