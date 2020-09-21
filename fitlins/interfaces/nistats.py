@@ -71,7 +71,8 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
                 columns={'condition': 'trial_type',
                          'amplitude': 'modulation'})
-            sparse = sparse.dropna(subset=['modulation'])  # Drop NAs
+            if 'modulation' in sparse.columns:
+                sparse = sparse.dropna(subset=['modulation'])  # Drop NAs
         else:
             sparse = None
 
