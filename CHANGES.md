@@ -1,3 +1,12 @@
+0.7.1 (October 09, 2020)
+========================
+
+Bug-fix release in the 0.7.x series.
+
+This release requires PyBIDS 0.12.2 or higher, fixing various bugs that affected FitLins.
+
+* Only drop modulation if needed (https://github.com/poldracklab/fitlins/pull/253)
+
 0.7.0 (August 05, 2020)
 =======================
 
