@@ -235,7 +235,7 @@ class LoadBIDSModel(SimpleInterface):
         for coll in step.get_collections():
             sparse = dense = None
             try:
-                sparse = coll.to_df(include_dense=False)
+                sparse = coll.to_df(include_dense=False, format='long')
             except ValueError:
                 pass
             try:
