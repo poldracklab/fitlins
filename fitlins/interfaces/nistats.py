@@ -106,7 +106,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             frame_times=np.arange(vols) * info['repetition_time'],
             events=sparse,
             add_regs=dense,
-            hrf_model=None,
+            hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
             drift_model=drift_model,
         )
