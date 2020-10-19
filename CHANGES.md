@@ -1,3 +1,13 @@
+0.8.0 (October 19, 2020)
+========================
+
+New feature release in the 0.8.x series.
+
+This release includes a change where events that are not explicitly convolved
+are modeled with boxcar functions instead of the nistats default.
+
+* FIX: Sparse matrix should be in long format, and HRF should be None by default (https://github.com/poldracklab/fitlins/pull/259)
+
 0.7.1 (October 09, 2020)
 ========================
 
