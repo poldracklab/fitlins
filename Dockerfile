@@ -8,7 +8,7 @@
 # 
 #     https://github.com/kaczmarj/neurodocker
 
-FROM neurodebian@sha256:5fbbad8c68525b588a459092254094436aae9dc1f3920f8d871a03053b10377c
+FROM neurodebian
 
 USER root
 
