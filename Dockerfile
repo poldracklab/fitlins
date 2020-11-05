@@ -75,7 +75,8 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
            "git=2.23.0" \
     && sync && conda clean --all && sync
 
-RUN conda install -y -q --name neuro \
+RUN conda install -y -q --name neuro -c leej3 \
+           "afni-minimal" \
            "numpy=1.17.2" \
            "scipy=1.3.1" \
            "scikit-learn=0.21.3" \
@@ -86,6 +87,7 @@ RUN conda install -y -q --name neuro \
            "patsy=0.5.1" \
            "traits=5.1.2" \
     && sync && conda clean --all && sync
+
 
 COPY [".", "/src/fitlins"]
 
