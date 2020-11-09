@@ -24,6 +24,7 @@ RUN export ND_ENTRYPOINT="/neurodocker/startup.sh" \
            bzip2 \
            ca-certificates \
            curl \
+           git \
            locales \
            unzip \
     && apt-get clean \
