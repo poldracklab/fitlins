@@ -105,7 +105,6 @@ RUN echo "$VERSION" > /src/fitlins/VERSION && sed -i -e 's/crashfile_format = pk
 RUN bash -c "source activate neuro \
     &&   pip install --no-cache-dir -r \
              "/src/fitlins/requirements.txt"" \
-    && pip install --upgrade git+git://github.com/Shotgunosine/pybids.git@fix_scanlength \
     && rm -rf ~/.cache/pip/* \
     && sync \
     && sed -i '$isource activate neuro' $ND_ENTRYPOINT
@@ -113,6 +112,7 @@ RUN bash -c "source activate neuro \
 RUN bash -c "source activate neuro \
     &&   pip install --no-cache-dir  \
              "/src/fitlins[all]"" \
+    && pip install --upgrade git+git://github.com/Shotgunosine/pybids.git@fix_scanlength \
     && rm -rf ~/.cache/pip/* \
     && sync \
     && sed -i '$isource activate neuro' $ND_ENTRYPOINT
