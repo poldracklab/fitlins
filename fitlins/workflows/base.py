@@ -7,7 +7,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
                     base_dir=None, name='fitlins_wf',
-                    estimator=None):
+                    estimator=None, errorts=False):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
     from ..interfaces.bids import (
@@ -92,7 +92,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     else:
         from ..interfaces.nistats import FirstLevelModel
     l1_model = pe.MapNode(
-        FirstLevelModel(),
+        FirstLevelModel(errorts=errorts),
         iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
         mem_gb=3,
         name='l1_model')

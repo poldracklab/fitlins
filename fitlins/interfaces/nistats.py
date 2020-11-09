@@ -141,6 +141,10 @@ def dscalar_from_cifti(img, data, name):
 
 
 class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, SimpleInterface):
+    def __init__(self, errorts=False, *args, **kwargs):
+        super(FirstLevelModel, self).__init__(*args, **kwargs)
+        self.errorts = errorts
+        
     def _run_interface(self, runtime):
         import nibabel as nb
         from nistats import first_level_model as level1

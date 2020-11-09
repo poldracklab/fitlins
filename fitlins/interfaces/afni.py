@@ -54,6 +54,10 @@ STAT_CODES = nb.volumeutils.Recoder(
 
 
 class FirstLevelModel(FirstLevelModel):
+    def __init__(self, errorts=False, *args, **kwargs):
+        super(FirstLevelModel, self).__init__(*args, **kwargs)
+        self.errorts = errorts
+
     def _run_interface(self, runtime):
         """
         Fit a GLM using AFNI's 3dREMLfit
@@ -129,6 +133,7 @@ class FirstLevelModel(FirstLevelModel):
         remlfit.inputs.matrix = design_fname
         remlfit.inputs.out_file = "glt_results.nii.gz"
         remlfit.inputs.var_file = "glt_extra_variables.nii.gz"
+        remlfit.inputs.wherr_file = "wherrorts.nii.gz"
         remlfit.inputs.tout = True
         remlfit.inputs.rout = True
         remlfit.inputs.fout = True
@@ -137,6 +142,25 @@ class FirstLevelModel(FirstLevelModel):
         remlfit.inputs.goforit = True
         remlfit.inputs.mask = self.inputs.mask_file
         reml_res = remlfit.run()
+
+        # calc smoothness
+        fwhm = afni.FWHMx()
+        fwhm.inputs.in_file = reml_res.outputs.wherr_file
+        fwhm.inputs.out_file = "residual_smoothness.out"
+        fwhm_res = fwhm.run()
+        self._results['residual_smoothness'] = fwhm_res.outputs.out_file
+
+        # calc tsnr
+        tsnr = afni.TStat()
+        tsnr.inputs.in_file = reml_res.outputs.wherr_file
+        tsnr.inputs.out_file = "residual_tsnr.nii.gz"
+        tsnr.inputs.options = "-tsnr"
+        tsnr_res = tsnr.run()
+        self._results['residual_tsnr'] = tsnr_res.outputs.out_file
+
+        # save error time series if people want it
+        if self.errorts:
+            self._results["errorts"] = reml_res.outputs.wherr_file
 
         # get pvals and zscore buckets (niftis with heterogenous intent codes)
         pval = Pval()
@@ -330,15 +354,17 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
         # CommandLine = "{' '.join(sys.argv)}"
         # ColumnLabels = "{column_labels}"
         # {test_info}
-        # Nstim = {len(stim_labels)}
-        # StimBots = "{stim_pos}"
-        # StimTops = "{stim_pos}"
-        # StimLabels = "{'; '.join(stim_labels)}"
         # >
         {design_vals}
         # </matrix>
         """
-
+    # Removing StimLabels to prevent duplication in the output files
+    # when GLTs of the same name are specified
+    # Here's the code to include them later if we so choose
+        # Nstim = {len(stim_labels)}
+        # StimBots = "{stim_pos}"
+        # StimTops = "{stim_pos}"
+        # StimLabels = "{'; '.join(stim_labels)}"
     design_mat = "\n".join([line.lstrip() for line in design_mat.splitlines()])
     return design_mat
 
