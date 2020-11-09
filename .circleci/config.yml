@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
@@ -121,70 +121,11 @@ jobs:
       - store_artifacts:
           path: /tmp/src/fitlins/docs/_build/html
 
-  test_ds003_afni:
-    docker:
-      - image: neurodebian:nd100-non-free
-    steps:
-      - run:
-          name: Update apt cache and install certificates
-          command: |
-              apt-get update
-              DEBIAN_FRONTEND=noninteractive apt-get -yq install ca-certificates
-      - checkout
-      - restore_cache:
-          keys:
-            - ds003-v0-{{ .Branch }}-
-            - ds003-v0-master-
-            - ds003-v0-
-      - run:
-          name: Install AFNI, Python, Pip, git
-          command: |
-              DEBIAN_FRONTEND=noninteractive apt-get -yq install afni python3 python3-pip python3-venv git
-              python3 -m pip install --upgrade pip
-              python3 -m venv /tmp/venv
-              source /tmp/venv/bin/activate
-              pip install --upgrade pip setuptools wheel
-      - run:
-          name: Install FitLins
-          command: |
-              source /tmp/venv/bin/activate
-              pip install ".[duecredit,test]"
-      - run:
-          name: Create working and output directories
-          command: |
-              mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
-              chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
-      - run:
-          name: Run FitLins
-          no_output_timeout: 2h
-          command: |
-              source /etc/afni/afni.sh
-              source /tmp/venv/bin/activate
-              export COVERAGE_FILE=/scratch/.coverage
-              coverage run --rcfile /root/project/docker/multiproc.coveragerc \
-                  $(which fitlins) /tmp/data/ds003_fmriprep/sourcedata \
-                      /tmp/ds003/derivatives dataset \
-                      -d /tmp/data/ds003_fmriprep -m /tmp/data/ds003_models/model-001_smdl.json \
-                      -w /tmp/ds003/work --participant-label 01 02 03 --space MNI152NLin2009cAsym \
-                      --n-cpus 2 --mem-gb 4 --estimator afni -vvv
-      - run:
-          name: Install codecov
-          command: |
-              source /tmp/venv/bin/activate
-              pip install codecov
-      - run:
-          name: Combine coverage and submit
-          command: |
-              source /tmp/venv/bin/activate
-              coverage combine \
-                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.*
-              coverage xml
-              codecov --file coverage.xml --flags afni -e CIRCLE_JOB
-      - store_artifacts:
-          path: /tmp/ds003
 
   test_ds003:
+    parameters:
+      estimator:
+        type: string
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
@@ -235,6 +176,7 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --estimator << parameters.estimator >>
                 --n-cpus 2 --mem-gb 4 -vv
       - run:
           name: Run FitLins Database-file
@@ -286,7 +228,7 @@ jobs:
                 /tmp/ds003/work_dbf*/.coverage.*
               sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
               python -m coverage xml
-              python -m codecov --file coverage.xml --flags ds003 -e CIRCLE_JOB
+              python -m codecov --file coverage.xml --flags << parameters.estimator >> -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
 
@@ -454,14 +396,12 @@ workflows:
             tags:
               only: /.*/
       - test_ds003:
+          name: test_ds003_<< matrix.estimator >>
+          matrix:
+            parameters:
+              estimator: ["afni", "nistats"]
           requires:
             - build
-            - cache_test_data
-          filters:
-            tags:
-              only: /.*/
-      - test_ds003_afni:
-          requires:
             - cache_test_data
           filters:
             tags:
@@ -472,13 +412,14 @@ workflows:
               only: /.*/
       - deploy_master:
           requires:
-            - test_ds003
+            - test_ds003_nistats
+            - test_ds003_afni
           filters:
             branches:
               only: master
       - deploy_docker:
           requires:
-            - test_ds003
+            - test_ds003_nistats
             - test_ds003_afni
             - build_docs
           filters:
@@ -488,7 +429,7 @@ workflows:
               only: /.*/
       - deploy_pypi:
           requires:
-            - test_ds003
+            - test_ds003_nistats
             - test_ds003_afni
             - build_docs
             - test_packaging
