@@ -238,7 +238,7 @@ class FirstLevelModel(FirstLevelModel):
 
             # Get boolean to index appropriate values
             stat_bool = stat_types == contrast_type.upper()
-            contrast_bool = np.array([name in x for x in vol_labels])
+            contrast_bool = np.array([((name in x) and (('stim_' + name ) not in x)) for x in vol_labels])
 
             # Get index for stdev
             variance_img_labels = parse_afni_ext(maps["effect_variance"])[
@@ -343,6 +343,7 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
     column_labels = "; ".join(cols)
     test_info = create_glt_test_info(design, contrasts)
     design_vals = design.to_csv(sep=" ", index=False, header=False)
+    stim_labels_with_tag = ['stim_' + sl for sl in stim_labels]
 
     design_mat = f"""\
         # <matrix
@@ -354,17 +355,15 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
         # CommandLine = "{' '.join(sys.argv)}"
         # ColumnLabels = "{column_labels}"
         # {test_info}
+        # Nstim = {len(stim_labels)}
+        # StimBots = "{stim_pos}"
+        # StimTops = "{stim_pos}"
+        # StimLabels = "{'; '.join(stim_labels_with_tag)}"
         # >
         {design_vals}
         # </matrix>
         """
-    # Removing StimLabels to prevent duplication in the output files
-    # when GLTs of the same name are specified
-    # Here's the code to include them later if we so choose
-        # Nstim = {len(stim_labels)}
-        # StimBots = "{stim_pos}"
-        # StimTops = "{stim_pos}"
-        # StimLabels = "{'; '.join(stim_labels)}"
+
     design_mat = "\n".join([line.lstrip() for line in design_mat.splitlines()])
     return design_mat
 
