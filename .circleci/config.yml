@@ -176,7 +176,7 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
-                --estimator << parameters.estimator >>
+                --estimator << parameters.estimator >> \
                 --n-cpus 2 --mem-gb 4 -vv
       - run:
           name: Run FitLins Database-file
