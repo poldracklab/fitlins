@@ -64,6 +64,7 @@ def test_get_afni_design_matrix():
     contrasts = prepare_contrasts(contrast_info, design.columns.tolist())
     t_r = 2
     stim_labels = ["trial_type.pseudoword", "trial_type.word"]
+    stim_labels_with_tag = ['stim_' + sl for sl in stim_labels]
     test_info = create_glt_test_info(design, contrasts)
     design_vals = design.to_csv(sep=" ", index=False, header=False)
     cols = "; ".join(design.columns)
@@ -81,7 +82,7 @@ def test_get_afni_design_matrix():
         # Nstim = 2
         # StimBots = "0; 1"
         # StimTops = "0; 1"
-        # StimLabels = "{'; '.join(stim_labels)}"
+        # StimLabels = "{'; '.join(stim_labels_with_tag)}"
         # >
         {design_vals}
         # </matrix>
