@@ -44,9 +44,6 @@ class EstimatorOutputSpec(TraitedSpec):
     contrast_metadata = traits.List(traits.Dict)
     model_maps = traits.List(File)
     model_metadata = traits.List(traits.Dict)
-    residual_smoothness = File()
-    residual_tsnr = File()
-    errorts = File()
 
 
 class FirstLevelEstimatorInterface(BaseInterface):

@@ -65,6 +65,7 @@ class FirstLevelModel(FirstLevelModel):
         from nipype import logging
         import nibabel as nb
         from nipype.interfaces import afni
+        import pandas as pd
 
         logger = logging.getLogger("nipype.interface")
 
@@ -74,6 +75,7 @@ class FirstLevelModel(FirstLevelModel):
         t_r = mat.index[1]
         design_fname = op.join(tmpdir, "design.xmat.1D")
         stim_labels = self.get_stim_labels()
+        fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
         # Write AFNI style design matrix to file
         afni_design = get_afni_design_matrix(mat, contrasts, stim_labels, t_r)
@@ -146,21 +148,54 @@ class FirstLevelModel(FirstLevelModel):
         # calc smoothness
         fwhm = afni.FWHMx()
         fwhm.inputs.in_file = reml_res.outputs.wherr_file
-        fwhm.inputs.out_file = "residual_smoothness.out"
+        fwhm.inputs.out_file = fname_fmt("model", "residsmoothness").replace('.nii.gz', '.tsv')
         fwhm_res = fwhm.run()
-        self._results['residual_smoothness'] = fwhm_res.outputs.out_file
+        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
+        fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
+
+        #self._results['residual_smoothness'] = fwhm_res.outputs.out_file
 
         # calc tsnr
         tsnr = afni.TStat()
         tsnr.inputs.in_file = reml_res.outputs.wherr_file
-        tsnr.inputs.out_file = "residual_tsnr.nii.gz"
+        tsnr.inputs.out_file = fname_fmt("model", "residtsnr")
         tsnr.inputs.options = "-tsnr"
         tsnr_res = tsnr.run()
-        self._results['residual_tsnr'] = tsnr_res.outputs.out_file
+        #self._results['residual_tsnr'] = tsnr_res.outputs.out_file
 
-        # save error time series if people want it
+        out_ents = self.inputs.contrast_info[0]["entities"]
+        out_maps = nb.load(reml_res.outputs.out_file)
+        var_maps = nb.load(reml_res.outputs.var_file)
+        
+        model_attr_extract = {
+            'r_square': (out_maps, 0),
+            'log_likelihood': (var_maps, 4),
+            'a': (var_maps, 0),
+            'b': (var_maps, 1),
+            'lam': (var_maps, 2),
+            'LjungBox': (var_maps, 5),
+        }
+        # Save model level maps
+        model_maps = []
+        model_metadata = []
+        for attr, (imgs, idx) in model_attr_extract.items():
+            model_metadata.append({'stat': attr, **out_ents})
+            fname = fname_fmt('model', attr)
+            extract_volume(imgs, idx, f"{attr} of model", fname)
+            model_maps.append(fname)
+
+        # separate dict for maps that don't need to be extracted
+        model_attr = {
+            'residtsnr': fwhm_res.outputs.out_file,
+            'residsmoothness': tsnr_res.outputs.out_file
+        }
+        # Save error time series if people want it
         if self.errorts:
-            self._results["errorts"] = reml_res.outputs.wherr_file
+            model_attr["errorts"] = reml_res.outputs.wherr_file
+        
+        for attr, fname in model_attr.items():
+            model_metadata.append({'stat': attr, **out_ents})
+            model_maps.append(fname)
 
         # get pvals and zscore buckets (niftis with heterogenous intent codes)
         pval = Pval()
@@ -176,13 +211,15 @@ class FirstLevelModel(FirstLevelModel):
 
         # create maps object
         maps = {
-            "stat": nb.load(reml_res.outputs.out_file),
-            "effect_variance": nb.load(reml_res.outputs.var_file),
+            "stat": out_maps,
+            "effect_variance": var_maps,
             "z_score": nb.load(zscores.outputs.out_file),
             "p_value": nb.load(pvals.outputs.out_file),
         }
         maps["effect_size"] = maps["stat"]
         self.save_remlfit_results(maps, contrasts, runtime)
+        self._results['model_maps'] = model_maps
+        self._results['model_metadata'] = model_metadata
         #########################
         # Results are saved to self in save_remlfit_results, if the
         # memory saving is required it should be implemented there
@@ -276,17 +313,9 @@ class FirstLevelModel(FirstLevelModel):
                 # Extract maps and info from bucket and append to relevant
                 # list of maps
                 for idx in idx_list:
-                    img = maps[map_type].slicer[..., int(idx)]
-                    intent_info = get_afni_intent_info_for_subvol(img, idx)
-                    intent_info = (*intent_info, f"{map_type} of contrast {name}")
-
-                    outmap = nb.Nifti1Image(img.get_fdata(), img.affine)
-                    outmap = set_intents([outmap], [intent_info])[0]
-
-                    # Write maps to disk
+                    imgs = maps[map_type]
                     fname = fname_fmt(name, map_type)
-                    outmap.to_filename(fname)
-
+                    extract_volume(imgs, idx, f"{map_type} of contrast {name}", fname_fmt(name, map_type))                    
                     map_list.append(fname)
 
         self._results["effect_maps"] = effect_maps
@@ -301,6 +330,15 @@ class FirstLevelModel(FirstLevelModel):
         # column labels.
         weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
         return list(set(_flatten([x.keys() for x in weights])))
+
+def extract_volume(imgs, idx, intent_name, fname):
+    img = imgs.slicer[..., int(idx)]
+    intent_info = get_afni_intent_info_for_subvol(img, idx)
+    intent_info = (*intent_info, intent_name)
+
+    outmap = nb.Nifti1Image(img.get_fdata(), img.affine)
+    outmap = set_intents([outmap], [intent_info])[0]
+    outmap.to_filename(fname)
 
 
 class AFNIMergeAll(MergeAll):
