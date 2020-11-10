@@ -463,6 +463,13 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - run_pytest:
+          requires:
+            - build
+            - cache_test_data
+          filters:
+            tags:
+              only: /.*/
       - deploy_master:
           requires:
             - test_ds003_nistats
