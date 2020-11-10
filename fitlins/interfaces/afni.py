@@ -186,8 +186,8 @@ class FirstLevelModel(FirstLevelModel):
 
         # separate dict for maps that don't need to be extracted
         model_attr = {
-            'residtsnr': fwhm_res.outputs.out_file,
-            'residsmoothness': tsnr_res.outputs.out_file
+            'residtsnr': tsnr_res.outputs.out_file,
+            'residsmoothness': fwhm_res.outputs.out_file
         }
         # Save error time series if people want it
         if self.errorts:
