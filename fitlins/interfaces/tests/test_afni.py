@@ -10,8 +10,8 @@ import sys
 from nibabel.testing import data_path
 import nibabel as nb
 
-from .nistats import prepare_contrasts
-from .afni import (
+from fitlins.interfaces.nistats import prepare_contrasts
+from fitlins.interfaces.afni import (
     create_glt_test_info,
     set_intents,
     get_afni_design_matrix,
