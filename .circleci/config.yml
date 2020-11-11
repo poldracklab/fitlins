@@ -175,7 +175,7 @@ jobs:
               pyenv local 3.6.3
               python -m coverage combine \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.* \
+                /tmp/ds003/work/.coverage.* 
               sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
               python -m coverage xml
               python -m codecov --file coverage.xml --flags pytest -e CIRCLE_JOB
