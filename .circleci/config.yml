@@ -131,6 +131,11 @@ jobs:
       - restore_cache:
           keys:
             - docker-v0-{{ .Branch }}-{{ .Revision }}
+      - restore_cache:
+          keys:
+            - ds003-v0-{{ .Branch }}-
+            - ds003-v0-master-
+            - ds003-v0-
       - run:
           name: Install coverage and codecov
           command: |
@@ -152,6 +157,8 @@ jobs:
           name: Run pytest
           no_output_timeout: 2h
           command: |
+            mkdir -p /tmp/ds003/work
+            chmod 777 /tmp/ds003/work
             docker run --rm \
                 -v /tmp/ds003/work:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage.pytest \
