@@ -21,7 +21,8 @@
     [
       "install",
       [
-        "wget"
+        "wget",
+        "git"
       ]
     ],
     [
@@ -60,6 +61,17 @@
           "patsy=0.5.1",
           "traits=5.1.2"
         ]
+      }
+    ],
+    [
+      "miniconda",
+      {
+        "use_env": "neuro",
+        "conda_install": [
+          "afni-minimal"
+        ],
+        "conda_opts":
+        "--channel leej3"
       }
     ],
     [
