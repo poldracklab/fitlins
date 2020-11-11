@@ -154,7 +154,7 @@ jobs:
           command: |
             docker run --rm \
                 -v /tmp/ds003/work:/scratch \
-                -e COVERAGE_FILE=/scratch/.coverage \
+                -e COVERAGE_FILE=/scratch/.coverage.pytest \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 bash -c '\
