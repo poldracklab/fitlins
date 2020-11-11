@@ -19,6 +19,12 @@
       }
     ],
     [
+      "install",
+      [
+        "wget"
+      ]
+    ],
+    [
       "user",
       "neuro"
     ],
