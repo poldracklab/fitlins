@@ -119,14 +119,14 @@ class ModelSpecLoader(SimpleInterface):
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
-                models = auto_model(layout)
+                models = auto_model(layout, one_vs_rest=True)
 
         models = [_ensure_model(m) for m in models]
 
         if self.inputs.selectors:
             # This is almost certainly incorrect
             models = [model for model in models
-                      if all(val in model['input'].get(key, [val])
+                      if all(val in model['Input'].get(key, [val])
                              for key, val in self.inputs.selectors.items())]
 
         self._results['model_spec'] = models
