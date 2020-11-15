@@ -3,6 +3,7 @@ from copy import deepcopy
 from ..base import init_fitlins_wf
 from ...utils import config
 
+
 def test_init_fitlins_wf(tmp_path, bids_dir, bids_dset, sample_model):
     _, database_path = bids_dset
     out_dir = bids_dir / 'derivatives' / 'fitlins'
