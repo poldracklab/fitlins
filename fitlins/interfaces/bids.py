@@ -119,7 +119,7 @@ class ModelSpecLoader(SimpleInterface):
                 if not models:
                     raise ValueError("No models found")
             elif models == 'default':
-                models = auto_model(layout, one_vs_rest=True)
+                models = auto_model(layout)
 
         models = [_ensure_model(m) for m in models]
 
