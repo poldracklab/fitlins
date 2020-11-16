@@ -497,13 +497,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - upload_coverage:
-          requires:
-            - test_pytest
-            - test_ds003
-          filters:
-            tags:
-              only: /.*/
       - test_packaging:
           filters:
             tags:
