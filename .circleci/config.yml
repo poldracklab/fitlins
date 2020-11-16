@@ -154,6 +154,12 @@ jobs:
               docker images
             fi
       - run:
+          name: Install coverage and codecov
+          command: |
+              pyenv install 3.6.3
+              pyenv local 3.6.3
+              python -m pip install -U "coverage<5" codecov
+      - run:
           name: Run pytest
           no_output_timeout: 2h
           command: |
@@ -189,10 +195,16 @@ jobs:
               --entrypoint="/neurodocker/startup.sh" \
               poldracklab/fitlins:latest \
               pytest --cov=fitlins /src/fitlins
-      - persist_to_workspace:
-          root: /tmp/pytestcov
-          paths:
-            - .coverage*
+      - run:
+          name: Combine coverage and submit
+          command: |
+              pyenv local 3.6.3
+              python -m coverage combine \
+                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
+                /tmp/pytestcov/.coverage*
+              sed -i -e 's/\/src\/fitlins/\/tmp\/src\/fitlins/g' .coverage
+              python -m coverage xml
+              python -m codecov --file coverage.xml --flags pytest -e CIRCLE_JOB
 
   test_ds003:
     parameters:
@@ -223,6 +235,12 @@ jobs:
               pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
               docker images
             fi
+      - run:
+          name: Install coverage and codecov
+          command: |
+              pyenv install 3.6.3
+              pyenv local 3.6.3
+              python -m pip install -U "coverage<5" codecov
       - run:
           name: Run FitLins
           no_output_timeout: 2h
@@ -284,27 +302,6 @@ jobs:
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
-      - store_artifacts:
-          path: /tmp/ds003
-      - persist_to_workspace:
-          root: /tmp/ds003
-          paths:
-            - work/.coverage.*
-            - work_dbf*/.coverage.*
-
-  upload_coverage:
-    machine:
-      image: circleci/classic:201711-01
-    working_directory: /tmp/src/fitlins
-    steps:
-      - attach_workspace:
-          at: /tmp
-      - run:
-          name: Install coverage and codecov
-          command: |
-              pyenv install 3.6.3
-              pyenv local 3.6.3
-              python -m pip install -U "coverage<5" codecov
       - run:
           name: Combine coverage and submit
           command: |
@@ -313,9 +310,7 @@ jobs:
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
                 /tmp/ds003/work/.coverage.* \
                 /tmp/ds003/work_dbf*/.coverage.* \
-                /tmp/pytestcov/.coverage*
 
-              sed -i -e 's/\/src\/fitlins/\/tmp\/src\/fitlins/g' .coverage
               sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
               python -m coverage xml
               python -m codecov --file coverage.xml --flags << parameters.estimator >> -e CIRCLE_JOB
