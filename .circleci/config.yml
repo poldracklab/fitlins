@@ -121,7 +121,11 @@ jobs:
       - store_artifacts:
           path: /tmp/src/fitlins/docs/_build/html
 
+<<<<<<< HEAD
   run_pytest:
+=======
+  test_pytest:
+>>>>>>> update config to include pytest
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/fitlins
@@ -131,6 +135,7 @@ jobs:
       - restore_cache:
           keys:
             - docker-v0-{{ .Branch }}-{{ .Revision }}
+<<<<<<< HEAD
       - restore_cache:
           keys:
             - ds003-v0-{{ .Branch }}-
@@ -142,6 +147,8 @@ jobs:
               pyenv install 3.6.3
               pyenv local 3.6.3
               python -m pip install -U "coverage<5" codecov
+=======
+>>>>>>> update config to include pytest
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -155,6 +162,7 @@ jobs:
             fi
       - run:
           name: Run pytest
+<<<<<<< HEAD
           no_output_timeout: 2h
           command: |
             mkdir -p /tmp/ds003/work
@@ -181,6 +189,14 @@ jobs:
               python -m codecov --file coverage.xml --flags pytest -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
+=======
+          command: |
+            mkdir -p /tmp/pytestcov
+            docker run -v /tmp/pytestcov:/tmp/pytestcov \
+              --entrypoint="/neurodocker/startup.sh" \
+              poldracklab/fitlins:latest \
+              bash -c "cd /tmp/pytestcov && pytest --cov=fitlins /src/fitlins"
+>>>>>>> update config to include pytest
 
   test_ds003:
     parameters:
@@ -200,12 +216,6 @@ jobs:
             - ds003-v0-{{ .Branch }}-
             - ds003-v0-master-
             - ds003-v0-
-      - run:
-          name: Install coverage and codecov
-          command: |
-              pyenv install 3.6.3
-              pyenv local 3.6.3
-              python -m pip install -U "coverage<5" codecov
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -278,6 +288,22 @@ jobs:
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
+      - store_artifacts:
+          path: /tmp/ds003
+
+  upload_coverage:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/fitlins
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Install coverage and codecov
+          command: |
+              pyenv install 3.6.3
+              pyenv local 3.6.3
+              python -m pip install -U "coverage<5" codecov
       - run:
           name: Combine coverage and submit
           command: |
@@ -285,12 +311,19 @@ jobs:
               python -m coverage combine \
                 --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
                 /tmp/ds003/work/.coverage.* \
-                /tmp/ds003/work_dbf*/.coverage.*
+                /tmp/ds003/work_dbf*/.coverage.* \
+                /tmp/pytestcov/.coverage.*
+
+              sed -i -e 's/\/src\/fitlins/\/tmp\/src\/fitlins/g' .coverage
               sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
               python -m coverage xml
+<<<<<<< HEAD
               python -m codecov --file coverage.xml --flags << parameters.estimator >> -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
+=======
+              python -m codecov --file coverage.xml --flags circleci -e CIRCLE_JOB
+>>>>>>> update config to include pytest
 
   test_packaging:
     docker:
@@ -455,6 +488,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - test_pytest:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - test_ds003:
           name: test_ds003_<< matrix.estimator >>
           matrix:
@@ -463,6 +502,13 @@ workflows:
           requires:
             - build
             - cache_test_data
+          filters:
+            tags:
+              only: /.*/
+      - upload_coverage:
+          requires:
+            - test_pytest
+            - test_ds003
           filters:
             tags:
               only: /.*/
