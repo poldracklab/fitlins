@@ -2,6 +2,7 @@
 branch = True
 omit =
     */tests/*
+    */bin/fitlins
 concurrency = multiprocessing
 
 [paths]
