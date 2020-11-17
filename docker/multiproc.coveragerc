@@ -8,3 +8,4 @@ concurrency = multiprocessing
 source =
     fitlins/
     /opt/miniconda-latest/envs/**/site-packages/fitlins/
+    /tmp/src/fitlins/
