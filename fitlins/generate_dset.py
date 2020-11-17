@@ -18,6 +18,9 @@ def write_metadata(filepath, metadata):
 
 
 class RegressorFileCreator():
+    """Generator for _regressors files in bids derivatives dataset"""
+
+    # pattern for file
     PATTERN = (
         "sub-{subject}[/ses-{session}]/{datatype<func>|func}/"
         "sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}]"
@@ -25,6 +28,8 @@ class RegressorFileCreator():
         "[_echo-{echo}][_space-{space}][_cohort-{cohort}][_desc-{desc}]_"
         "{suffix<timeseries|regressors>|timeseries}{extension<.json|.tsv>|.tsv}"
     )
+
+    # common file parameters
     FILE_PARAMS = {"suffix": "regressors", "datatype": "func", "desc": "confounds"}
 
     def __init__(self, base_dir, fname_params, regr_names, n_tp, metadata=None):
@@ -37,15 +42,18 @@ class RegressorFileCreator():
         self.create_fname(fname_params, meta_params)
 
     def init_data(self, regr_names, n_tp):
+        """create the regressor data"""
         self.noise_df = pd.DataFrame(
             {name: np.random.random(n_tp) for name in regr_names}
         )
 
     def create_fname(self, fname_params, meta_params):
+        """create the bids derivatives regressor file path and path names"""
         self.fname = self.base_dir / build_path(fname_params, self.PATTERN)
         self.meta_fname = self.base_dir / build_path(meta_params, self.PATTERN)
 
     def write_file(self):
+        """write the data to files"""
         self.fname.dirpath().ensure_dir()
         self.noise_df.to_csv(self.fname, sep='\t', index=False)
         if self.metadata:
@@ -263,6 +271,8 @@ class EventsFileCreator():
 
 
 class DummyDerivatives():
+    """Create a minimal BIDS+Derivatives dataset for testing"""
+
     DERIVATIVES_DICT = {
         "Name": "fMRIPrep - fMRI PREProcessing workflow",
         "BIDSVersion": "1.4.1",
@@ -315,18 +325,25 @@ class DummyDerivatives():
         self.cnr = cnr or 2
         self.regr_names = regr_names or ["food_sweats", "sugar_jitters"]
         self.func_metadata = func_metadata or {"RepetitionTime": 2.0, "SkullStripped": False}
+        self.deriv_dir = self.base_dir.ensure('derivatives', 'fmriprep', dir=True)
 
-        bids_dataset_json = base_dir.ensure("dataset_description.json")
+        self.create_dataset_descriptions()
+        self.write_bids_derivatives_dataset()
+        self.create_layout()
 
+    def create_dataset_descriptions(self):
+        # dataset_description.json files are needed in both bids and derivatives
+        bids_dataset_json = self.base_dir.ensure("dataset_description.json")
         with open(str(bids_dataset_json), 'w') as dj:
             json.dump(self.BIDS_DICT, dj)
 
-        deriv_dir = base_dir.ensure('derivatives', 'fmriprep', dir=True)
-        deriv_dataset_json = deriv_dir.ensure("dataset_description.json")
+        deriv_dataset_json = self.deriv_dir.ensure("dataset_description.json")
 
         with open(str(deriv_dataset_json), 'w') as dj:
             json.dump(self.DERIVATIVES_DICT, dj)
 
+    def write_bids_derivatives_dataset(self):
+        # generate all combinations of relevant file parameters
         unique_scans = product(
             self.participant_labels,
             self.session_labels or (None,),
@@ -347,7 +364,7 @@ class DummyDerivatives():
             # calculate number of timepoints
             n_tp = int(events.experiment_duration // self.func_metadata["RepetitionTime"])
             # create noise file
-            noise = RegressorFileCreator(deriv_dir, file_params, self.regr_names, n_tp)
+            noise = RegressorFileCreator(self.deriv_dir, file_params, self.regr_names, n_tp)
             noise.write_file()
             # create bids func file
             FuncFileCreator(
@@ -357,15 +374,16 @@ class DummyDerivatives():
             ).write_file()
             # create deriv func file
             deriv_func = DerivFuncFileCreator(
-                deriv_dir, file_params, events.events_df,
+                self.deriv_dir, file_params, events.events_df,
                 self.trial_type_weights, noise.noise_df, n_tp,
                 self.cnr, self.func_metadata,
             )
             deriv_func.write_file()
             # create mask for deriv_func
-            DerivMaskFileCreator(deriv_dir, file_params, deriv_func.data).write_file()
+            DerivMaskFileCreator(self.deriv_dir, file_params, deriv_func.data).write_file()
 
+    def create_layout(self):
         # create bids layout
         self.layout = bids.BIDSLayout(
-            self.base_dir, derivatives=True, database_path=database_path,
+            self.base_dir, derivatives=True, database_path=self.database_path,
             reset_database=True)
