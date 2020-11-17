@@ -1,13 +1,12 @@
 from pathlib import Path
 import warnings
-# from nipype.interfaces import fsl
 
 
 def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
-                    base_dir=None, name='fitlins_wf',
-                    estimator=None, errorts=False):
+                    estimator=None, errorts=False,
+                    base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
     from ..interfaces.bids import (

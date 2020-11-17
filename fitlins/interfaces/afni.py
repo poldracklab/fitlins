@@ -71,9 +71,8 @@ class FirstLevelModel(FirstLevelModel):
 
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
         contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns.tolist())
-        tmpdir = op.join(runtime.cwd)
         t_r = mat.index[1]
-        design_fname = op.join(tmpdir, "design.xmat.1D")
+        design_fname = op.join(runtime.cwd, "design.xmat.1D")
         stim_labels = self.get_stim_labels()
         fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
@@ -126,7 +125,7 @@ class FirstLevelModel(FirstLevelModel):
 
         # Execute commands
         logger.info(
-            f"3dREMLfit and 3dPval computation will be performed in: {tmpdir}\n"
+            f"3dREMLfit and 3dPval computation will be performed in: {runtime.cwd}\n"
         )
 
         # Define 3dREMLfit command
@@ -330,10 +329,10 @@ class FirstLevelModel(FirstLevelModel):
 
 def extract_volume(imgs, idx, intent_name, fname):
     img = imgs.slicer[..., int(idx)]
-    intent_info = get_afni_intent_info_for_subvol(img, idx)
+    intent_info = get_afni_intent_info_for_subvol(imgs, idx)
     intent_info = (*intent_info, intent_name)
 
-    outmap = nb.Nifti1Image(img.get_fdata(), img.affine)
+    outmap = nb.Nifti1Image.from_image(img)
     outmap = set_intents([outmap], [intent_info])[0]
     outmap.to_filename(fname)
 

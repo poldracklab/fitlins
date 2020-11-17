@@ -141,9 +141,11 @@ def dscalar_from_cifti(img, data, name):
 
 
 class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, SimpleInterface):
-    def __init__(self, errorts=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        # Do not error on errorts being passed, but don't try to use it
+        # This provides a common API with AFNI's FirstLevelModel
+        kwargs.pop("errorts", None)
         super(FirstLevelModel, self).__init__(*args, **kwargs)
-        self.errorts = errorts
         
     def _run_interface(self, runtime):
         import nibabel as nb
