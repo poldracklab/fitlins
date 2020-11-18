@@ -15,7 +15,6 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
-    from ..interfaces.afni import AFNIMergeAll
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -126,7 +125,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}'
+        'stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not

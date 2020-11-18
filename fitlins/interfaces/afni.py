@@ -169,6 +169,7 @@ class FirstLevelModel(FirstLevelModel):
             'a': (var_maps, 0),
             'b': (var_maps, 1),
             'lam': (var_maps, 2),
+            'residwhstd': (var_maps, 3),
             'LjungBox': (var_maps, 5),
         }
         # Save model level maps
