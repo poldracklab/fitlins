@@ -330,6 +330,7 @@ class FirstLevelModel(FirstLevelModel):
         weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
         return list(set(_flatten([x.keys() for x in weights])))
 
+
 def extract_volume(imgs, idx, intent_name, fname):
     img = imgs.slicer[..., int(idx)]
     intent_info = get_afni_intent_info_for_subvol(imgs, idx)
@@ -337,16 +338,6 @@ def extract_volume(imgs, idx, intent_name, fname):
     outmap = set_intents([outmap], [intent_info])[0]
     outmap.header['descrip'] = intent_name
     outmap.to_filename(fname)
-
-
-class AFNIMergeAll(MergeAll):
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        for key in self._fields:
-            val = getattr(self.inputs, key)
-            outputs[key] = [elem for sublist in val for elem in sublist]
-
-        return outputs
 
 
 def get_afni_design_matrix(design, contrasts, stim_labels, t_r):

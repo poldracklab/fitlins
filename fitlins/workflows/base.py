@@ -231,18 +231,11 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
-        if estimator == "afni":
-            collate = pe.Node(
-                    AFNIMergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                                  'pvalue_maps', 'contrast_metadata']),
-                name='collate_{}'.format(level),
-                run_without_submitting=True)
-        else:
-            collate = pe.Node(
-                    MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                              'pvalue_maps', 'contrast_metadata']),
-                 name='collate_{}'.format(level),
-                 run_without_submitting=True)
+        collate = pe.Node(
+                MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                          'pvalue_maps', 'contrast_metadata']),
+             name='collate_{}'.format(level),
+             run_without_submitting=True)
 
         #
         # Plotting
