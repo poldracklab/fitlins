@@ -208,7 +208,6 @@ class FirstLevelModel(FirstLevelModel):
         # create maps object
         maps = {
             "stat": out_maps,
-            "effect_variance": var_maps,
             "z_score": nb.load(zscores.outputs.out_file),
             "p_value": nb.load(pvals.outputs.out_file),
         }
@@ -241,6 +240,7 @@ class FirstLevelModel(FirstLevelModel):
         runtime : nipype runtime object
         """
         import nibabel as nb
+        import numpy as np
 
         contrast_metadata = []
         effect_maps = []
@@ -273,15 +273,8 @@ class FirstLevelModel(FirstLevelModel):
             stat_bool = stat_types == contrast_type.upper()
             contrast_bool = np.array([((name in x) and (('stim_' + name ) not in x)) for x in vol_labels])
 
-            # Get index for stdev
-            variance_img_labels = parse_afni_ext(maps["effect_variance"])[
-                "BRICK_LABS"
-            ].split("~")
-            stdev_bool = np.array(["StDev" == x for x in variance_img_labels])
-
             # Indices for multi image nibabel object  should have length 1 and be integers
             stat_idx = np.where(contrast_bool & stat_bool)[0]
-            stdev_idx = np.where(stdev_bool)[0]
             # For multirow ftests there will be more than one index
             effect_idx = np.where(contrast_bool & effect_bool)[0]
 
@@ -290,21 +283,15 @@ class FirstLevelModel(FirstLevelModel):
             # modifying function as required and then append it to the
             # appropriate output list type represented by map_list and write
             # map_list to disk
-            for map_type, map_list, idx_list, mod_func in (
-                ("effect_size", effect_maps, effect_idx, None),
-                ("effect_variance", variance_maps, stdev_idx, np.square),
-                ("z_score", zscore_maps, stat_idx, None),
-                ("p_value", pvalue_maps, stat_idx, None),
-                ("stat", stat_maps, stat_idx, None),
+            for map_type, map_list, idx_list in (
+                ("effect_size", effect_maps, effect_idx),
+                ("z_score", zscore_maps, stat_idx),
+                ("p_value", pvalue_maps, stat_idx),
+                ("stat", stat_maps, stat_idx),
             ):
 
                 if len(effect_idx) > 1:
                     continue
-                # If not defined mod_func will be identity
-                if not mod_func:
-
-                    def mod_func(x):
-                        return x
 
                 # Extract maps and info from bucket and append to relevant
                 # list of maps
@@ -313,6 +300,22 @@ class FirstLevelModel(FirstLevelModel):
                     fname = fname_fmt(name, map_type)
                     extract_volume(imgs, idx, f"{map_type} of contrast {name}", fname_fmt(name, map_type))                    
                     map_list.append(fname)
+
+        # calculate effect variance 
+        for (name, weights, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
+            map_type = "effect_variance"
+            effect_img = nb.load(effect_fname)
+            effect = effect_img.get_fdata()
+            stat_img = nb.load(stat_fname)
+            stat = stat_img.get_fdata()
+            variance = ((effect/stat)) ** 2
+            variance_img = nb.Nifti1Image(variance, effect_img.affine, effect_img.header)
+            variance_img.header['descrip'] = f"{map_type} of contrast {name}"
+
+            fname = fname_fmt(name, map_type)
+            variance_img.to_filename(fname)
+            variance_maps.append(fname)
+
 
         self._results["effect_maps"] = effect_maps
         self._results["variance_maps"] = variance_maps
@@ -330,10 +333,9 @@ class FirstLevelModel(FirstLevelModel):
 def extract_volume(imgs, idx, intent_name, fname):
     img = imgs.slicer[..., int(idx)]
     intent_info = get_afni_intent_info_for_subvol(imgs, idx)
-    intent_info = (*intent_info, intent_name)
-
     outmap = nb.Nifti1Image.from_image(img)
     outmap = set_intents([outmap], [intent_info])[0]
+    outmap.header['descrip'] = intent_name
     outmap.to_filename(fname)
 
 
