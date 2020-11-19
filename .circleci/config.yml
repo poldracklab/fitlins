@@ -147,6 +147,7 @@ jobs:
           no_output_timeout: 2h
           command: |
             mkdir -p /tmp/pytestcov
+            chmod 777 /tmp/pytestcov
             docker run --rm \
                 -v /tmp/pytestcov:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage.pytest \
