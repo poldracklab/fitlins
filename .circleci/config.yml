@@ -258,7 +258,7 @@ jobs:
               # combine coverage
               docker run --rm \
                 -v /tmp/ds003/work:/scratch0 \
-                -v /work_dbf:/scratch1 \
+                -v /tmp/ds003/work_dbf:/scratch1 \
                 -v /tmp/ds003/work_dbf2:/scratch2 \
                 -w /scratch0 \
                 --entrypoint="/neurodocker/startup.sh" \
