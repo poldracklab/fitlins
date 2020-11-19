@@ -131,17 +131,6 @@ jobs:
       - restore_cache:
           keys:
             - docker-v0-{{ .Branch }}-{{ .Revision }}
-      - restore_cache:
-          keys:
-            - ds003-v0-{{ .Branch }}-
-            - ds003-v0-master-
-            - ds003-v0-
-      - run:
-          name: Install coverage and codecov
-          command: |
-              pyenv install 3.6.3
-              pyenv local 3.6.3
-              python -m pip install -U "coverage<5" codecov
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -157,30 +146,21 @@ jobs:
           name: Run pytest
           no_output_timeout: 2h
           command: |
-            mkdir -p /tmp/ds003/work
-            chmod 777 /tmp/ds003/work
+            mkdir -p /tmp/pytestcov
+            chmod 777 /tmp/pytestcov
             docker run --rm \
-                -v /tmp/ds003/work:/scratch \
+                -v /tmp/pytestcov:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage.pytest \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                bash -c '\
-                export PATH=/opt/miniconda-latest/envs/neuro/bin:$PATH \
-                && pip install pytest \
-                && coverage run --rcfile /src/fitlins/docker/multiproc.coveragerc `which pytest` /src/fitlins'
-
+                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml /src/fitlins
       - run:
-          name: Combine coverage and submit
+          name: Submit pytest coverage
           command: |
-              pyenv local 3.6.3
-              python -m coverage combine \
-                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.* 
-              sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
-              python -m coverage xml
-              python -m codecov --file coverage.xml --flags pytest -e CIRCLE_JOB
-      - store_artifacts:
-          path: /tmp/ds003
+              bash <(curl --retry 5 -s https://codecov.io/bash) \
+                -f /tmp/pytestcov/cov_pytest.xml \
+                -F pytest \
+                -e CIRCLE_JOB
 
   test_ds003:
     parameters:
@@ -200,12 +180,6 @@ jobs:
             - ds003-v0-{{ .Branch }}-
             - ds003-v0-master-
             - ds003-v0-
-      - run:
-          name: Install coverage and codecov
-          command: |
-              pyenv install 3.6.3
-              pyenv local 3.6.3
-              python -m pip install -U "coverage<5" codecov
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -257,6 +231,7 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --estimator << parameters.estimator >> \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
           name: Run FitLins Database-file_exists
@@ -277,18 +252,29 @@ jobs:
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
                 -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
+                --estimator << parameters.estimator >> \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
           name: Combine coverage and submit
           command: |
-              pyenv local 3.6.3
-              python -m coverage combine \
-                --rcfile /tmp/src/fitlins/docker/multiproc.coveragerc \
-                /tmp/ds003/work/.coverage.* \
-                /tmp/ds003/work_dbf*/.coverage.*
-              sed -i -e 's/.opt.miniconda-latest.envs.neuro.lib.python3.6.site-packages/\/tmp\/src\/fitlins/g' .coverage
-              python -m coverage xml
-              python -m codecov --file coverage.xml --flags << parameters.estimator >> -e CIRCLE_JOB
+              # combine coverage
+              docker run --rm \
+                -v /tmp/ds003/work:/scratch0 \
+                -v /tmp/ds003/work_dbf:/scratch1 \
+                -v /tmp/ds003/work_dbf2:/scratch2 \
+                -w /scratch0 \
+                --entrypoint="/neurodocker/startup.sh" \
+                poldracklab/fitlins:latest \
+                bash -c "coverage combine \
+                          /scratch0/.coverage* \
+                          /scratch1/.coverage* \
+                          /scratch2/.coverage* \
+                         && coverage xml"
+              # submit coverage
+              bash <(curl --retry 5 -s https://codecov.io/bash) \
+                -f /tmp/ds003/work/coverage.xml \
+                -F << parameters.estimator >> \
+                -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
 
@@ -455,6 +441,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - run_pytest:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - test_ds003:
           name: test_ds003_<< matrix.estimator >>
           matrix:
@@ -467,13 +459,6 @@ workflows:
             tags:
               only: /.*/
       - test_packaging:
-          filters:
-            tags:
-              only: /.*/
-      - run_pytest:
-          requires:
-            - build
-            - cache_test_data
           filters:
             tags:
               only: /.*/

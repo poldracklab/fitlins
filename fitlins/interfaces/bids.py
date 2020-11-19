@@ -126,7 +126,7 @@ class ModelSpecLoader(SimpleInterface):
         if self.inputs.selectors:
             # This is almost certainly incorrect
             models = [model for model in models
-                      if all(val in model['input'].get(key, [val])
+                      if all(val in model['Input'].get(key, [val])
                              for key, val in self.inputs.selectors.items())]
 
         self._results['model_spec'] = models
