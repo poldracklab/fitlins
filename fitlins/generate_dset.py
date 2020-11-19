@@ -101,8 +101,8 @@ class DerivFuncFileCreator():
         return noise_df.values.mean(axis=1)
 
     def _create_nii(self, timeseries):
-        brain_data = np.zeros((9, 9, 9, len(timeseries)))
-        brain_data[2:4, 2:4, 2:4, :] = timeseries
+        brain_data = np.random.random((9, 9, 9, len(timeseries)))
+        brain_data[2:6, 2:6, 2:6, :] += timeseries
         return nib.Nifti1Image(brain_data, affine=np.eye(4))
 
     def init_data(self, events_df, trial_type_weights, noise_df, n_tp, cnr, metadata):
@@ -112,7 +112,8 @@ class DerivFuncFileCreator():
         contrast = signal.max()
         signal_scaling_factor = contrast * cnr * noise.std()
         timeseries = (signal * signal_scaling_factor) + noise
-        self.data = self._create_nii(timeseries)
+        scaled_timeseries = (timeseries * 10) + 100
+        self.data = self._create_nii(scaled_timeseries)
 
     def create_fname(self, fname_params, meta_params):
         self.fname = self.base_dir / build_path(fname_params, self.PATTERN)
@@ -149,7 +150,7 @@ class DerivMaskFileCreator():
         self.create_fname(fname_params, meta_params)
 
     def init_data(self, func_img):
-        mask_data = (func_img.get_fdata()[:, :, :, 0] != 0).astype(int)
+        mask_data = (func_img.get_fdata()[:, :, :, 0] > 10).astype(np.int32)
         self.data = nib.Nifti1Image(mask_data, np.eye(4))
 
     def create_fname(self, fname_params, meta_params):
@@ -202,8 +203,8 @@ class FuncFileCreator():
         return noise_df.values.mean(axis=1)
 
     def _create_nii(self, timeseries):
-        brain_data = np.zeros((9, 9, 9, len(timeseries)))
-        brain_data[2:4, 2:4, 2:4, :] = timeseries
+        brain_data = np.random.random((9, 9, 9, len(timeseries)))
+        brain_data[2:6, 2:6, 2:6, :] += timeseries
         return nib.Nifti1Image(brain_data, affine=np.eye(4))
 
     def init_data(self, events_df, trial_type_weights, noise_df, n_tp, cnr, metadata):
@@ -213,7 +214,8 @@ class FuncFileCreator():
         contrast = signal.max()
         signal_scaling_factor = contrast * cnr * noise.std()
         timeseries = (signal * signal_scaling_factor) + noise
-        self.data = self._create_nii(timeseries)
+        scaled_timeseries = (timeseries * 10) + 100
+        self.data = self._create_nii(scaled_timeseries)
 
     def create_fname(self, fname_params, meta_params):
         self.fname = self.base_dir / build_path(fname_params, self.PATTERN)
