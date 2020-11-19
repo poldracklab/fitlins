@@ -216,14 +216,12 @@ jobs:
           name: Run FitLins Database-file
           no_output_timeout: 2h
           command: |
-            mkdir -p /tmp/ds003/work_dbf 
-            chmod 777 /tmp/ds003/work_dbf /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
             docker run --rm -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
-                -v /tmp/ds003/work_dbf:/scratch \
+                -v /tmp/ds003/work:/scratch \
                 -v /tmp/data/ds003_models:/models \
-                -e COVERAGE_FILE=/scratch/.coverage.database-file \
+                -e COVERAGE_FILE=/scratch/.coverage.database-file-new \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
@@ -237,14 +235,12 @@ jobs:
           name: Run FitLins Database-file_exists
           no_output_timeout: 2h
           command: |
-            mkdir -p /tmp/ds003/work_dbf2 
-            chmod 777 /tmp/ds003/work_dbf2 /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
             docker run --rm -v /tmp/data/ds003_fmriprep:/data \
                 -v /tmp/ds003/derivatives:/out \
-                -v /tmp/ds003/work_dbf2:/scratch \
+                -v /tmp/ds003/work:/scratch \
                 -v /tmp/data/ds003_models:/models \
-                -e COVERAGE_FILE=/scratch/.coverage.database-file \
+                -e COVERAGE_FILE=/scratch/.coverage.database-file-exists \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
@@ -259,16 +255,11 @@ jobs:
           command: |
               # combine coverage
               docker run --rm \
-                -v /tmp/ds003/work:/scratch0 \
-                -v /tmp/ds003/work_dbf:/scratch1 \
-                -v /tmp/ds003/work_dbf2:/scratch2 \
-                -w /scratch0 \
+                -v /tmp/ds003/work:/scratch \
+                -w /scratch \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                bash -c "coverage combine \
-                          /scratch0/.coverage* \
-                          /scratch1/.coverage* \
-                          /scratch2/.coverage* \
+                bash -c "coverage combine /scratch/.coverage* \
                          && coverage xml"
               # submit coverage
               bash <(curl --retry 5 -s https://codecov.io/bash) \
