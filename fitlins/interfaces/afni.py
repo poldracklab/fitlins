@@ -282,9 +282,6 @@ class FirstLevelModel(FirstLevelModel):
 
             # Get boolean to index appropriate values
             stat_bool = stat_types == contrast_type.upper()
-            contrast_bool = []
-            
-
             contrast_bool = np.array([name == x for x in clean_vol_labels])
 
             # Indices for multi image nibabel object  should have length 1 and be integers
