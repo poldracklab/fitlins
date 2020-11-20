@@ -267,11 +267,11 @@ class FirstLevelModel(FirstLevelModel):
         effect_bool = np.array([x.endswith("Coef") for x in vol_labels])
         clean_vol_labels = []
         for ii, x in enumerate(vol_labels):
-            if (ii in [0,1]):
+            if (ii in [0, 1]):
                 clean_vol_labels.append(x)
             elif x.endswith('_Coef') or x.endswith('_Tstat'):
                 clean_vol_labels.append('#'.join(x.split('#')[:-1]))
-            elif x.endswith('_R^2') or  x.endswith('_Fstat'):
+            elif x.endswith('_R^2') or x.endswith('_Fstat'):
                 clean_vol_labels.append('_'.join(x.split('_')[:-1]))
             else:
                 clean_vol_labels.append(x)
