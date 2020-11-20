@@ -265,6 +265,16 @@ class FirstLevelModel(FirstLevelModel):
         vol_labels = parse_afni_ext(maps["effect_size"])["BRICK_LABS"].split("~")
 
         effect_bool = np.array([x.endswith("Coef") for x in vol_labels])
+        clean_vol_labels = []
+        for ii, x in enumerate(vol_labels):
+            if (ii in [0,1]):
+                clean_vol_labels.append(x)
+            elif x.endswith('_Coef') or x.endswith('_Tstat'):
+                clean_vol_labels.append('#'.join(x.split('#')[:-1]))
+            elif x.endswith('_R^2') or  x.endswith('_Fstat'):
+                clean_vol_labels.append('_'.join(x.split('_')[:-1]))
+            else:
+                clean_vol_labels.append(x)
         for (name, weights, contrast_type) in contrasts:
             contrast_metadata.append(
                 {"contrast": name, "stat": contrast_type, **out_ents}
@@ -272,7 +282,10 @@ class FirstLevelModel(FirstLevelModel):
 
             # Get boolean to index appropriate values
             stat_bool = stat_types == contrast_type.upper()
-            contrast_bool = np.array([((name in x) and (('stim_' + name ) not in x)) for x in vol_labels])
+            contrast_bool = []
+            
+
+            contrast_bool = np.array([name == x for x in clean_vol_labels])
 
             # Indices for multi image nibabel object  should have length 1 and be integers
             stat_idx = np.where(contrast_bool & stat_bool)[0]
