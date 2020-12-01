@@ -166,8 +166,6 @@ class FirstLevelModel(FirstLevelModel):
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
         
-        self.save_tsnr(beta_maps, var_maps)
-
         model_attr_extract = {
             'r_square': (out_maps, 0),
             'log_likelihood': (var_maps, 4),
@@ -189,7 +187,7 @@ class FirstLevelModel(FirstLevelModel):
 
         # separate dict for maps that don't need to be extracted
         model_attr = {
-            'residtsnr': 'model_tsnr.nii.gz',
+            'residtsnr': self.save_tsnr(runtime, beta_maps, var_maps),
             'residsmoothness': fwhm_res.outputs.out_file
         }
         # Save error time series if people want it
@@ -345,7 +343,7 @@ class FirstLevelModel(FirstLevelModel):
         weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
         return list(set(_flatten([x.keys() for x in weights])))
 
-    def save_tsnr(self, rbetas, rvars):
+    def save_tsnr(self, runtime, rbetas, rvars):
         vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
         # find the name of the constant column
@@ -357,7 +355,9 @@ class FirstLevelModel(FirstLevelModel):
         tsnr_dat = const_dat / std_dat
         tsnr_img = nb.Nifti1Image(tsnr_dat, std_img.affine, std_img.header)
         tsnr_img.header['descrip'] = f"residual TSNR of model"
-        tsnr_img.to_filename('model_residtsnr.nii.gz')
+        fname = op.join(runtime.cwd, 'model_residtsnr.nii.gz')
+        tsnr_img.to_filename(fname)
+        return fname
 
 def extract_volume(imgs, idx, intent_name, fname):
     img = imgs.slicer[..., int(idx)]
