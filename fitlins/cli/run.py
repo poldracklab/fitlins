@@ -19,12 +19,12 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
 
-from bids.layout import BIDSLayout
+import bids
 from bids.analysis import auto_model, Analysis
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
-from ..utils import bids, config
+from ..utils import bids as fub, config
 from ..viz.reports import build_report_dict, write_full_report
 
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
@@ -217,7 +217,11 @@ def run_fitlins(argv=None):
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
+<<<<<<< HEAD
     bids.write_derivative_description(opts.bids_dir, deriv_dir, opts)
+=======
+    fub.write_derivative_description(opts.bids_dir, deriv_dir)
+>>>>>>> 08d7041 (RF: Use BIDSLayoutIndexer, requiring PyBIDS 0.12.4)
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
@@ -229,16 +233,16 @@ def run_fitlins(argv=None):
         database_path = opts.database_path
         reset_database = False
 
-    layout = BIDSLayout(opts.bids_dir,
-                        derivatives=derivatives,
-                        ignore=ignore,
-                        force_index=force_index,
-                        database_path=database_path,
-                        reset_database=reset_database)
+    indexer = bids.BIDSLayoutIndexer(ignore=ignore, force_index=force_index)
+    layout = bids.BIDSLayout(opts.bids_dir,
+                             derivatives=derivatives,
+                             database_path=database_path,
+                             reset_database=reset_database,
+                             indexer=indexer)
 
     subject_list = None
     if opts.participant_label is not None:
-        subject_list = bids.collect_participants(
+        subject_list = fub.collect_participants(
             layout, participant_label=opts.participant_label)
 
     # Build main workflow
