@@ -131,6 +131,14 @@ def get_parser():
                          help='path where intermediate results should be stored')
     g_other.add_argument('--drop-missing', action='store_true', default=False,
                          help='drop missing inputs/contrasts in model fitting.')
+
+    g_other.add_argument("--estimator", action="store", type=str,
+                         help="estimator to use to fit the model",
+                         default="nistats", choices=["nistats", "afni"])
+    g_other.add_argument("--error-ts", action='store_true', default=False,
+                         help='save error time series for first level models.'
+                        ' Currently only implemented for afni estimator.')
+
     return parser
 
 
@@ -193,6 +201,11 @@ def run_fitlins(argv=None):
         # TODO - fix neuroscout
         derivatives = derivatives[0].split(" ")
 
+    if opts.error_ts and opts.estimator != 'afni':
+        raise NotImplementedError("Saving the error time series is only implmented for"
+                                  " the afni estimator. If this is a feature you want"
+                                  f" for {opts.estimator} please let us know on github.")
+
     pipeline_name = 'fitlins'
     if opts.derivative_label:
         pipeline_name += '_' + opts.derivative_label
@@ -234,6 +247,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
+        estimator=opts.estimator, errorts=opts.error_ts
         )
     fitlins_wf.config = deepcopy(config.get_fitlins_config()._sections)
 

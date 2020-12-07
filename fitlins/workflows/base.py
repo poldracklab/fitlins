@@ -5,6 +5,7 @@ import warnings
 def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
+                    estimator=None, errorts=False,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
@@ -84,8 +85,12 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
 
+    if estimator == 'afni':
+        from ..interfaces.afni import FirstLevelModel
+    else:
+        from ..interfaces.nistats import FirstLevelModel
     l1_model = pe.MapNode(
-        FirstLevelModel(),
+        FirstLevelModel(errorts=errorts),
         iterfield=['design_matrix', 'contrast_info', 'bold_file', 'mask_file'],
         mem_gb=3,
         name='l1_model')
@@ -120,7 +125,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
         '[sub-{subject}_][ses-{session}_]task-{task}[_acq-{acquisition}]' \
         '[_rec-{reconstruction}][_run-{run}][_echo-{echo}][_space-{space}]_' \
-        'stat-{stat<rSquare|logLikelihood>}_statmap{extension<.nii.gz|.dscalar.nii>}'
+        'stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}'
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
@@ -226,11 +231,10 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
-            MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                      'pvalue_maps', 'contrast_metadata'],
-                     check_lengths=(not drop_missing)),
-            name='collate_{}'.format(level),
-            run_without_submitting=True)
+                MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                          'pvalue_maps', 'contrast_metadata']),
+             name='collate_{}'.format(level),
+             run_without_submitting=True)
 
         #
         # Plotting
