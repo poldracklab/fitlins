@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
-from nistats.hemodynamic_models import compute_regressor
+from nilearn.glm.first_level.hemodynamic_models import compute_regressor
 import nibabel as nib
 import bids
 from bids.layout.writing import build_path

@@ -9,7 +9,7 @@ from .abstract import (
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
-    _pkg = 'nistats'
+    _pkg = 'nilearn.glm'
 
 
 def prepare_contrasts(contrasts, all_regressors):
@@ -52,7 +52,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
     def _run_interface(self, runtime):
         import nibabel as nb
-        from nistats import design_matrix as dm
+        from nilearn.glm.first_level import design_matrix as dm
         info = self.inputs.session_info
         img = nb.load(self.inputs.bold_file)
         if isinstance(img, nb.Cifti2Image):
@@ -149,8 +149,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         
     def _run_interface(self, runtime):
         import nibabel as nb
-        from nistats import first_level_model as level1
-        from nistats.contrasts import compute_contrast
+        from nilearn.glm import first_level as level1
+        from nilearn.glm.contrasts import compute_contrast
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
 
@@ -271,10 +271,10 @@ def _match(query, metadata):
 class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         import nibabel as nb
-        from nistats import second_level_model as level2
-        from nistats import first_level_model as level1
-        from nistats.contrasts import (compute_contrast, compute_fixed_effects,
-                                       _compute_fixed_effects_params)
+        from nilearn.glm import second_level as level2
+        from nilearn.glm import first_level as level1
+        from nilearn.glm.contrasts import (compute_contrast, compute_fixed_effects,
+                                           _compute_fixed_effects_params)
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):

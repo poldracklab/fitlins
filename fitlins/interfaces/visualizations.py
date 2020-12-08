@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
-import nistats as nis
-import nistats.reporting  # noqa: F401
 
 from nipype.interfaces.base import (
     SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -59,7 +57,7 @@ class DesignPlot(Visualization):
     def _visualize(self, data, out_name):
         from matplotlib import pyplot as plt
         plt.set_cmap('viridis')
-        plot_and_save(out_name, nis.reporting.plot_design_matrix, data)
+        plot_and_save(out_name, nlp.plot_design_matrix, data)
 
 
 class DesignCorrelationPlotInputSpec(VisualizationInputSpec):

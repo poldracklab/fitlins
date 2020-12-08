@@ -109,11 +109,12 @@ class ModelSpecLoader(SimpleInterface):
             if not isdefined(models):
                 # model is not yet standardized, so validate=False
                 # Ignore all subject directories and .git/ and .datalad/ directories
+                indexer = bids.BIDSLayoutIndexer(
+                    ignore=[re.compile(r'sub-'), re.compile(r'\.(git|datalad)')])
                 small_layout = bids.BIDSLayout(
                     layout.root, derivatives=[d.root for d in layout.derivatives.values()],
                     validate=False,
-                    ignore=[re.compile(r'sub-'),
-                            re.compile(r'\.(git|datalad)')])
+                    indexer=indexer)
                 # PyBIDS can double up, so find unique models
                 models = list(set(small_layout.get(suffix='smdl', return_type='file')))
                 if not models:
