@@ -65,6 +65,10 @@ class FirstLevelModel(FirstLevelModel):
         from nipype import logging
         import nibabel as nb
         from nipype.interfaces import afni
+        from nipype.interfaces.afni.preprocess import (
+            BlurInMask,
+            BlurToFWHM
+        )
         import pandas as pd
 
         logger = logging.getLogger("nipype.interface")
@@ -80,16 +84,38 @@ class FirstLevelModel(FirstLevelModel):
         afni_design = get_afni_design_matrix(mat, contrasts, stim_labels, t_r)
         Path(design_fname).write_text(afni_design)
 
-        # Get input scans for 3dREMLfit: scaled and/or smoothed input and the mask file
-        img_path = self.inputs.bold_file
-        img = nb.load(img_path)
-
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
             mask_file = None
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
+            # Get input scans for 3dREMLfit
+            # If there's not smoothing, then the input bold file will do
+            img_path = self.inputs.bold_file
+            img = nb.load(img_path)
+        else:
+            # Need to do smoothing before scaling
+            smooth = BlurInMask()
+            smooth.inputs.in_file = self.inputs.bold_file
+            if mask_file is None:
+                smooth.inputs.automask = True
+            else:
+                smooth.inputs.mask = mask_file
+            if 'desc-preproc' in self.inputs.bold_file:
+                smooth.inputs.out_file = self.inputs.bold_file.replace('desc-preproc', 'desc-smoothed')
+            else:
+                smooth.inputs.out_file = 'input_desc-preproc.nii.gz'
+            smooth.inputs.preserve = True
+            smooth.inputs.fwhm = smoothing_fwhm
+            smooth_res = smooth.run()
+
+            # Get input scans for 3dREMLfit
+            # If there's smoothing, then this will be the result of the smoothing
+            img_path = smooth_res.outputs.out_file
+            img = nb.load(img_path)
+
+
 
         # Signal scaling occurs by default (the
         # nistats.first_level_model.FirstLevelModel class rewrites the default
