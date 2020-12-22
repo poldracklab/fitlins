@@ -112,7 +112,9 @@ def get_parser():
                              "Optional analysis LEVEL (default: l1) may be specified numerically "
                              "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
                              "Optional smoothing TYPE (default: iso) must be one of:  "
-                             " `iso` (isotropic). e.g., `--smoothing 5:dataset:iso` will perform "
+                             " `iso` (isotropic additive smoothing), `isoblurto` (isotropic "
+                             "smoothing progressivley applied till the target smoothness is reached). "
+                             "e.g., `--smoothing 5:dataset:iso` will perform "
                              "a 5mm FWHM isotropic smoothing on subject-level maps, "
                              "before evaluating the dataset level.")
 
