@@ -87,15 +87,35 @@ class FirstLevelModel(FirstLevelModel):
         mask_file = self.inputs.mask_file
         if not isdefined(mask_file):
             mask_file = None
+
+        # Need to do smoothing before scaling
         smoothing_fwhm = self.inputs.smoothing_fwhm
+        smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
             # Get input scans for 3dREMLfit
             # If there's not smoothing, then the input bold file will do
             img_path = self.inputs.bold_file
             img = nb.load(img_path)
+        elif isdefined(smoothing_type) and smoothing_type == 'isoblurto':
+            smooth = BlurToFWHM()
+            smooth.inputs.in_file = self.inputs.bold_file
+            if mask_file is None:
+                smooth.inputs.automask = True
+            else:
+                smooth.inputs.mask = mask_file
+            if 'desc-preproc' in self.inputs.bold_file:
+                smooth.inputs.out_file = self.inputs.bold_file.replace('desc-preproc', 'desc-smoothed')
+            else:
+                smooth.inputs.out_file = 'input_desc-smoothed.nii.gz'
+            smooth.inputs.fwhm = smoothing_fwhm
+            smooth_res = smooth.run()
+
+            # Get input scans for 3dREMLfit
+            # If there's smoothing, then this will be the result of the smoothing
+            img_path = smooth_res.outputs.out_file
+            img = nb.load(img_path)
         else:
-            # Need to do smoothing before scaling
             smooth = BlurInMask()
             smooth.inputs.in_file = self.inputs.bold_file
             if mask_file is None:
@@ -105,7 +125,7 @@ class FirstLevelModel(FirstLevelModel):
             if 'desc-preproc' in self.inputs.bold_file:
                 smooth.inputs.out_file = self.inputs.bold_file.replace('desc-preproc', 'desc-smoothed')
             else:
-                smooth.inputs.out_file = 'input_desc-preproc.nii.gz'
+                smooth.inputs.out_file = 'input_desc-smoothed.nii.gz'
             smooth.inputs.preserve = True
             smooth.inputs.fwhm = smoothing_fwhm
             smooth_res = smooth.run()
@@ -378,7 +398,11 @@ class FirstLevelModel(FirstLevelModel):
         const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
         std_img = rvars.slicer[..., 3]
         std_dat = std_img.get_fdata()
-        tsnr_dat = const_dat / std_dat
+        # scaled units are percent signal change
+        # afni convention is mean of 100
+        # nistat convention is mean of 0
+        # for the purposes of TSNR, we'll add 100
+        tsnr_dat = np.abs(const_dat + 100) / std_dat
         tsnr_img = nb.Nifti1Image(tsnr_dat, std_img.affine, std_img.header)
         tsnr_img.header['descrip'] = f"residual TSNR of model"
         fname = op.join(runtime.cwd, 'model_residtsnr.nii.gz')
