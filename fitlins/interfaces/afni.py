@@ -200,13 +200,6 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        # # calc tsnr
-        # tsnr = afni.TStat()
-        # tsnr.inputs.in_file = reml_res.outputs.wherr_file
-        # tsnr.inputs.out_file = fname_fmt("model", "residtsnr")
-        # tsnr.inputs.options = "-tsnr"
-        # tsnr_res = tsnr.run()
-
         out_ents = self.inputs.contrast_info[0]["entities"]
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
