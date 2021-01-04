@@ -218,7 +218,7 @@ def run_fitlins(argv=None):
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
     fub.write_derivative_description(opts.bids_dir, deriv_dir, opts)
-
+    
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     # Go ahead and initialize the layout database
