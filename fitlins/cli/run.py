@@ -217,12 +217,7 @@ def run_fitlins(argv=None):
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
-<<<<<<< HEAD
-    bids.write_derivative_description(opts.bids_dir, deriv_dir, opts)
-=======
-    fub.write_derivative_description(opts.bids_dir, deriv_dir)
->>>>>>> 08d7041 (RF: Use BIDSLayoutIndexer, requiring PyBIDS 0.12.4)
-
+    fub.write_derivative_description(opts.bids_dir, deriv_dir, opts)
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
     # Go ahead and initialize the layout database
