@@ -203,17 +203,21 @@ def run_fitlins(argv=None):
         # TODO - fix neuroscout
         derivatives = derivatives[0].split(" ")
 
-    if opts.error_ts and opts.estimator != 'afni':
-        raise NotImplementedError("Saving the error time series is only implmented for"
-                                  " the afni estimator. If this is a feature you want"
-                                  f" for {opts.estimator} please let us know on github.")
-
+    if opts.estimator != 'afni':
+        if opts.error_ts:
+            raise NotImplementedError("Saving the error time series is only implmented for"
+                                      " the afni estimator. If this is a feature you want"
+                                      f" for {opts.estimator} please let us know on github.")
+        if ('isoblurto' in opts.smoothing):
+            raise NotImplementedError("The isoblurto smoothing type is only implmented for"
+                                      " the afni estimator. If this is a feature you want"
+                                      f" for {opts.estimator} please let us know on github.")
     pipeline_name = 'fitlins'
     if opts.derivative_label:
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
-    bids.write_derivative_description(opts.bids_dir, deriv_dir)
+    bids.write_derivative_description(opts.bids_dir, deriv_dir, opts)
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
