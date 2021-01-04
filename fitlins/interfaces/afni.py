@@ -105,9 +105,9 @@ class FirstLevelModel(FirstLevelModel):
             else:
                 smooth.inputs.mask = mask_file
             if 'desc-preproc' in self.inputs.bold_file:
-                smooth.inputs.out_file = self.inputs.bold_file.replace('desc-preproc', 'desc-smoothed')
+                smooth.inputs.out_file =  op.join(runtime.cwd, self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed'))
             else:
-                smooth.inputs.out_file = 'input_desc-smoothed.nii.gz'
+                smooth.inputs.out_file = op.join(runtime.cwd, 'input_desc-smoothed.nii.gz')
             smooth.inputs.fwhm = smoothing_fwhm
             smooth_res = smooth.run()
 
@@ -123,9 +123,9 @@ class FirstLevelModel(FirstLevelModel):
             else:
                 smooth.inputs.mask = mask_file
             if 'desc-preproc' in self.inputs.bold_file:
-                smooth.inputs.out_file = self.inputs.bold_file.replace('desc-preproc', 'desc-smoothed')
+                smooth.inputs.out_file =  op.join(runtime.cwd, self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed'))
             else:
-                smooth.inputs.out_file = 'input_desc-smoothed.nii.gz'
+                smooth.inputs.out_file = op.join(runtime.cwd, 'input_desc-smoothed.nii.gz')
             smooth.inputs.preserve = True
             smooth.inputs.fwhm = smoothing_fwhm
             smooth_res = smooth.run()

@@ -280,6 +280,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                                            _compute_fixed_effects_params)
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
+        smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
         if isdefined(smoothing_type) and smoothing_type != 'iso':
