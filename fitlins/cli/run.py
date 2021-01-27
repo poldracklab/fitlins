@@ -135,6 +135,9 @@ def get_parser():
     g_other.add_argument("--estimator", action="store", type=str,
                          help="estimator to use to fit the model",
                          default="nistats", choices=["nistats", "afni"])
+    g_other.add_argument("--drift-model", action="store", type=str,
+                         help="specifies the desired drift model",
+                         default=None, choices=["polynomial", "cosine", None])
     g_other.add_argument("--error-ts", action='store_true', default=False,
                          help='save error time series for first level models.'
                         ' Currently only implemented for afni estimator.')
@@ -247,6 +250,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
+        drift_model=opts.drift_model,
         estimator=opts.estimator, errorts=opts.error_ts
         )
     fitlins_wf.config = deepcopy(config.get_fitlins_config()._sections)
