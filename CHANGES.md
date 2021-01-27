@@ -1,18 +1,19 @@
-0.8.1 (January 27, 2021)
+0.9.0 (January 27, 2021)
 ========================
 
-New feature release in the 0.8.x series.
+New feature release in the 0.9.x series.
 
 This release added AFNI's 3dREMLfit for first-level estimation, dropped nistats
 in favor of nilearn.stats, and several other minor improvements.
 
+* FIX: AFNI contrast bool (https://github.com/poldracklab/fitlins/pull/266)
+* ENH: Writeout estimator to derivative description (https://github.com/poldracklab/fitlins/pull/278)
 * ENH: disable automatic drift modeling (https://github.com/poldracklab/fitlins/pull/276)
 * ENH: modify path patterns to make task optional (https://github.com/poldracklab/fitlins/pull/275)
-* MNT: Update PyBIDS and nilearn (https://github.com/poldracklab/fitlins/pull/268)
-* FIX: AFNI contrast bool (https://github.com/poldracklab/fitlins/pull/266)
-* CI: Make faster? (https://github.com/poldracklab/fitlins/pull/264)
-* TST: Add dummy dataset for pytest/local testing (https://github.com/poldracklab/fitlins/pull/262) 
 * ENH: Add AFNI 3dREMLfit for first-level estimation (https://github.com/poldracklab/fitlins/pull/171)
+* TST: Add dummy dataset for pytest/local testing (https://github.com/poldracklab/fitlins/pull/262) 
+* MNT: Update PyBIDS and nilearn (https://github.com/poldracklab/fitlins/pull/268)
+* CI: Make faster? (https://github.com/poldracklab/fitlins/pull/264)
 
 
 0.8.0 (October 19, 2020)
