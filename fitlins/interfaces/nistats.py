@@ -91,8 +91,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                     'Use --drop-missing to drop before model fitting.')
 
             column_names = dense.columns.tolist()
-            drift_model = None if (('cosine00' in column_names) |
-                                   ('cosine_00' in column_names)) else 'cosine'
 
             if dense.empty:
                 dense = None
@@ -100,7 +98,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         else:
             dense = None
             column_names = None
-            drift_model = 'cosine'
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
@@ -108,7 +105,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             add_regs=dense,
             hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
-            drift_model=drift_model,
+            drift_model=None   # drift model should be added using StatModel
         )
 
         mat.to_csv('design.tsv', sep='\t')
