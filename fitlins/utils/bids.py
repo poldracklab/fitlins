@@ -107,7 +107,7 @@ def collect_participants(layout, participant_label=None, strict=False):
     return found_label
 
 
-def write_derivative_description(bids_dir, deriv_dir, estimator):
+def write_derivative_description(bids_dir, deriv_dir, estimator, smoothing):
     from fitlins import __version__
 
     desc = {
@@ -118,6 +118,7 @@ def write_derivative_description(bids_dir, deriv_dir, estimator):
             'Version': __version__,
             'CodeURL': 'https://github.com/poldracklab/fitlins',
             'Estimator': estimator,
+            'Smoothing': smoothing
             },
         'CodeURL': 'https://github.com/poldracklab/fitlins',
         'HowToAcknowledge': 'https://github.com/poldracklab/fitlins',
