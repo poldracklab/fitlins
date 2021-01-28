@@ -107,8 +107,28 @@ def collect_participants(layout, participant_label=None, strict=False):
     return found_label
 
 
-def write_derivative_description(bids_dir, deriv_dir):
+def write_derivative_description(bids_dir, deriv_dir, args):
     from fitlins import __version__
+    from pathlib import Path
+
+    def _clean_relative(item):
+        """ Turn absolute paths into relative paths """
+        try:
+            p = Path(item)
+            c = f"../{p.stem}"
+        except:
+            c = item
+        return c
+
+    # Clean up args
+    out_args = {}
+    for k, v in args.items():
+        if k in ['bids_dir', 'output_dir', 'model', 'derivatives', 'work_dir']:
+            if isinstance(v, list):
+                v = [_clean_relative(i) for i in v]
+            else:
+                v = _clean_relative(v)
+        out_args[k] = v
 
     desc = {
         'Name': 'Fitlins output',
@@ -117,6 +137,7 @@ def write_derivative_description(bids_dir, deriv_dir):
             'Name': 'FitLins',
             'Version': __version__,
             'CodeURL': 'https://github.com/poldracklab/fitlins',
+            'Parameters': out_args,
             },
         'CodeURL': 'https://github.com/poldracklab/fitlins',
         'HowToAcknowledge': 'https://github.com/poldracklab/fitlins',
