@@ -208,7 +208,7 @@ def run_fitlins(argv=None):
             raise NotImplementedError("Saving the error time series is only implmented for"
                                       " the afni estimator. If this is a feature you want"
                                       f" for {opts.estimator} please let us know on github.")
-        if ('isoblurto' in opts.smoothing):
+        if opts.smoothing and ('isoblurto' in opts.smoothing):
             raise NotImplementedError("The isoblurto smoothing type is only implmented for"
                                       " the afni estimator. If this is a feature you want"
                                       f" for {opts.estimator} please let us know on github.")
