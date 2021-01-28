@@ -76,19 +76,14 @@ jobs:
             git config --global user.name 'FitLins CircleCI User'
             git config --global user.email 'crn.poldracklab@gmail.com'
       - run:
-          name: Install fMRIPrep derivatives of ds000003
+          name: Install fMRIPrep derivatives of ds000003 and reference data
           command: |
-            datalad install -r ///labs/poldrack/ds003_fmriprep
-            datalad update ds003_fmriprep/
-            datalad get ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
-                        ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
-                        ds003_fmriprep/dataset_description.json \
-                        ds003_fmriprep/sub-*/*/*.json
-      - run:
-          name: Download a model for ds000003
-          command: |
-              mkdir -p ds003_models
-              cp /tmp/src/examples/models/ds000003/models/model-001_smdl.json ds003_models/
+            datalad install -r -s https://gin.g-node.org/shotgunosine/fitlins_tests
+            datalad get fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                                    fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                                    fitlins_tests/ds003/ds003_fmriprep/dataset_description.json \
+                                    fitlins_tests/ds003/ds003_fmriprep/sub-*/*/*.json
+            datalad get -r fitlins_tests/ds003/nistats_smooth/ fitlins_tests/ds003/afni_smooth/ fitlins_tests/ds003/afni_blurto/ 
       - save_cache:
          key: ds003-v0-{{ .Branch }}-{{ .BuildNum }}
          paths:
@@ -153,7 +148,7 @@ jobs:
                 -e COVERAGE_FILE=/scratch/.coverage.pytest \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml /src/fitlins
+                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
       - run:
           name: Submit pytest coverage
           command: |
@@ -164,7 +159,7 @@ jobs:
 
   test_ds003:
     parameters:
-      estimator:
+      test_name:
         type: string
     machine:
       image: circleci/classic:201711-01
@@ -193,25 +188,28 @@ jobs:
             fi
       - run:
           name: Run FitLins
-          no_output_timeout: 2h
+          no_output_timeout: 4h
           command: |
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/data/ds003_fmriprep:/data:ro \
+            docker run --rm -v /tmp/fitlins_tests:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/data/ds003_models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                coverage run \
-                --rcfile /src/fitlins/docker/multiproc.coveragerc \
-                $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /models/model-001_smdl.json -w /scratch \
-                --participant-label 01 02 03 --space MNI152NLin2009cAsym \
-                --estimator << parameters.estimator >> \
-                --n-cpus 2 --mem-gb 4 -vv
+                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest_<< parameters.test_name >>.xml \
+                /src/fitlins/fitlins/tests \
+                --filins-path=$CONDA_PREFIX/bin/fitlins
+                --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
+                --output-dir=/out \
+                --derivatives=/data/ds003/ds003_fmriprep \
+                --model=/data/ds003/models/model-001_smdl.json \
+                --work-dir=/scratch \
+                --test_name=<< parameters.test_name >> \
+                --database-path=/data/ds003_database \
+                --reference-dir=/data/ds003
       - run:
           name: Combine coverage and submit
           command: |
@@ -221,12 +219,12 @@ jobs:
                 -w /scratch \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                bash -c "coverage combine /scratch/.coverage* \
+                bash -c "coverage combine /scratch/.cov* \
                          && coverage xml"
               # submit coverage
               bash <(curl --retry 5 -s https://codecov.io/bash) \
-                -f /tmp/ds003/work/coverage.xml \
-                -F << parameters.estimator >> \
+                -f /scratch/coverage.xml \
+                -F << parameters.test_name >> \
                 -e CIRCLE_JOB
       - store_artifacts:
           path: /tmp/ds003
@@ -264,17 +262,16 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
+            docker run --rm --v /tmp/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/data/ds003_models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-new \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /models/model-001_smdl.json -w /scratch \
+                -d /data -m /data/ds003/models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
@@ -282,17 +279,16 @@ jobs:
           no_output_timeout: 2h
           command: |
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/data/ds003_fmriprep:/data \
+            docker run --rm --v /tmp/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/data/ds003_models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-exists \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /models/model-001_smdl.json -w /scratch \
+                -d /data -m /data/ds003/models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
@@ -487,7 +483,7 @@ workflows:
           name: test_ds003_<< matrix.estimator >>
           matrix:
             parameters:
-              estimator: ["afni", "nistats"]
+              test_name: ["afni_smooth", "nistats_smooth", "afni_blurto"]
           requires:
             - build
             - cache_test_data
@@ -506,15 +502,17 @@ workflows:
               only: /.*/
       - deploy_master:
           requires:
-            - test_ds003_nistats
-            - test_ds003_afni
+            - test_ds003_nistats_smooth
+            - test_ds003_afni_smooth
+            - test_ds003_afni_blurto
           filters:
             branches:
               only: master
       - deploy_docker:
           requires:
-            - test_ds003_nistats
-            - test_ds003_afni
+            - test_ds003_nistats_smooth
+            - test_ds003_afni_smooth
+            - test_ds003_afni_blurto
             - build_docs
           filters:
             branches:
@@ -523,8 +521,9 @@ workflows:
               only: /.*/
       - deploy_pypi:
           requires:
-            - test_ds003_nistats
-            - test_ds003_afni
+            - test_ds003_nistats_smooth
+            - test_ds003_afni_smooth
+            - test_ds003_afni_blurto
             - build_docs
             - test_packaging
           filters:
