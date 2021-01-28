@@ -193,7 +193,7 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/fitlins_tests:/data:ro \
+            docker run --rm -v /tmp/data/fitlins_tests:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage \
@@ -201,14 +201,14 @@ jobs:
                 poldracklab/fitlins:latest \
                 pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest_<< parameters.test_name >>.xml \
                 /src/fitlins/fitlins/tests \
-                --fitlins-path=$CONDA_PREFIX/bin/fitlins
+                --fitlins-path=$CONDA_PREFIX/bin/fitlins \
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
                 --output-dir=/out \
                 --derivatives=/data/ds003/ds003_fmriprep \
                 --model=/data/ds003/models/model-001_smdl.json \
                 --work-dir=/scratch \
-                --test_name=<< parameters.test_name >> \
-                --database-path=/data/ds003_database \
+                --test-name=<< parameters.test_name >> \
+                --database-path=/out/ds003_database \
                 --reference-dir=/data/ds003
       - run:
           name: Combine coverage and submit
@@ -262,7 +262,7 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm --v /tmp/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
+            docker run --rm --v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-new \
@@ -279,7 +279,7 @@ jobs:
           no_output_timeout: 2h
           command: |
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm --v /tmp/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
+            docker run --rm --v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-exists \
