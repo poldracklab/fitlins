@@ -19,7 +19,7 @@ from nipype.interfaces.base import traits, isdefined, File
 from nipype.utils.filemanip import fname_presuffix
 
 from .nistats import FirstLevelModel, prepare_contrasts, _flatten
-from .utils import MergeAll
+
 
 STAT_CODES = nb.volumeutils.Recoder(
     (
@@ -105,7 +105,10 @@ class FirstLevelModel(FirstLevelModel):
             else:
                 smooth.inputs.mask = mask_file
             if 'desc-preproc' in self.inputs.bold_file:
-                smooth.inputs.out_file =  op.join(runtime.cwd, self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed'))
+                smooth.inputs.out_file = op.join(
+                    runtime.cwd,
+                    self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed')
+                )
             else:
                 smooth.inputs.out_file = op.join(runtime.cwd, 'input_desc-smoothed.nii.gz')
             smooth.inputs.fwhm = smoothing_fwhm
@@ -123,7 +126,10 @@ class FirstLevelModel(FirstLevelModel):
             else:
                 smooth.inputs.mask = mask_file
             if 'desc-preproc' in self.inputs.bold_file:
-                smooth.inputs.out_file =  op.join(runtime.cwd, self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed'))
+                smooth.inputs.out_file = op.join(
+                    runtime.cwd,
+                    self.inputs.bold_file.split("/")[-1].replace('desc-preproc', 'desc-smoothed')
+                )
             else:
                 smooth.inputs.out_file = op.join(runtime.cwd, 'input_desc-smoothed.nii.gz')
             smooth.inputs.preserve = True
@@ -134,8 +140,6 @@ class FirstLevelModel(FirstLevelModel):
             # If there's smoothing, then this will be the result of the smoothing
             img_path = smooth_res.outputs.out_file
             img = nb.load(img_path)
-
-
 
         # Signal scaling occurs by default (the
         # nistats.first_level_model.FirstLevelModel class rewrites the default
@@ -204,7 +208,7 @@ class FirstLevelModel(FirstLevelModel):
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
-        
+
         model_attr_extract = {
             'r_square': (out_maps, 0),
             'log_likelihood': (var_maps, 4),
@@ -223,7 +227,6 @@ class FirstLevelModel(FirstLevelModel):
             extract_volume(imgs, idx, f"{attr} of model", fname)
             model_maps.append(fname)
 
-
         # separate dict for maps that don't need to be extracted
         model_attr = {
             'residtsnr': self.save_tsnr(runtime, beta_maps, var_maps),
@@ -232,7 +235,7 @@ class FirstLevelModel(FirstLevelModel):
         # Save error time series if people want it
         if self.errorts:
             model_attr["errorts"] = reml_res.outputs.wherr_file
-        
+
         for attr, fname in model_attr.items():
             model_metadata.append({'stat': attr, **out_ents})
             model_maps.append(fname)
@@ -350,10 +353,15 @@ class FirstLevelModel(FirstLevelModel):
                 for idx in idx_list:
                     imgs = maps[map_type]
                     fname = fname_fmt(name, map_type)
-                    extract_volume(imgs, idx, f"{map_type} of contrast {name}", fname_fmt(name, map_type))                    
+                    extract_volume(
+                        imgs,
+                        idx,
+                        f"{map_type} of contrast {name}",
+                        fname_fmt(name, map_type)
+                    )
                     map_list.append(fname)
 
-        # calculate effect variance 
+        # calculate effect variance
         for (name, weights, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
             map_type = "effect_variance"
             effect_img = nb.load(effect_fname)
@@ -367,7 +375,6 @@ class FirstLevelModel(FirstLevelModel):
             fname = fname_fmt(name, map_type)
             variance_img.to_filename(fname)
             variance_maps.append(fname)
-
 
         self._results["effect_maps"] = effect_maps
         self._results["variance_maps"] = variance_maps
@@ -397,10 +404,11 @@ class FirstLevelModel(FirstLevelModel):
         # for the purposes of TSNR, we'll add 100
         tsnr_dat = np.abs(const_dat + 100) / std_dat
         tsnr_img = nb.Nifti1Image(tsnr_dat, std_img.affine, std_img.header)
-        tsnr_img.header['descrip'] = f"residual TSNR of model"
+        tsnr_img.header['descrip'] = "residual TSNR of model"
         fname = op.join(runtime.cwd, 'model_residtsnr.nii.gz')
         tsnr_img.to_filename(fname)
         return fname
+
 
 def extract_volume(imgs, idx, intent_name, fname):
     img = imgs.slicer[..., int(idx)]

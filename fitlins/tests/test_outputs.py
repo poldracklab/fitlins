@@ -4,8 +4,6 @@ import nibabel as nib
 import numpy as np
 import json
 
-import pytest
-
 
 def test_get_nan_diff():
     ref_data = np.array([[np.nan, 0]])
@@ -32,7 +30,10 @@ def test_get_nan_diff():
     ref_data = np.array([[np.nan, 1]])
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_abs=0.01)[0]
-    expected_dif = 'Absolute difference (max of 0.09999999999999998) greater than 0.01 for ref and out.'
+    expected_dif = (
+        'Absolute difference (max of 0.09999999999999998)'
+        ' greater than 0.01 for ref and out.'
+    )
     assert dif == expected_dif
 
     ref_data = np.array([[np.nan, 1]])
@@ -43,7 +44,9 @@ def test_get_nan_diff():
     ref_data = np.array([[np.nan, 1]])
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_rel=0.005)[0]
-    expected_dif = 'Relative difference (max of 0.10526315789473682) greater than 0.005 for ref and out.'
+    expected_dif = (
+        'Relative difference (max of 0.10526315789473682) greater than 0.005 for ref and out.'
+    )
     assert dif == expected_dif
 
     ref_data = np.array([[np.nan, 1]])
@@ -54,7 +57,9 @@ def test_get_nan_diff():
     ref_data = np.array([[np.nan, 1]])
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_abs=0.01, max_rel=0.005)[0]
-    expected_dif = 'Relative difference (max of 0.10526315789473682) greater than 0.005 for ref and out.'
+    expected_dif = (
+        'Relative difference (max of 0.10526315789473682) greater than 0.005 for ref and out.'
+    )
     assert dif == expected_dif
 
     ref_data = np.array([[np.nan, 1]])
@@ -64,7 +69,7 @@ def test_get_nan_diff():
 
 
 def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
-                 model, work_dir, 
+                 model, work_dir,
                  database_path,
                  test_name, reference_dir):
     if test_name == "afni_smooth":
@@ -115,12 +120,12 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         difs = get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=1e-06, max_rel=1e-04)
         assert len(difs) == 0
 
-    # check dataset description json
-    ref_json = reference_dir/'dataset_description.json'
-    out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
-
     # Hold off on checking dataset description till that's settled
-    #get_json_diff(ref_json, out_json)
+    # check dataset description json
+    # ref_json = reference_dir/'dataset_description.json'
+    # out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
+
+    # get_json_diff(ref_json, out_json)
 
 
 def get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=0, max_rel=0):
@@ -142,19 +147,23 @@ def get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=0, max_rel=0):
                 diff = diff[over]
                 rel_diff = rel_diff[over]
                 if (rel_diff > max_rel).any():
-                    res.append(f"Relative difference (max of {rel_diff.max()}) greater than {max_rel} for {ref_nii} and {out_nii}.")
+                    res.append(f"Relative difference (max of {rel_diff.max()})"
+                               f" greater than {max_rel} for {ref_nii} and {out_nii}.")
             elif max_rel:
                 if (rel_diff > max_rel).any():
-                    res.append(f"Relative difference (max of {rel_diff.max()}) greater than {max_rel} for {ref_nii} and {out_nii}.")
+                    res.append(f"Relative difference (max of {rel_diff.max()})"
+                               f" greater than {max_rel} for {ref_nii} and {out_nii}.")
             else:
                 if ((diff > max_abs).any()):
-                    res.append(f"Absolute difference (max of {diff.max()}) greater than {max_abs} for {ref_nii} and {out_nii}.")
-            
+                    res.append(f"Absolute difference (max of {diff.max()})"
+                               f" greater than {max_abs} for {ref_nii} and {out_nii}.")
+
         else:
             res.append(f"{ref_nii} nans don't match {out_nii} nans.")
 
     else:
-        res.append(f"{ref_nii} shape {ref_nii.shape} does not match {out_nii} shape {out_nii.shape}.")
+        res.append(f"{ref_nii} shape {ref_nii.shape} does not match {out_nii}"
+                   f" shape {out_nii.shape}.")
     return res
 
 

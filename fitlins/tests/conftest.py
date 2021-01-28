@@ -1,4 +1,3 @@
-import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -8,11 +7,10 @@ def pytest_addoption(parser):
     parser.addoption(
         '--bids-dir', action="append", default=[],
         help='the root folder of a BIDS valid dataset (sub-XXXXX folders should '
-              'be found at the top level in this folder)'
+             'be found at the top level in this folder)'
     )
     parser.addoption('--output-dir', action="append", default=[],
-                     help='the output path for the outcomes of preprocessing and visual '
-                             'reports')
+                     help='the output path for the outcomes of preprocessing and visual reports')
     parser.addoption('--derivatives', action="append", default=[],
                      help='location of derivatives (including preprocessed images).')
     parser.addoption('--model', action="append", default=[],
@@ -22,7 +20,7 @@ def pytest_addoption(parser):
     parser.addoption('--reference-dir', action="append", default=[],
                      help='directory containing reference results for evaluating test results')
     parser.addoption(
-        '--database-path',action="append", default=[],
+        '--database-path', action="append", default=[],
         help="Path to directory containing SQLite database indicies "
              "for this BIDS dataset. "
              "If a value is passed and the file already exists, "
@@ -33,6 +31,7 @@ def pytest_addoption(parser):
         help="name of test to run",
         choices=["nistats_smooth", "afni_smooth", "afni_blurto"]
     )
+
 
 def pytest_generate_tests(metafunc):
     opt_keys = {

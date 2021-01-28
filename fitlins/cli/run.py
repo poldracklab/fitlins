@@ -113,7 +113,8 @@ def get_parser():
                              "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
                              "Optional smoothing TYPE (default: iso) must be one of:  "
                              " `iso` (isotropic additive smoothing), `isoblurto` (isotropic "
-                             "smoothing progressivley applied till the target smoothness is reached). "
+                             "smoothing progressivley applied till "
+                             "the target smoothness is reached). "
                              "e.g., `--smoothing 5:dataset:iso` will perform "
                              "a 5mm FWHM isotropic smoothing on subject-level maps, "
                              "before evaluating the dataset level.")
@@ -139,7 +140,7 @@ def get_parser():
                          default="nistats", choices=["nistats", "afni"])
     g_other.add_argument("--error-ts", action='store_true', default=False,
                          help='save error time series for first level models.'
-                        ' Currently only implemented for afni estimator.')
+                         ' Currently only implemented for afni estimator.')
 
     return parser
 
@@ -160,7 +161,6 @@ def run_fitlins(argv=None):
         re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
         # Iterate over empty tuple if undefined
         for ign in opts.ignore or ()]
-
 
     log_level = 25 + 5 * (opts.quiet - opts.verbose)
     logger.setLevel(log_level)

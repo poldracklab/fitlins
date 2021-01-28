@@ -146,7 +146,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         # This provides a common API with AFNI's FirstLevelModel
         kwargs.pop("errorts", None)
         super(FirstLevelModel, self).__init__(*args, **kwargs)
-        
+
     def _run_interface(self, runtime):
         import nibabel as nb
         from nilearn.glm import first_level as level1
@@ -176,7 +176,9 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
             smoothing_fwhm = None
         smoothing_type = self.inputs.smoothing_type
         if isdefined(smoothing_type) and smoothing_type != 'iso':
-            raise NotImplementedError("Only the iso smoothing type is available for the nistats estimator.")
+            raise NotImplementedError(
+                "Only the iso smoothing type is available for the nistats estimator."
+            )
         if is_cifti:
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
             labels, estimates = level1.run_glm(img.get_fdata(dtype='f4'), mat.values)
@@ -185,7 +187,9 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                                                _get_voxelwise_stat(labels, estimates, 'r_square'),
                                                'r_square'),
                 'log_likelihood': dscalar_from_cifti(img,
-                                                     _get_voxelwise_stat(labels, estimates, 'logL'),
+                                                     _get_voxelwise_stat(labels,
+                                                                         estimates,
+                                                                         'logL'),
                                                      'log_likelihood')
             }
         else:
@@ -284,7 +288,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
         if isdefined(smoothing_type) and smoothing_type != 'iso':
-            raise NotImplementedError("Only the iso smoothing type is available for the nistats estimator.")
+            raise NotImplementedError(
+                "Only the iso smoothing type is available for the nistats estimator."
+            )
         effect_maps = []
         variance_maps = []
         stat_maps = []
