@@ -16,7 +16,8 @@ class DesignMatrixInputSpec(TraitedSpec):
     session_info = traits.Dict()
     drop_missing = traits.Bool(
         desc='Drop columns in design matrix with all missing values')
-    drift_model = traits.String(
+    drift_model = traits.Either(
+        traits.String(), None,
         desc='Optional drift model to apply to design matrix'
     )
 
