@@ -480,7 +480,7 @@ workflows:
             tags:
               only: /.*/
       - test_ds003:
-          name: test_ds003_<< matrix.estimator >>
+          name: test_ds003_<< matrix.test_name >>
           matrix:
             parameters:
               test_name: ["afni_smooth", "nistats_smooth", "afni_blurto"]
