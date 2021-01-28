@@ -121,11 +121,14 @@ def write_derivative_description(bids_dir, deriv_dir, args):
         return c
 
     # Clean up args
-    for d in ['bids_dir', 'output_dir', 'model', 'derivatives', 'work_dir']:
-        if isinstance(args[d], list):
-            args[d] = [_clean_relative(i) for i in args[d]]
-        else:
-            args[d] = _clean_relative(d)
+    out_args = {}
+    for k, v in args.items():
+        if k in ['bids_dir', 'output_dir', 'model', 'derivatives', 'work_dir']:
+            if isinstance(v, list):
+                v = [_clean_relative(i) for i in v]
+            else:
+                v = _clean_relative(v)
+        out_args[k] = v
 
     desc = {
         'Name': 'Fitlins output',
@@ -134,7 +137,7 @@ def write_derivative_description(bids_dir, deriv_dir, args):
             'Name': 'FitLins',
             'Version': __version__,
             'CodeURL': 'https://github.com/poldracklab/fitlins',
-            'Parameters': args,
+            'Parameters': out_args,
             },
         'CodeURL': 'https://github.com/poldracklab/fitlins',
         'HowToAcknowledge': 'https://github.com/poldracklab/fitlins',
