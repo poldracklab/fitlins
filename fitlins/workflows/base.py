@@ -85,7 +85,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
 
-    model.inputs.drift_model = drift_model
+    design_matrix.inputs.drift_model = drift_model
 
     if estimator == 'afni':
         from ..interfaces.afni import FirstLevelModel
