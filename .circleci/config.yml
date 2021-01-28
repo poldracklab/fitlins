@@ -201,7 +201,7 @@ jobs:
                 poldracklab/fitlins:latest \
                 pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest_<< parameters.test_name >>.xml \
                 /src/fitlins/fitlins/tests \
-                --filins-path=$CONDA_PREFIX/bin/fitlins
+                --fitlins-path=$CONDA_PREFIX/bin/fitlins
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
                 --output-dir=/out \
                 --derivatives=/data/ds003/ds003_fmriprep \
