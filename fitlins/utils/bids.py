@@ -109,6 +109,23 @@ def collect_participants(layout, participant_label=None, strict=False):
 
 def write_derivative_description(bids_dir, deriv_dir, args):
     from fitlins import __version__
+    from pathlib import Path
+
+    def _clean_relative(item):
+        """ Turn absolute paths into relative paths """
+        try:
+            p = Path(item)
+            c = f"../{p.stem}"
+        except:
+            c = item
+        return c
+
+    # Clean up args
+    for d in ['bids_dir', 'output_dir', 'model', 'derivatives', 'work_dir']:
+        if isinstance(args[d], list):
+            args[d] = [_clean_relative(i) for i in args[d]]
+        else:
+            args[d] = _clean_relative(d)
 
     desc = {
         'Name': 'Fitlins output',
