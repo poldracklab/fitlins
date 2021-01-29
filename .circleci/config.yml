@@ -197,10 +197,12 @@ jobs:
             docker run --rm -v /tmp/data/fitlins_tests:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -e COVERAGE_FILE=/scratch/.coverage \
+                -e COVERAGE_FILE=/scratch/.coverage_<< parameters.test_name >> \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                pytest --cov=fitlins --cov-report xml:/scratch/.coverage_<< parameters.test_name >>.xml \
+                coverage run \
+                --rcfile /src/fitlins/docker/multiproc.coveragerc \
+                $CONDA_PREFIX/bin/pytest --cov=fitlins --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
                 /src/fitlins/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
