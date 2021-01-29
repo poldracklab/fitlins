@@ -79,7 +79,7 @@ jobs:
           name: Install fMRIPrep derivatives of ds000003 and reference data
           command: |
             datalad install -r -s https://gin.g-node.org/shotgunosine/fitlins_tests
-            datalad update fitlins_tests
+            datalad update --merge fitlins_tests
             datalad get fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
                                     fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
                                     fitlins_tests/ds003/ds003_fmriprep/dataset_description.json \
