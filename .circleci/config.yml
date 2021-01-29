@@ -199,7 +199,7 @@ jobs:
                 -e COVERAGE_FILE=/scratch/.coverage \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest_<< parameters.test_name >>.xml \
+                pytest --cov=fitlins --cov-report xml:/scratch/.coverage_<< parameters.test_name >>.xml \
                 /src/fitlins/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
