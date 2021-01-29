@@ -108,7 +108,6 @@ def collect_participants(layout, participant_label=None, strict=False):
 
 
 def write_derivative_description(bids_dir, deriv_dir, args):
->>>>>>> origin
     from fitlins import __version__
     from pathlib import Path
 
