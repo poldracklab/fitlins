@@ -169,7 +169,7 @@ def write_derivative_description(bids_dir, deriv_dir, args):
         desc['License'] = orig_desc['License']
 
     with open(os.path.join(deriv_dir, 'dataset_description.json'), 'w') as fobj:
-        json.dump(desc, fobj)
+        json.dump(desc, fobj, indent=2)
 
 
 def _get_shub_version(singularity_url):
