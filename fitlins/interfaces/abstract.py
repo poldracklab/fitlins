@@ -15,7 +15,11 @@ class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
     session_info = traits.Dict()
     drop_missing = traits.Bool(
-            desc='Drop columns in design matrix with all missing values')
+        desc='Drop columns in design matrix with all missing values')
+    drift_model = traits.Either(
+        traits.String(), None,
+        desc='Optional drift model to apply to design matrix'
+    )
 
 
 class DesignMatrixOutputSpec(TraitedSpec):

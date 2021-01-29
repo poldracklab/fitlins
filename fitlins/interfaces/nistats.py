@@ -66,6 +66,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                 f"Unknown image type ({img.__class__.__name__}) <{self.inputs.bold_file}>")
 
         drop_missing = bool(self.inputs.drop_missing)
+        drift_model = self.inputs.drift_model
 
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
@@ -92,7 +93,8 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
-                                   ('cosine_00' in column_names)) else 'cosine'
+                                   ('cosine_00' in column_names)) else \
+                                       drift_model
 
             if dense.empty:
                 dense = None
@@ -100,7 +102,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         else:
             dense = None
             column_names = None
-            drift_model = 'cosine'
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
@@ -108,7 +109,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             add_regs=dense,
             hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
-            drift_model=drift_model,
+            drift_model=drift_model
         )
 
         mat.to_csv('design.tsv', sep='\t')
