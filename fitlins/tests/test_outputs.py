@@ -94,7 +94,6 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         "--space", "MNI152NLin2009cAsym",
         "--estimator", estimator,
         "--smoothing", smoothing,
-        "-vv",
         "--n-cpus", '2',
         "--mem-gb", '4'
     ]
@@ -120,12 +119,11 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         difs = get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=1e-06, max_rel=1e-04)
         assert len(difs) == 0
 
-    # Hold off on checking dataset description till that's settled
     # check dataset description json
-    # ref_json = reference_dir/'dataset_description.json'
-    # out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
+    ref_json = reference_dir/'dataset_description.json'
+    out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
 
-    # get_json_diff(ref_json, out_json)
+    get_json_diff(ref_json, out_json)
 
 
 def get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=0, max_rel=0):
@@ -168,8 +166,8 @@ def get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=0, max_rel=0):
 
 
 def get_json_diff(ref_json, out_json):
-    ref_jdat = json.loads(ref_json.read_text())
-    out_jdat = json.loads(out_json.read_text())
-    pd_check_fields = ['Estimator', 'Smoothing']
+    ref_jdat = json.loads(ref_json.read_text())['PipelineDescription']['Parameters']
+    out_jdat = json.loads(out_json.read_text())['PipelineDescription']['Parameters']
+    pd_check_fields = ['estimator', 'smoothing', 'participant_label']
     for cf in pd_check_fields:
-        assert ref_jdat['PipelineDescription'][cf] == out_jdat['PipelineDescription'][cf]
+        assert ref_jdat[cf] == out_jdat[cf]
