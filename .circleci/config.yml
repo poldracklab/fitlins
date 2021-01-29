@@ -224,7 +224,7 @@ jobs:
                          && coverage xml"
               # submit coverage
               bash <(curl --retry 5 -s https://codecov.io/bash) \
-                -f /scratch/coverage.xml \
+                -f /tmp/ds003/work/coverage.xml \
                 -F << parameters.test_name >> \
                 -e CIRCLE_JOB
       - store_artifacts:
