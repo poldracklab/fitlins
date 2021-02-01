@@ -202,7 +202,9 @@ jobs:
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
-                $CONDA_PREFIX/bin/pytest --cov=fitlins --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
+                $CONDA_PREFIX/bin/pytest --cov=fitlins \
+                --cov-config /src/fitlins/docker/multiproc.coveragerc \
+                --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
                 /src/fitlins/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
