@@ -149,7 +149,9 @@ jobs:
                 -e COVERAGE_FILE=/scratch/.coverage.pytest \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
-                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
+                pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml \
+                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
+                 --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
       - run:
           name: Submit pytest coverage
           command: |
