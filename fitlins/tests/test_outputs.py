@@ -81,7 +81,10 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
     elif test_name == "nistats_smooth":
         estimator = "nistats"
         smoothing = "10.0:l1:iso"
-
+    elif test_name == "nistats_blurto":
+        estimator = "nistats"
+        smoothing = "5.0:l1:isoblurto"
+        
     opts = [
         fitlins_path,
         bids_dir,

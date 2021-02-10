@@ -29,7 +29,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--test-name", action="append", default=[],
         help="name of test to run",
-        choices=["nistats_smooth", "afni_smooth", "afni_blurto"]
+        choices=["nistats_smooth", "nistats_blurto", "afni_smooth", "afni_blurto"]
     )
 
 

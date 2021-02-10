@@ -193,8 +193,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
         (loader, design_matrix, [('design_info', 'session_info')]),
         (getter, design_matrix, [('bold_files', 'bold_file')]),
-        (getter, l1_model, [('bold_files', 'bold_file'),
-                            ('mask_files', 'mask_file')]),
+        (getter, l1_model, [('mask_files', 'mask_file')]),
         (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
         (design_matrix, plot_design, [('design_matrix', 'data')]),
         (design_matrix, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
@@ -318,8 +317,30 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             ])
 
         if smoothing and smoothing_level in (step, level):
-            model.inputs.smoothing_fwhm = smoothing_fwhm
-            model.inputs.smoothing_type = smoothing_type
+            # No need to do smoothing independently if it's nistats iso
+            if ((smoothing_type == "iso") and (estimator == "nistats")):
+                model.inputs.smoothing_fwhm = smoothing_fwhm
+                model.inputs.smoothing_type = smoothing_type
+                wf.connect([
+                    (getter, l1_model, [('bold_files', 'bold_file')])
+                ])
+            else:
+                if smoothing_type == "isoblurto":
+                    from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+                elif smoothing_type == "iso":
+                    from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+                smooth = pe.MapNode(
+                    smooth_interface(),
+                    iterfield=["in_file", "mask"],
+                    name="smooth"
+                )
+                smooth.inputs.fwhm = smoothing_fwhm
+                smooth.inputs.outputtype = 'NIFTI_GZ'
+                wf.connect([
+                    (getter, smooth, [('mask_files', 'mask')]),
+                    (getter, smooth, [('bold_files', 'in_file')]),
+                    (smooth, l1_model, [('out_file', 'bold_file')])
+                ])
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
