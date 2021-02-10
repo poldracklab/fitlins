@@ -481,7 +481,7 @@ workflows:
           name: test_ds003_<< matrix.test_name >>
           matrix:
             parameters:
-              test_name: ["afni_smooth", "nistats_smooth", "afni_blurto"]
+              test_name: ["afni_smooth", "nistats_smooth", "afni_blurto", "nistats_blurto"]
           requires:
             - build
             - cache_test_data
@@ -501,6 +501,7 @@ workflows:
       - deploy_master:
           requires:
             - test_ds003_nistats_smooth
+            - test_ds003_nistats_blurto
             - test_ds003_afni_smooth
             - test_ds003_afni_blurto
           filters:
@@ -509,6 +510,7 @@ workflows:
       - deploy_docker:
           requires:
             - test_ds003_nistats_smooth
+            - test_ds003_nistats_blurto
             - test_ds003_afni_smooth
             - test_ds003_afni_blurto
             - build_docs
@@ -520,6 +522,7 @@ workflows:
       - deploy_pypi:
           requires:
             - test_ds003_nistats_smooth
+            - test_ds003_nistats_blurto
             - test_ds003_afni_smooth
             - test_ds003_afni_blurto
             - build_docs
