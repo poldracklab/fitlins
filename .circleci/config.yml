@@ -205,7 +205,7 @@ jobs:
                 pytest --cov=fitlins \
                 --cov-config /src/fitlins/fitlins/tests/multiproc.coveragerc \
                 --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
-                /src/fitlins/fitlins/tests \
+                $CONDA_PREFIX/lib/python3.6/site-packages/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
                 --output-dir=/out \
