@@ -84,7 +84,7 @@ jobs:
                                     fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
                                     fitlins_tests/ds003/ds003_fmriprep/dataset_description.json \
                                     fitlins_tests/ds003/ds003_fmriprep/sub-*/*/*.json
-            datalad get -r fitlins_tests/ds003/nistats_smooth/ fitlins_tests/ds003/afni_smooth/ fitlins_tests/ds003/afni_blurto/ 
+            datalad get -r fitlins_tests/ds003/nistats_smooth/ fitlins_tests/ds003/afni_smooth/ fitlins_tests/ds003/afni_blurto/ fitlins_tests/ds003/nistats_blurto/
       - save_cache:
          key: ds003-v1-{{ .Branch }}-{{ .BuildNum }}
          paths:
