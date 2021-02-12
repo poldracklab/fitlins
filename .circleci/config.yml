@@ -203,7 +203,7 @@ jobs:
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 pytest --cov=fitlins \
-                --cov-config /src/fitlins/fitlins/tests/multiproc.coveragerc \
+                --cov-config /src/fitlins/docker/multiproc.coveragerc \
                 --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
                 $CONDA_PREFIX/lib/python3.6/site-packages/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
