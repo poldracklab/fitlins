@@ -336,7 +336,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 smooth.inputs.outputtype = 'NIFTI_GZ'
                 wf.disconnect([
                     (getter, l1_model, [('bold_files', 'bold_file')])
-                    ])
+                ])
                 wf.connect([
                     (getter, smooth, [('mask_files', 'mask')]),
                     (getter, smooth, [('bold_files', 'in_file')]),

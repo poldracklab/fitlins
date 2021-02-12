@@ -65,10 +65,7 @@ class FirstLevelModel(FirstLevelModel):
         from nipype import logging
         import nibabel as nb
         from nipype.interfaces import afni
-        from nipype.interfaces.afni.preprocess import (
-            BlurInMask,
-            BlurToFWHM
-        )
+
         import pandas as pd
 
         logger = logging.getLogger("nipype.interface")

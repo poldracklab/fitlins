@@ -84,7 +84,7 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
     elif test_name == "nistats_blurto":
         estimator = "nistats"
         smoothing = "5.0:l1:isoblurto"
-        
+
     opts = [
         fitlins_path,
         bids_dir,
@@ -123,7 +123,7 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         assert len(difs) == 0
 
     # check dataset description json
-    ref_json = reference_dir/'dataset_description.json'
+    ref_json = reference_dir / 'dataset_description.json'
     out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
 
     get_json_diff(ref_json, out_json)
