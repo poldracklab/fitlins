@@ -37,6 +37,7 @@ class FirstLevelEstimatorInputSpec(TraitedSpec):
     design_matrix = File(exists=True, mandatory=True)
     contrast_info = traits.List(traits.Dict)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+    smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
 
 
 class EstimatorOutputSpec(TraitedSpec):
@@ -61,6 +62,7 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
+    smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
 
 
 class SecondLevelEstimatorOutputSpec(EstimatorOutputSpec):
