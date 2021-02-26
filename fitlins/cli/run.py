@@ -112,7 +112,10 @@ def get_parser():
                              "Optional analysis LEVEL (default: l1) may be specified numerically "
                              "(e.g., `l1`) or by name (`run`, `subject`, `session` or `dataset`). "
                              "Optional smoothing TYPE (default: iso) must be one of:  "
-                             " `iso` (isotropic). e.g., `--smoothing 5:dataset:iso` will perform "
+                             " `iso` (isotropic additive smoothing), `isoblurto` (isotropic "
+                             "smoothing progressivley applied till "
+                             "the target smoothness is reached). "
+                             "e.g., `--smoothing 5:dataset:iso` will perform "
                              "a 5mm FWHM isotropic smoothing on subject-level maps, "
                              "before evaluating the dataset level.")
 
@@ -135,9 +138,12 @@ def get_parser():
     g_other.add_argument("--estimator", action="store", type=str,
                          help="estimator to use to fit the model",
                          default="nistats", choices=["nistats", "afni"])
+    g_other.add_argument("--drift-model", action="store", type=str,
+                         help="specifies the desired drift model",
+                         default=None, choices=["polynomial", "cosine", None])
     g_other.add_argument("--error-ts", action='store_true', default=False,
                          help='save error time series for first level models.'
-                        ' Currently only implemented for afni estimator.')
+                         ' Currently only implemented for afni estimator.')
 
     return parser
 
@@ -158,7 +164,6 @@ def run_fitlins(argv=None):
         re.compile(ign[1:-1]) if (ign[0], ign[-1]) == ('/', '/') else ign
         # Iterate over empty tuple if undefined
         for ign in opts.ignore or ()]
-
 
     log_level = 25 + 5 * (opts.quiet - opts.verbose)
     logger.setLevel(log_level)
@@ -201,17 +206,20 @@ def run_fitlins(argv=None):
         # TODO - fix neuroscout
         derivatives = derivatives[0].split(" ")
 
-    if opts.error_ts and opts.estimator != 'afni':
-        raise NotImplementedError("Saving the error time series is only implmented for"
-                                  " the afni estimator. If this is a feature you want"
-                                  f" for {opts.estimator} please let us know on github.")
+    if opts.estimator != 'afni':
+        if opts.error_ts:
+            raise NotImplementedError("Saving the error time series is only implmented for"
+                                      " the afni estimator. If this is a feature you want"
+                                      f" for {opts.estimator} please let us know on github.")
 
     pipeline_name = 'fitlins'
     if opts.derivative_label:
         pipeline_name += '_' + opts.derivative_label
     deriv_dir = op.join(opts.output_dir, pipeline_name)
     os.makedirs(deriv_dir, exist_ok=True)
-    fub.write_derivative_description(opts.bids_dir, deriv_dir)
+    fub.write_derivative_description(
+        opts.bids_dir, deriv_dir, vars(opts)
+    )
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
@@ -247,6 +255,7 @@ def run_fitlins(argv=None):
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
         smoothing=opts.smoothing, drop_missing=opts.drop_missing,
+        drift_model=opts.drift_model,
         estimator=opts.estimator, errorts=opts.error_ts
         )
     fitlins_wf.config = deepcopy(config.get_fitlins_config()._sections)

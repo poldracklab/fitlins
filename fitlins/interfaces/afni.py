@@ -19,7 +19,7 @@ from nipype.interfaces.base import traits, isdefined, File
 from nipype.utils.filemanip import fname_presuffix
 
 from .nistats import FirstLevelModel, prepare_contrasts, _flatten
-from .utils import MergeAll
+
 
 STAT_CODES = nb.volumeutils.Recoder(
     (
@@ -65,6 +65,7 @@ class FirstLevelModel(FirstLevelModel):
         from nipype import logging
         import nibabel as nb
         from nipype.interfaces import afni
+
         import pandas as pd
 
         logger = logging.getLogger("nipype.interface")
@@ -80,16 +81,8 @@ class FirstLevelModel(FirstLevelModel):
         afni_design = get_afni_design_matrix(mat, contrasts, stim_labels, t_r)
         Path(design_fname).write_text(afni_design)
 
-        # Get input scans for 3dREMLfit: scaled and/or smoothed input and the mask file
         img_path = self.inputs.bold_file
         img = nb.load(img_path)
-
-        mask_file = self.inputs.mask_file
-        if not isdefined(mask_file):
-            mask_file = None
-        smoothing_fwhm = self.inputs.smoothing_fwhm
-        if not isdefined(smoothing_fwhm):
-            smoothing_fwhm = None
 
         # Signal scaling occurs by default (the
         # nistats.first_level_model.FirstLevelModel class rewrites the default
@@ -135,6 +128,8 @@ class FirstLevelModel(FirstLevelModel):
         remlfit.inputs.out_file = "glt_results.nii.gz"
         remlfit.inputs.var_file = "glt_extra_variables.nii.gz"
         remlfit.inputs.wherr_file = "wherrorts.nii.gz"
+        remlfit.inputs.errts_file = "errorts.nii.gz"
+        remlfit.inputs.rbeta_file = "rbetas.nii.gz"
         remlfit.inputs.tout = True
         remlfit.inputs.rout = True
         remlfit.inputs.fout = True
@@ -152,17 +147,11 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        # calc tsnr
-        tsnr = afni.TStat()
-        tsnr.inputs.in_file = reml_res.outputs.wherr_file
-        tsnr.inputs.out_file = fname_fmt("model", "residtsnr")
-        tsnr.inputs.options = "-tsnr"
-        tsnr_res = tsnr.run()
-        
         out_ents = self.inputs.contrast_info[0]["entities"]
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
-        
+        beta_maps = nb.load(reml_res.outputs.rbeta_file)
+
         model_attr_extract = {
             'r_square': (out_maps, 0),
             'log_likelihood': (var_maps, 4),
@@ -183,13 +172,13 @@ class FirstLevelModel(FirstLevelModel):
 
         # separate dict for maps that don't need to be extracted
         model_attr = {
-            'residtsnr': tsnr_res.outputs.out_file,
+            'residtsnr': self.save_tsnr(runtime, beta_maps, var_maps),
             'residsmoothness': fwhm_res.outputs.out_file
         }
         # Save error time series if people want it
         if self.errorts:
             model_attr["errorts"] = reml_res.outputs.wherr_file
-        
+
         for attr, fname in model_attr.items():
             model_metadata.append({'stat': attr, **out_ents})
             model_maps.append(fname)
@@ -307,10 +296,15 @@ class FirstLevelModel(FirstLevelModel):
                 for idx in idx_list:
                     imgs = maps[map_type]
                     fname = fname_fmt(name, map_type)
-                    extract_volume(imgs, idx, f"{map_type} of contrast {name}", fname_fmt(name, map_type))                    
+                    extract_volume(
+                        imgs,
+                        idx,
+                        f"{map_type} of contrast {name}",
+                        fname_fmt(name, map_type)
+                    )
                     map_list.append(fname)
 
-        # calculate effect variance 
+        # calculate effect variance
         for (name, weights, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
             map_type = "effect_variance"
             effect_img = nb.load(effect_fname)
@@ -325,7 +319,6 @@ class FirstLevelModel(FirstLevelModel):
             variance_img.to_filename(fname)
             variance_maps.append(fname)
 
-
         self._results["effect_maps"] = effect_maps
         self._results["variance_maps"] = variance_maps
         self._results["stat_maps"] = stat_maps
@@ -338,6 +331,26 @@ class FirstLevelModel(FirstLevelModel):
         # column labels.
         weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
         return list(set(_flatten([x.keys() for x in weights])))
+
+    def save_tsnr(self, runtime, rbetas, rvars):
+        vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
+        mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
+        # find the name of the constant column
+        const_name = mat.columns[(mat != 1).sum(0) == 0].values[0]
+        const_idx = np.where(np.array(vol_labels) == const_name)[0]
+        const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
+        std_img = rvars.slicer[..., 3]
+        std_dat = std_img.get_fdata()
+        # scaled units are percent signal change
+        # afni convention is mean of 100
+        # nistat convention is mean of 0
+        # for the purposes of TSNR, we'll add 100
+        tsnr_dat = np.abs(const_dat + 100) / std_dat
+        tsnr_img = nb.Nifti1Image(tsnr_dat, std_img.affine, std_img.header)
+        tsnr_img.header['descrip'] = "residual TSNR of model"
+        fname = op.join(runtime.cwd, 'model_residtsnr.nii.gz')
+        tsnr_img.to_filename(fname)
+        return fname
 
 
 def extract_volume(imgs, idx, intent_name, fname):

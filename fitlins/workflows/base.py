@@ -5,7 +5,7 @@ import warnings
 def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
-                    estimator=None, errorts=False,
+                    estimator=None, errorts=False, drift_model=None,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
@@ -69,7 +69,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
 
         smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
         smoothing_fwhm = float(smoothing_fwhm)
-        if smoothing_type not in ('iso'):
+        if smoothing_type not in (['iso', 'isoblurto']):
             raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
         # Check that smmoothing level exists in model
@@ -84,6 +84,8 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         DesignMatrix(drop_missing=drop_missing),
         iterfield=['session_info', 'bold_file'],
         name='design_matrix')
+
+    design_matrix.inputs.drift_model = drift_model
 
     if estimator == 'afni':
         from ..interfaces.afni import FirstLevelModel
@@ -318,7 +320,30 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             ])
 
         if smoothing and smoothing_level in (step, level):
-            model.inputs.smoothing_fwhm = smoothing_fwhm
+            # No need to do smoothing independently if it's nistats iso
+            if ((smoothing_type == "iso") and (estimator == "nistats")):
+                model.inputs.smoothing_fwhm = smoothing_fwhm
+                model.inputs.smoothing_type = smoothing_type
+            else:
+                if smoothing_type == "isoblurto":
+                    from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+                elif smoothing_type == "iso":
+                    from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+                smooth = pe.MapNode(
+                    smooth_interface(),
+                    iterfield=["in_file", "mask"],
+                    name="smooth"
+                )
+                smooth.inputs.fwhm = smoothing_fwhm
+                smooth.inputs.outputtype = 'NIFTI_GZ'
+                wf.disconnect([
+                    (getter, l1_model, [('bold_files', 'bold_file')])
+                ])
+                wf.connect([
+                    (getter, smooth, [('mask_files', 'mask')]),
+                    (getter, smooth, [('bold_files', 'in_file')]),
+                    (smooth, l1_model, [('out_file', 'bold_file')])
+                ])
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),

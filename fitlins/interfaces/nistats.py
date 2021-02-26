@@ -66,6 +66,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
                 f"Unknown image type ({img.__class__.__name__}) <{self.inputs.bold_file}>")
 
         drop_missing = bool(self.inputs.drop_missing)
+        drift_model = self.inputs.drift_model
 
         if info['sparse'] not in (None, 'None'):
             sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
@@ -92,7 +93,8 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
             column_names = dense.columns.tolist()
             drift_model = None if (('cosine00' in column_names) |
-                                   ('cosine_00' in column_names)) else 'cosine'
+                                   ('cosine_00' in column_names)) else \
+                                       drift_model
 
             if dense.empty:
                 dense = None
@@ -100,7 +102,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         else:
             dense = None
             column_names = None
-            drift_model = 'cosine'
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
@@ -108,7 +109,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             add_regs=dense,
             hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
-            drift_model=drift_model,
+            drift_model=drift_model
         )
 
         mat.to_csv('design.tsv', sep='\t')
@@ -146,7 +147,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         # This provides a common API with AFNI's FirstLevelModel
         kwargs.pop("errorts", None)
         super(FirstLevelModel, self).__init__(*args, **kwargs)
-        
+
     def _run_interface(self, runtime):
         import nibabel as nb
         from nilearn.glm import first_level as level1
@@ -174,6 +175,11 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         smoothing_fwhm = self.inputs.smoothing_fwhm
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
+        smoothing_type = self.inputs.smoothing_type
+        if isdefined(smoothing_type) and smoothing_type != 'iso':
+            raise NotImplementedError(
+                "Only the iso smoothing type is available for the nistats estimator."
+            )
         if is_cifti:
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
             labels, estimates = level1.run_glm(img.get_fdata(dtype='f4'), mat.values)
@@ -182,7 +188,9 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                                                _get_voxelwise_stat(labels, estimates, 'r_square'),
                                                'r_square'),
                 'log_likelihood': dscalar_from_cifti(img,
-                                                     _get_voxelwise_stat(labels, estimates, 'logL'),
+                                                     _get_voxelwise_stat(labels,
+                                                                         estimates,
+                                                                         'logL'),
                                                      'log_likelihood')
             }
         else:
@@ -277,9 +285,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                                            _compute_fixed_effects_params)
 
         smoothing_fwhm = self.inputs.smoothing_fwhm
+        smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
             smoothing_fwhm = None
-
+        if isdefined(smoothing_type) and smoothing_type != 'iso':
+            raise NotImplementedError(
+                "Only the iso smoothing type is available for the nistats estimator."
+            )
         effect_maps = []
         variance_maps = []
         stat_maps = []
