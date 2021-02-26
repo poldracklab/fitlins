@@ -1,4 +1,4 @@
-0.9.0 (January 27, 2021)
+0.9.0 (February 26, 2021)
 ========================
 
 New feature release in the 0.9.x series.
