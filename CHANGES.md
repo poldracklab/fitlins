@@ -4,8 +4,9 @@
 New feature release in the 0.9.x series.
 
 This release added AFNI's 3dREMLfit for first-level estimation, dropped nistats
-in favor of nilearn.stats, and several other minor improvements.
+in favor of nilearn.stats, added test reference outputs, among other minor improvements.
 
+* AFNI TSNR calculation, ADD: BlurToFWHM, ADD: testing outputs against reference (https://github.com/poldracklab/fitlins/pull/280)
 * FIX: AFNI contrast bool (https://github.com/poldracklab/fitlins/pull/266)
 * ENH: Writeout estimator to derivative description (https://github.com/poldracklab/fitlins/pull/278)
 * ENH: disable automatic drift modeling (https://github.com/poldracklab/fitlins/pull/276)
