@@ -98,7 +98,8 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         "--estimator", estimator,
         "--smoothing", smoothing,
         "--n-cpus", '2',
-        "--mem-gb", '4'
+        "--mem-gb", '4',
+        "--drift-model", "cosine"
     ]
 
     if database_path is not None:
