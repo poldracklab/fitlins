@@ -193,7 +193,6 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     #
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, design_matrix, [('design_info', 'session_info')]),
         (getter, design_matrix, [('bold_files', 'bold_file')]),
         (getter, l1_model, [('bold_files', 'bold_file'),
                             ('mask_files', 'mask_file')]),
@@ -222,6 +221,11 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         select_entities = pe.Node(
             niu.Select(index=ix),
             name='select_{}_entities'.format(level),
+            run_without_submitting=True)
+              
+        select_design = pe.Node(
+            niu.Select(index=ix),
+            name='select_{}_design'.format(level),
             run_without_submitting=True)
 
         select_contrasts = pe.Node(
@@ -293,6 +297,8 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
                 (select_entities, ds_model_warnings,  [('out', 'entities')]),
                 (select_entities, ds_design, [('out', 'entities')]),
                 (select_entities, ds_design_matrix, [('out', 'entities')]),
+                (loader, select_design, [('design_info', 'inlist')]),
+                (select_design, design_matrix, [('out', 'session_info')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
                 (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
