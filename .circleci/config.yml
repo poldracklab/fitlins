@@ -409,8 +409,8 @@ jobs:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
+            if [[ -n "$DOCKER_ACCESS_TOKEN" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_ACCESS_TOKEN
               docker tag poldracklab/fitlins poldracklab/fitlins:master
               docker push poldracklab/fitlins:master
             fi
@@ -437,8 +437,8 @@ jobs:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
+            if [[ -n "$DOCKER_ACCESS_TOKEN" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_ACCESS_TOKEN
               docker push poldracklab/fitlins:latest
               docker tag poldracklab/fitlins poldracklab/fitlins:$CIRCLE_TAG
               docker push poldracklab/fitlins:$CIRCLE_TAG
