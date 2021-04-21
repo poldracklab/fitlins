@@ -1,3 +1,12 @@
+0.9.1 (April 21, 2021)
+======================
+
+Minor release in the 0.9.x series.
+Upgrades pybids and nilearn to latest versions. 
+
+* PIN: nilearn 0.7.1+ (https://github.com/poldracklab/fitlins/pull/286)
+* MNT: Upgrade pybids to 0.13 (https://github.com/poldracklab/fitlins/pull/284)
+
 0.9.0 (February 26, 2021)
 ========================
 
