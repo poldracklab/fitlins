@@ -183,7 +183,7 @@ class FirstLevelModel(FirstLevelModel):
             model_metadata.append({'stat': attr, **out_ents})
             model_maps.append(fname)
 
-        # get pvals and zscore buckets (niftis with heterogenous intent codes)
+        # get pvals and zscore buckets (niftis with heterogeneous intent codes)
         pval = Pval()
         pval.inputs.in_file = reml_res.outputs.out_file
         pval.inputs.out_file = "pval_maps.nii.gz"

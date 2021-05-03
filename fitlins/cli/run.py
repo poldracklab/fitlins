@@ -75,9 +75,9 @@ def get_parser():
     # optional arguments
     parser.add_argument('--version', action='version', version=verstr)
     parser.add_argument('-v', '--verbose', action='count', default=0,
-                        help="increase log verbosity for each occurence, debug level is -vvv")
+                        help="increase log verbosity for each occurrence, debug level is -vvv")
     parser.add_argument('-q', '--quiet', action='count', default=0,
-                        help="decrease log verbosity for each occurence, debug level is -vvv")
+                        help="decrease log verbosity for each occurrence, debug level is -vvv")
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
     g_bids.add_argument('--participant-label', action='store', nargs='+', default=None,
@@ -101,7 +101,7 @@ def get_parser():
     g_bids.add_argument('--desc-label', action='store', default='preproc',
                         help="use BOLD files with the provided description label")
     g_bids.add_argument('--database-path', action='store', default=None,
-                        help="Path to directory containing SQLite database indicies "
+                        help="Path to directory containing SQLite database indices "
                              "for this BIDS dataset. "
                              "If a value is passed and the file already exists, "
                              "indexing is skipped.")
@@ -208,7 +208,7 @@ def run_fitlins(argv=None):
 
     if opts.estimator != 'afni':
         if opts.error_ts:
-            raise NotImplementedError("Saving the error time series is only implmented for"
+            raise NotImplementedError("Saving the error time series is only implemented for"
                                       " the afni estimator. If this is a feature you want"
                                       f" for {opts.estimator} please let us know on github.")
 
