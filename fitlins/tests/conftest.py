@@ -21,7 +21,7 @@ def pytest_addoption(parser):
                      help='directory containing reference results for evaluating test results')
     parser.addoption(
         '--database-path', action="append", default=[],
-        help="Path to directory containing SQLite database indicies "
+        help="Path to directory containing SQLite database indices "
              "for this BIDS dataset. "
              "If a value is passed and the file already exists, "
              "indexing is skipped."

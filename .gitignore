@@ -71,3 +71,4 @@ secrets.py
 local_settings.py
 
 *.swp
+.pytest_cache
