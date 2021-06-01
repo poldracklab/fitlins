@@ -53,7 +53,7 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
     def _run_interface(self, runtime):
         import nibabel as nb
         from nilearn.glm.first_level import design_matrix as dm
-        info = self.inputs.session_info
+        info = self.inputs.design_info
         img = nb.load(self.inputs.bold_file)
         if isinstance(img, nb.Cifti2Image):
             vols = img.shape[0]
@@ -284,6 +284,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         from nilearn.glm.contrasts import (compute_contrast, compute_fixed_effects,
                                            _compute_fixed_effects_params)
 
+
+        info = self.inputs.design_info
         smoothing_fwhm = self.inputs.smoothing_fwhm
         smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
@@ -292,6 +294,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             raise NotImplementedError(
                 "Only the iso smoothing type is available for the nistats estimator."
             )
+
+        import pdb; pdb.set_trace()
+
         effect_maps = []
         variance_maps = []
         stat_maps = []
@@ -314,7 +319,19 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        mat = pd.get_dummies(names)
+        breakpoint()
+
+        dense = None
+        if info['dense'] not in (None, 'None'):
+            dense = pd.read_hdf(info['dense'], key='dense')
+            if dense.empty:
+                dense = None
+
+        mat = dense
+
+        
+        breakpoint()
+
         contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
 
         is_cifti = filtered_effects[0].endswith('dscalar.nii')
@@ -337,6 +354,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=mat)
 
+        breakpoint()
         for name, weights, contrast_type in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
@@ -399,6 +417,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     fname = fname_fmt(name, map_type)
                     maps[map_type].to_filename(fname)
                     map_list.append(fname)
+
+        breakpoint
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps

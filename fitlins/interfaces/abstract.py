@@ -13,7 +13,7 @@ from nipype.interfaces.base import BaseInterface, TraitedSpec, File, traits
 
 class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
-    session_info = traits.Dict()
+    design_info = traits.Dict()
     drop_missing = traits.Bool(
         desc='Drop columns in design matrix with all missing values')
     drift_model = traits.Either(
@@ -60,6 +60,7 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
     variance_maps = traits.List(traits.List(File(exists=True)))
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
+    design_info = traits.Dict()
     contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
     smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')

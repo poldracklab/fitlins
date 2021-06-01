@@ -82,7 +82,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
 
     design_matrix = pe.MapNode(
         DesignMatrix(drop_missing=drop_missing),
-        iterfield=['session_info', 'bold_file'],
+        iterfield=['design_info', 'bold_file'],
         name='design_matrix')
 
     design_matrix.inputs.drift_model = drift_model
@@ -138,12 +138,12 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     reportlet_dir.mkdir(parents=True, exist_ok=True)
     snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
         '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
-    ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(reportlet_dir),
-                     path_patterns=snippet_pattern),
-        iterfield=['entities', 'in_file'],
-        run_without_submitting=True,
-        name='ds_model_warning')
+    # ds_model_warnings = pe.MapNode(
+    #     BIDSDataSink(base_directory=str(reportlet_dir),
+    #                  path_patterns=snippet_pattern),
+    #     iterfield=['entities', 'in_file'],
+    #     run_without_submitting=True,
+    #     name='ds_model_warning')
 
     plot_design = pe.MapNode(
         DesignPlot(image_type='svg'),
@@ -192,17 +192,17 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
     # General Connections
     #
     wf.connect([
-        (loader, ds_model_warnings, [('warnings', 'in_file')]),
-        (loader, design_matrix, [('design_info', 'session_info')]),
+        # (loader, ds_model_warnings, [('warnings', 'in_file')]),
+        # (loader, design_matrix, [('design_info', 'session_info')]),
         (getter, design_matrix, [('bold_files', 'bold_file')]),
         (getter, l1_model, [('bold_files', 'bold_file'),
                             ('mask_files', 'mask_file')]),
         (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
-        (design_matrix, plot_design, [('design_matrix', 'data')]),
-        (design_matrix, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
-        (design_matrix, plot_corr,  [('design_matrix', 'data')]),
-        (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
-        (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
+        # (design_matrix, plot_design, [('design_matrix', 'data')]),
+        # (design_matrix, plot_l1_contrast_matrix,  [('design_matrix', 'data')]),
+        # (design_matrix, plot_corr,  [('design_matrix', 'data')]),
+        # (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
+        # (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
         ])
 
     stage = None
@@ -229,94 +229,102 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
             name='select_{}_contrasts'.format(level),
             run_without_submitting=True)
 
+        select_designs = pe.Node(
+            niu.Select(index=ix),
+            name='select_{}_designs'.format(level),
+            run_without_submitting=True)
+
+
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
-        collate = pe.Node(
-                MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                          'pvalue_maps', 'contrast_metadata']),
-             name='collate_{}'.format(level),
-             run_without_submitting=True)
+        # collate = pe.Node(
+        #         MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+        #                   'pvalue_maps', 'contrast_metadata']),
+        #      name='collate_{}'.format(level),
+        #      run_without_submitting=True)
 
         #
         # Plotting
         #
 
-        plot_contrasts = pe.MapNode(
-            GlassBrainPlot(image_type='png'),
-            iterfield='data',
-            name='plot_{}_contrasts'.format(level))
+        # plot_contrasts = pe.MapNode(
+        #     GlassBrainPlot(image_type='png'),
+        #     iterfield='data',
+        #     name='plot_{}_contrasts'.format(level))
 
         #
         # Derivatives
         #
 
-        collate_outputs = pe.Node(
-            CollateWithMetadata(
-                fields=['effect_maps', 'variance_maps', 'stat_maps', 'pvalue_maps', 'zscore_maps'],
-                field_to_metadata_map={
-                    'effect_maps': {'stat': 'effect'},
-                    'variance_maps': {'stat': 'variance'},
-                    'pvalue_maps': {'stat': 'p'},
-                    'zscore_maps': {'stat': 'z'},
-                }),
-            name=f'collate_{level}_outputs')
+        # collate_outputs = pe.Node(
+        #     CollateWithMetadata(
+        #         fields=['effect_maps', 'variance_maps', 'stat_maps', 'pvalue_maps', 'zscore_maps'],
+        #         field_to_metadata_map={
+        #             'effect_maps': {'stat': 'effect'},
+        #             'variance_maps': {'stat': 'variance'},
+        #             'pvalue_maps': {'stat': 'p'},
+        #             'zscore_maps': {'stat': 'z'},
+        #         }),
+        #     name=f'collate_{level}_outputs')
 
-        ds_contrast_maps = pe.Node(
-            BIDSDataSink(base_directory=out_dir,
-                         path_patterns=contrast_pattern),
-            run_without_submitting=True,
-            name='ds_{}_contrast_maps'.format(level))
+        # ds_contrast_maps = pe.Node(
+        #     BIDSDataSink(base_directory=out_dir,
+        #                  path_patterns=contrast_pattern),
+        #     run_without_submitting=True,
+        #     name='ds_{}_contrast_maps'.format(level))
 
-        ds_contrast_plots = pe.Node(
-            BIDSDataSink(base_directory=out_dir,
-                         path_patterns=contrast_plot_pattern),
-            run_without_submitting=True,
-            name='ds_{}_contrast_plots'.format(level))
+        # ds_contrast_plots = pe.Node(
+        #     BIDSDataSink(base_directory=out_dir,
+        #                  path_patterns=contrast_plot_pattern),
+        #     run_without_submitting=True,
+        #     name='ds_{}_contrast_plots'.format(level))
 
         if ix == 0:
-            ds_model_maps = pe.Node(
-                BIDSDataSink(base_directory=out_dir,
-                             path_patterns=model_map_pattern),
-                run_without_submitting=True,
-                name='ds_{}_model_maps'.format(level))
+            # ds_model_maps = pe.Node(
+            #     BIDSDataSink(base_directory=out_dir,
+            #                  path_patterns=model_map_pattern),
+            #     run_without_submitting=True,
+            #     name='ds_{}_model_maps'.format(level))
 
-            collate_mm = pe.Node(
-                MergeAll(['model_maps', 'model_metadata'],
-                         check_lengths=(not drop_missing)),
-                name='collate_mm_{}'.format(level),
-                run_without_submitting=True)
+            # collate_mm = pe.Node(
+            #     MergeAll(['model_maps', 'model_metadata'],
+            #              check_lengths=(not drop_missing)),
+            #     name='collate_mm_{}'.format(level),
+            #     run_without_submitting=True)
 
             wf.connect([
                 (loader, select_entities, [('entities', 'inlist')]),
                 (select_entities, getter,  [('out', 'entities')]),
-                (select_entities, ds_model_warnings,  [('out', 'entities')]),
-                (select_entities, ds_design, [('out', 'entities')]),
-                (select_entities, ds_design_matrix, [('out', 'entities')]),
-                (plot_design, ds_design, [('figure', 'in_file')]),
-                (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
-                (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
-                (select_entities, ds_l1_contrasts, [('out', 'entities')]),
-                (select_entities, ds_corr, [('out', 'entities')]),
-                (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
-                (plot_corr, ds_corr,  [('figure', 'in_file')]),
-                (model, collate_mm, [('model_maps', 'model_maps'),
-                                     ('model_metadata', 'model_metadata')]),
-                (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
-                                             ('model_metadata', 'entities')]),
+                # (select_entities, ds_model_warnings,  [('out', 'entities')]),
+                # (select_entities, ds_design, [('out', 'entities')]),
+                # (select_entities, ds_design_matrix, [('out', 'entities')]),
+                (select_designs, design_matrix, [('out', 'design_info')]),
+                # (plot_design, ds_design, [('figure', 'in_file')]),
+                # (select_contrasts, plot_l1_contrast_matrix,  [('out', 'contrast_info')]),
+                # (select_contrasts, plot_corr,  [('out', 'contrast_info')]),
+                # (select_entities, ds_l1_contrasts, [('out', 'entities')]),
+                # (select_entities, ds_corr, [('out', 'entities')]),
+                # (plot_l1_contrast_matrix, ds_l1_contrasts,  [('figure', 'in_file')]),
+                # (plot_corr, ds_corr,  [('figure', 'in_file')]),
+                # (model, collate_mm, [('model_maps', 'model_maps'),
+                #                      ('model_metadata', 'model_metadata')]),
+                # (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
+                #                              ('model_metadata', 'entities')]),
             ])
 
         #  Set up higher levels
         else:
             model = pe.MapNode(
                 SecondLevelModel(),
-                iterfield=['contrast_info'],
+                iterfield=['design_info', 'contrast_info'],
                 name='{}_model'.format(level))
 
             wf.connect([
                 (stage, model, [('effect_maps', 'effect_maps'),
                                 ('variance_maps', 'variance_maps'),
                                 ('contrast_metadata', 'stat_metadata')]),
+                (select_designs, model, [('out', 'design_info')]),
             ])
 
         if smoothing and smoothing_level in (step, level):
@@ -347,26 +355,27 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
 
         wf.connect([
             (loader, select_contrasts, [('contrast_info', 'inlist')]),
+            (loader, select_designs, [('design_info', 'inlist')]),
             (select_contrasts, model,  [('out', 'contrast_info')]),
-            (model, collate, [('effect_maps', 'effect_maps'),
-                              ('variance_maps', 'variance_maps'),
-                              ('stat_maps', 'stat_maps'),
-                              ('zscore_maps', 'zscore_maps'),
-                              ('pvalue_maps', 'pvalue_maps'),
-                              ('contrast_metadata', 'contrast_metadata')]),
-            (collate, collate_outputs, [
-                ('contrast_metadata', 'metadata'),
-                ('effect_maps', 'effect_maps'),
-                ('variance_maps', 'variance_maps'),
-                ('stat_maps', 'stat_maps'),
-                ('zscore_maps', 'zscore_maps'),
-                ('pvalue_maps', 'pvalue_maps'),
-                ]),
-            (collate, plot_contrasts, [('stat_maps', 'data')]),
-            (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
-                                                 ('metadata', 'entities')]),
-            (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
-            (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
+            # (model, collate, [('effect_maps', 'effect_maps'),
+            #                   ('variance_maps', 'variance_maps'),
+            #                   ('stat_maps', 'stat_maps'),
+            #                   ('zscore_maps', 'zscore_maps'),
+            #                   ('pvalue_maps', 'pvalue_maps'),
+            #                   ('contrast_metadata', 'contrast_metadata')]),
+            # (collate, collate_outputs, [
+            #     ('contrast_metadata', 'metadata'),
+            #     ('effect_maps', 'effect_maps'),
+            #     ('variance_maps', 'variance_maps'),
+            #     ('stat_maps', 'stat_maps'),
+            #     ('zscore_maps', 'zscore_maps'),
+            #     ('pvalue_maps', 'pvalue_maps'),
+            #     ]),
+            # (collate, plot_contrasts, [('stat_maps', 'data')]),
+            # (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
+            #                                      ('metadata', 'entities')]),
+            # (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
+            # (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
 
             ])
 
