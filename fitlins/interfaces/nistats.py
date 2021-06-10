@@ -20,20 +20,20 @@ def prepare_contrasts(contrasts, all_regressors):
         return []
 
     out_contrasts = []
-    for contrast in contrasts:
+    for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
-        missing = any([[n for n, v in row.items()
-                        if v != 0 and n not in all_regressors]
-                       for row in contrast['weights']])
+        # missing = any([[n for n, v in row.items()
+        #                 if v != 0 and n not in all_regressors]
+        #                for row in contrast['weights']])
+        missing = False
         if not missing:
             # Fill in zeros
             weights = np.array([
-                [row[col] if col in row else 0 for col in all_regressors]
-                for row in contrast['weights']
+                [contrast_info.weights[0] if col in contrast_info.name else 0 for col in all_regressors]
                 ])
 
             out_contrasts.append(
-                (contrast['name'], weights, contrast['type']))
+                (contrast_info.name, weights, contrast_info.test))
 
     return out_contrasts
 
@@ -68,15 +68,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         drop_missing = bool(self.inputs.drop_missing)
         drift_model = self.inputs.drift_model
 
-        if info['sparse'] not in (None, 'None'):
-            sparse = pd.read_hdf(info['sparse'], key='sparse').rename(
-                columns={'condition': 'trial_type',
-                         'amplitude': 'modulation'})
-            if 'modulation' in sparse.columns:
-                sparse = sparse.dropna(subset=['modulation'])  # Drop NAs
-        else:
-            sparse = None
-
         if info['dense'] not in (None, 'None'):
             dense = pd.read_hdf(info['dense'], key='dense')
 
@@ -105,7 +96,6 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
-            events=sparse,
             add_regs=dense,
             hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
@@ -152,6 +142,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         import nibabel as nb
         from nilearn.glm import first_level as level1
         from nilearn.glm.contrasts import compute_contrast
+
+        spec = self.inputs.spec
         mat = pd.read_csv(self.inputs.design_matrix, delimiter='\t', index_col=0)
         img = nb.load(self.inputs.bold_file)
 
@@ -205,7 +197,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                     _get_voxelwise_stat(flm.labels_[0], flm.results_[0], 'logL'))
             }
 
-        out_ents = self.inputs.contrast_info[0]['entities']
+        out_ents = spec.entities
 
         # Save model level images
 
@@ -223,16 +215,16 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        for name, weights, contrast_type in prepare_contrasts(
-              self.inputs.contrast_info, mat.columns):
+        for name, weights, contrast_test in prepare_contrasts(
+              spec.contrasts, mat.columns):
             contrast_metadata.append(
                 {'contrast': name,
-                 'stat': contrast_type,
+                 'stat': contrast_test,
                  **out_ents}
                 )
             if is_cifti:
                 contrast = compute_contrast(labels, estimates, weights,
-                                            contrast_type=contrast_type)
+                                            contrast_type=contrast_test)
                 maps = {
                     map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
                     for map_type in ['z_score', 'stat', 'p_value', 'effect_size',
@@ -240,7 +232,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                 }
 
             else:
-                maps = flm.compute_contrast(weights, contrast_type,
+                maps = flm.compute_contrast(weights, contrast_test,
                                             output_type='all')
 
             for map_type, map_list in (('effect_size', effect_maps),

@@ -5,6 +5,7 @@ import pkg_resources as pkgr
 from bids.layout import add_config_paths, BIDSLayout
 
 from ..utils import snake_to_camel
+from ..utils.bids import load_all_specs
 
 PATH_PATTERNS = [
     'reports/[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
@@ -37,7 +38,7 @@ def deroot(val, root):
     return val
 
 
-def build_report_dict(deriv_dir, work_dir, analysis):
+def build_report_dict(deriv_dir, work_dir, graph):
     fl_layout = BIDSLayout(
         deriv_dir,
         config=['bids', 'derivatives', 'fitlins'],
@@ -53,45 +54,49 @@ def build_report_dict(deriv_dir, work_dir, analysis):
 
     report = {
         'dataset': {
-            'name': analysis.layout.description['Name'],
+            'name': graph.layout.description['Name'],
             },
-        'model': analysis.model,
-        'steps': []
+        'model': graph.model,
+        'nodes': []
         }
 
-    if 'DatasetDOI' in analysis.layout.description:
-        report['dataset']['doi'] = analysis.layout.description['DatasetDOI']
-
-    for step in analysis.steps:
-        report_step = {'name': step.level, 'analyses': []}
-        report['steps'].append(report_step)
-        for coll in step.get_collections():
+    if 'DatasetDOI' in graph.layout.description:
+        report['dataset']['doi'] = graph.layout.description['DatasetDOI']
+        
+    all_specs = {}
+    load_all_specs(all_specs, None, graph.root_node)
+    
+    for node, colls in all_specs.items():
+        report_node = {'name': node, 'analyses': []}
+        report['nodes'].append(report_node)
+        for coll in colls:
             ents = coll.entities.copy()
-            contrasts = step.get_contrasts(coll)
+            contrasts = coll.contrasts
             for key in ('datatype', 'desc', 'suffix', 'extension'):
                 ents.pop(key, None)
-            for key in analysis.layout.get_entities(metadata=True):
+            for key in graph.layout.get_entities(metadata=True):
                 ents.pop(key, None)
-
+                
             analysis_dict = {
                 'entities': {
                     key: val
                     for key, val in ents.items()
                     if key in ('subject', 'session', 'task', 'run') and val},
                 'contrasts': []
-                }
-
+            }
+            
             for contrast in contrasts:
                 glassbrain = fl_layout.get(
                     contrast=snake_to_camel(contrast.name),
                     suffix='ortho', extension='png', **ents)
+                
                 analysis_dict['contrasts'].append(
                     {'name': displayify(contrast.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
-            report_step['analyses'].append(analysis_dict)
-
-            # Space doesn't apply to design/contrast matrices
+                
+                report_step['analyses'].append(analysis_dict)
+                
             ents.pop('space', None)
             design_matrix = fl_layout.get(suffix='design', extension='svg', **ents)
             correlation_matrix = fl_layout.get(suffix='corr', extension='svg', **ents)
@@ -109,7 +114,7 @@ def build_report_dict(deriv_dir, work_dir, analysis):
     # Get subjects hackily
     report['subjects'] = sorted({
         analysis_dict['entities']['subject']
-        for analysis_dict in report['steps'][0]['analyses']})
+        for analysis_dict in report['nodes'][0]['analyses']})
 
     return report
 

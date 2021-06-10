@@ -17,6 +17,7 @@ Fetch some test data
 import os
 import json
 import warnings
+import copy
 
 
 class BIDSError(ValueError):
@@ -34,6 +35,19 @@ class BIDSError(ValueError):
 
 class BIDSWarning(RuntimeWarning):
     pass
+
+
+def load_all_specs(all_specs, specs, node):
+    if node.level == 'run':
+        specs = node.run(group_by=node.group_by, force_dense=False)
+    else:
+        contrasts = list(chain(*[s.contrasts for s in specs]))
+        specs = node.run(contrasts, group_by=node.group_by)  
+    
+    all_specs[node.name] = specs
+    children = copy.deepcopy(node.children)
+    while children:
+        load_all_specs(all_specs, specs, children.pop().destination)
 
 
 def collect_participants(layout, participant_label=None, strict=False):

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
+from collections import namedtuple
 
 from nipype.interfaces.base import (
     SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -61,14 +62,14 @@ class DesignPlot(Visualization):
 
 
 class DesignCorrelationPlotInputSpec(VisualizationInputSpec):
-    contrast_info = traits.List(traits.Dict)
+    contrast_info = traits.List(traits.Any)
 
 
 class DesignCorrelationPlot(Visualization):
     input_spec = DesignCorrelationPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
+        contrast_matrix = pd.DataFrame({c.name: c.weights
                                         for c in self.inputs.contrast_info})
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
@@ -77,12 +78,12 @@ class DesignCorrelationPlot(Visualization):
             confound_cols = [col for col in all_cols if col not in evs]
             data = data[ev_cols + confound_cols]
         plot_and_save(out_name, plot_corr_matrix,
-                      data.drop(columns='constant').corr(),
+                      data.drop(columns='constant', errors='ignore').corr(),
                       len(evs))
 
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
-    contrast_info = traits.List(traits.Dict)
+    contrast_info = traits.List(traits.Any)
     orientation = traits.Enum('horizontal', 'vertical', usedefault=True,
                               desc='Display orientation of contrast matrix')
 
@@ -91,7 +92,7 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
+        contrast_matrix = pd.DataFrame({c.name: c.weights
                                         for c in self.inputs.contrast_info},
                                        index=data.columns)
         contrast_matrix.fillna(value=0, inplace=True)

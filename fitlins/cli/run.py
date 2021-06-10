@@ -20,7 +20,7 @@ from argparse import RawTextHelpFormatter
 from multiprocessing import cpu_count
 
 import bids
-from bids.analysis import auto_model, Analysis
+from bids.modeling import auto_model, BIDSStatsModelsGraph
 
 from .. import __version__
 from ..workflows import init_fitlins_wf
@@ -250,7 +250,7 @@ def run_fitlins(argv=None):
     )
 
     fitlins_wf = init_fitlins_wf(
-        database_path, deriv_dir,
+        database_path, deriv_dir, layout,
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
@@ -270,7 +270,13 @@ def run_fitlins(argv=None):
         except Exception:
             retcode = 1
 
-    models = auto_model(layout) if model == 'default' else [model]
+    if model == 'default':
+        models = auto_model(layout)
+    else:
+        import json
+        if op.exists(model):
+            model_dict = json.loads(Path(model).read_text())
+        models = [model_dict]
 
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
@@ -281,11 +287,10 @@ def run_fitlins(argv=None):
     if subject_list is not None:
         selectors['subject'] = subject_list
 
-    for model in models:
-        analysis = Analysis(layout, model=model)
-        analysis.setup(**selectors)
-        report_dict = build_report_dict(deriv_dir, work_dir, analysis)
-        write_full_report(report_dict, run_context, deriv_dir)
+    # for model_dict in models:
+    #     graph = BIDSStatsModelsGraph(layout, model_dict)
+    #     report_dict = build_report_dict(deriv_dir, work_dir, graph)
+    #     write_full_report(report_dict, run_context, deriv_dir)
 
     return retcode
 

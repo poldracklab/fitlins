@@ -1,12 +1,15 @@
+import copy
+import json
 import os
 import re
-from pathlib import Path
-from gzip import GzipFile
-import json
 import shutil
-import copy
+
 import numpy as np
 import nibabel as nb
+
+from itertools import chain
+from pathlib import Path
+from gzip import GzipFile
 
 from nipype import logging
 from nipype.utils.filemanip import copyfile
@@ -155,15 +158,15 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
-    design_info = traits.List(traits.List(traits.Dict,
+    design_info = traits.List(traits.Dict,
                               desc='Descriptions of design matrices with sparse events, '
-                                   'dense regressors and TR'))
-    contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
-                                desc='A list of contrast specifications at each unit of analysis')
-    entities = traits.List(traits.List(traits.Dict),
-                           desc='A list of applicable entities at each unit of analysis')
+                                   'dense regressors and TR')
+    # contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
+    #                             desc='A list of contrast specifications at each unit of analysis')
+    # entities = traits.List(traits.List(traits.Dict),
+    #                        desc='A list of applicable entities at each unit of analysis')
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
-    specs = traits.Dict(desc='A collection of all specs built from the statsmodel', mandatory=True)
+    all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel', mandatory=True)
 
 
 class LoadBIDSModel(SimpleInterface):
@@ -181,29 +184,8 @@ class LoadBIDSModel(SimpleInterface):
                        regressors
             'repetition_time'   : float (in seconds)
 
-    entities : list of list of dictionaries
-        The entities list contains a list for each level of analysis.
-        At each level, the list contains a dictionary of entities that apply to each
-        unit of analysis. For example, if the first level is "Run" and there are 20
-        runs in the dataset, the first entry will be a list of 20 dictionaries, each
-        uniquely identifying a run.
-
-    contrast_info : list of lists of files
-        A list of contrast specifications at each unit of analysis; hence a list of
-        dictionaries for each entity dictionary.
-        A contrast specification is a list of contrast dictionaries
-        Each dictionary has form:
-          {
-            'entities': dict,
-            'name': str,
-            'type': 't' or 'F',
-            'weights': dict
-          }
-
-        The entities dictionary is a subset of the corresponding dictionary in the entities
-        output.
-        The weights dictionary is a mapping from design matrix column names to floats.
-
+    all_specs : dictionary of list of BIDSStatsModelsNodeOutput objects
+        The collection of specs from each level
     warnings : list of files
         Files containing HTML snippets with any warnings produced while processing the first
         level.
@@ -218,28 +200,31 @@ class LoadBIDSModel(SimpleInterface):
         layout = BIDSLayout.load(database_path=self.inputs.database_path)
         selectors = self.inputs.selectors
 
-        graph = BIDSStatsModelsGraph(layout, self.inputs.model_dict)
+        graph = BIDSStatsModelsGraph(layout, self.inputs.model)
         graph.load_collections(**selectors)
 
         all_specs = {}
-        self._load_all_specs(runtime, graph, all_specs, specs, node)
-        self._results['specs'] = all_specs
+        self._load_all_specs(runtime, graph, all_specs, None, graph.root_node)
+        self._results['all_specs'] = all_specs
 
         return runtime
 
     def _load_all_specs(self, runtime, graph, all_specs, specs, node):
-        
+
+        step_subdir = Path(runtime.cwd) / node.level
+        step_subdir.mkdir(parents=True, exist_ok=True)
 
         if node.level == 'run':
             specs = node.run(group_by=node.group_by, force_dense=False)
 
-            step_subdir = Path(runtime.cwd) / node.level
-            step_subdir.mkdir(parents=True, exist_ok=True)
+            entities = []
+            design_info = []
             warnings = []
 
             for coll in specs:
+                info = {}
                 ents = coll.entities.copy()
-                TR = coll.entities.pop('RepetitionTime', None)  # Required field in seconds
+                TR = coll.metadata['RepetitionTime'][0]
                 if TR is None:  # But is unreliable (for now?)
                     preproc_files = graph.layout.get(
                             extension=['.nii', '.nii.gz'], desc='preproc', **ents)
@@ -274,7 +259,7 @@ class LoadBIDSModel(SimpleInterface):
                     ents['space'] = space
 
                 ent_string = '_'.join('{}-{}'.format(key, val)
-                                      for key, val in ents.items())
+                                    for key, val in ents.items())
 
                 imputed = []
                 dense = coll.data
@@ -293,14 +278,20 @@ class LoadBIDSModel(SimpleInterface):
                 dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
                 dense.to_hdf(dense_file, key='dense')
 
+                info['dense'] = str(dense_file) if dense_file else None
+                info['repetition_time'] = TR
+
                 warning_file = step_subdir / '{}_warning.html'.format(ent_string)
                 with warning_file.open('w') as fobj:
                     if imputed:
                         fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
 
+                design_info.append(info)
                 warnings.append(str(warning_file))
 
+
             self._results['warnings'] = warnings
+            self._results['design_info'] = design_info
                 
         else:
             contrasts = list(chain(*[s.contrasts for s in specs]))
@@ -309,7 +300,7 @@ class LoadBIDSModel(SimpleInterface):
         all_specs[node.name] = specs
         children = copy.deepcopy(node.children)
         while children:
-            _load_all_specs(runtime, graph, all_specs, specs, children.pop().destination)
+            self._load_all_specs(runtime, graph, all_specs, specs, children.pop().destination)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
