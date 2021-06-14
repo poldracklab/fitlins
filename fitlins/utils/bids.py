@@ -18,6 +18,7 @@ import os
 import json
 import warnings
 import copy
+from itertools import chain
 
 
 class BIDSError(ValueError):

@@ -287,10 +287,11 @@ def run_fitlins(argv=None):
     if subject_list is not None:
         selectors['subject'] = subject_list
 
-    # for model_dict in models:
-    #     graph = BIDSStatsModelsGraph(layout, model_dict)
-    #     report_dict = build_report_dict(deriv_dir, work_dir, graph)
-    #     write_full_report(report_dict, run_context, deriv_dir)
+    for model_dict in models:
+        graph = BIDSStatsModelsGraph(layout, model_dict)
+        graph.load_collections(**selectors)
+        report_dict = build_report_dict(deriv_dir, work_dir, graph)
+        write_full_report(report_dict, run_context, deriv_dir)
 
     return retcode
 

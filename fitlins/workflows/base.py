@@ -54,32 +54,32 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
                        'extension': ['.nii', '.nii.gz', '.dtseries.nii', '.func.gii']}),
         name='getter')
 
-    if smoothing:
-        smoothing_params = smoothing.split(':', 2)
-        # Convert old style and warn; this should turn into an (informative) error around 0.5.0
-        if smoothing_params[0] == 'iso':
-            smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
-            warnings.warn(
-                "The format for smoothing arguments has changed. Please use "
-                f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
-        # Add defaults to simplify later logic
-        if len(smoothing_params) == 1:
-            smoothing_params.extend(('l1', 'iso'))
-        elif len(smoothing_params) == 2:
-            smoothing_params.append('iso')
+    # if smoothing:
+    #     smoothing_params = smoothing.split(':', 2)
+    #     # Convert old style and warn; this should turn into an (informative) error around 0.5.0
+    #     if smoothing_params[0] == 'iso':
+    #         smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
+    #         warnings.warn(
+    #             "The format for smoothing arguments has changed. Please use "
+    #             f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
+    #     # Add defaults to simplify later logic
+    #     if len(smoothing_params) == 1:
+    #         smoothing_params.extend(('l1', 'iso'))
+    #     elif len(smoothing_params) == 2:
+    #         smoothing_params.append('iso')
 
-        smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
-        smoothing_fwhm = float(smoothing_fwhm)
-        if smoothing_type not in (['iso', 'isoblurto']):
-            raise ValueError(f"Unknown smoothing type {smoothing_type}")
+    #     smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
+    #     smoothing_fwhm = float(smoothing_fwhm)
+    #     if smoothing_type not in (['iso', 'isoblurto']):
+    #         raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
-        # Check that smmoothing level exists in model
-        if smoothing_level.lower().startswith("l"):
-            if int(smoothing_level[1:]) > len(model_dict['Steps']):
-                raise ValueError(f"Invalid smoothing level {smoothing_level}")
-        elif smoothing_level.lower() not in (step['Level'].lower()
-                                             for step in model_dict['Steps']):
-            raise ValueError(f"Invalid smoothing level {smoothing_level}")
+    #     # Check that smmoothing level exists in model
+    #     if smoothing_level.lower().startswith("l"):
+    #         if int(smoothing_level[1:]) > len(model_dict['Steps']):
+    #             raise ValueError(f"Invalid smoothing level {smoothing_level}")
+    #     elif smoothing_level.lower() not in (step['Level'].lower()
+    #                                          for step in model_dict['Steps']):
+    #         raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     design_matrix = pe.MapNode(
         DesignMatrix(drop_missing=drop_missing),
@@ -326,48 +326,91 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
                 run_without_submitting=True)
 
             wf.connect([
-            (select_specs, l1_model, [('spec', 'spec')]),
-            (select_entities, getter, [('entities', 'entities')]),
-            (select_entities, ds_model_warnings, [('entities', 'entities')]),
-            (select_entities, ds_design, [('entities', 'entities')]),
-            (select_entities, ds_design_matrix, [('entities', 'entities')]),
-            (select_entities, ds_run_contrasts, [('entities', 'entities')]),
-            (select_entities, ds_corr, [('entities', 'entities')]),
-            (select_contrasts, plot_run_contrast_matrix,  [('contrasts', 'contrast_info')]),
-            (select_contrasts, plot_corr,  [('contrasts', 'contrast_info')]),
-            (plot_design, ds_design, [('figure', 'in_file')]),
-            (plot_run_contrast_matrix, ds_run_contrasts,  [('figure', 'in_file')]),
-            (plot_corr, ds_corr,  [('figure', 'in_file')]),
-            (model, collate_mm, [('model_maps', 'model_maps'),
-                                ('model_metadata', 'model_metadata')]),
-            (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
+                (loader, select_entities, [('all_specs', 'all_specs')]),
+                (loader, select_contrasts, [('all_specs', 'all_specs')]),
+                (select_entities, getter, [('entities', 'entities')]),
+                (select_entities, ds_model_warnings, [('entities', 'entities')]),
+                (select_entities, ds_design, [('entities', 'entities')]),
+                (select_entities, ds_design_matrix, [('entities', 'entities')]),
+                (select_entities, ds_run_contrasts, [('entities', 'entities')]),
+                (select_entities, ds_corr, [('entities', 'entities')]),
+                (select_contrasts, plot_run_contrast_matrix,  [('contrasts', 'contrast_info')]),
+                (select_contrasts, plot_corr,  [('contrasts', 'contrast_info')]),
+                (plot_design, ds_design, [('figure', 'in_file')]),
+                (plot_run_contrast_matrix, ds_run_contrasts,  [('figure', 'in_file')]),
+                (plot_corr, ds_corr,  [('figure', 'in_file')]),
+                (model, collate_mm, [('model_maps', 'model_maps'),
+                                    ('model_metadata', 'model_metadata')]),
+                (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
                                        ('model_metadata', 'entities')]),
             ])
+
+        else:
+            model = pe.MapNode(
+                    SecondLevelModel(),
+                    iterfield=['spec'],
+                    name=f'{select_spec_name}_model')
+
+            wf.connect([
+                (stage, model, [('effect_maps', 'effect_maps'),
+                                ('variance_maps', 'variance_maps'),
+                                ('contrast_metadata', 'stat_metadata')]),
+            ])
+
+            # if smoothing and smoothing_level:
+            # # No need to do smoothing independently if it's nistats iso
+            # if ((smoothing_type == "iso") and (estimator == "nistats")):
+            #     model.inputs.smoothing_fwhm = smoothing_fwhm
+            #     model.inputs.smoothing_type = smoothing_type
+            # else:
+            #     if smoothing_type == "isoblurto":
+            #         from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+            #     elif smoothing_type == "iso":
+            #         from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+            #     smooth = pe.MapNode(
+            #         smooth_interface(),
+            #         iterfield=["in_file", "mask"],
+            #         name="smooth"
+            #     )
+            #     smooth.inputs.fwhm = smoothing_fwhm
+            #     smooth.inputs.outputtype = 'NIFTI_GZ'
+            #     wf.disconnect([
+            #         (getter, l1_model, [('bold_files', 'bold_file')])
+            #     ])
+            #     wf.connect([
+            #         (getter, smooth, [('mask_files', 'mask')]),
+            #         (getter, smooth, [('bold_files', 'in_file')]),
+            #         (smooth, l1_model, [('out_file', 'bold_file')])
+            #     ])
+
 
 
         wf.connect([
             (loader, select_specs, [('all_specs', 'all_specs')]),
-            (loader, select_entities, [('all_specs', 'all_specs')]),
-            (loader, select_contrasts, [('all_specs', 'all_specs')]),
-            # (model, collate, [('effect_maps', 'effect_maps'),
-            #                   ('variance_maps', 'variance_maps'),
-            #                   ('stat_maps', 'stat_maps'),
-            #                   ('zscore_maps', 'zscore_maps'),
-            #                   ('pvalue_maps', 'pvalue_maps'),
-            #                   ('contrast_metadata', 'contrast_metadata')]),
-            # (collate, collate_outputs, [
-            #     ('contrast_metadata', 'metadata'),
-            #     ('effect_maps', 'effect_maps'),
-            #     ('variance_maps', 'variance_maps'),
-            #     ('stat_maps', 'stat_maps'),
-            #     ('zscore_maps', 'zscore_maps'),
-            #     ('pvalue_maps', 'pvalue_maps'),
-            #     ]),
-            # (collate, plot_contrasts, [('stat_maps', 'data')]),
-            # (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
-            #                                      ('metadata', 'entities')]),
-            # (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
-            # (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
+            (select_specs, model, [('spec', 'spec')]),
+            (model, collate, [('effect_maps', 'effect_maps'),
+                              ('variance_maps', 'variance_maps'),
+                              ('stat_maps', 'stat_maps'),
+                              ('zscore_maps', 'zscore_maps'),
+                              ('pvalue_maps', 'pvalue_maps'),
+                              ('contrast_metadata', 'contrast_metadata')]),
+            (collate, collate_outputs, [
+                ('contrast_metadata', 'metadata'),
+                ('effect_maps', 'effect_maps'),
+                ('variance_maps', 'variance_maps'),
+                ('stat_maps', 'stat_maps'),
+                ('zscore_maps', 'zscore_maps'),
+                ('pvalue_maps', 'pvalue_maps'),
+                ]),
+            (collate, plot_contrasts, [('stat_maps', 'data')]),
+            (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
+                                                 ('metadata', 'entities')]),
+            (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
+            (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
             ])
+
+
+        if level != analysis_level:
+            stage = model
 
     return wf

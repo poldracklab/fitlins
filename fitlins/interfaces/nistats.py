@@ -277,7 +277,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                                            _compute_fixed_effects_params)
 
 
-        info = self.inputs.design_info
+        spec = self.inputs.spec
         smoothing_fwhm = self.inputs.smoothing_fwhm
         smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
@@ -287,15 +287,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 "Only the iso smoothing type is available for the nistats estimator."
             )
 
-        import pdb; pdb.set_trace()
-
         effect_maps = []
         variance_maps = []
         stat_maps = []
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        out_ents = self.inputs.contrast_info[0]['entities']  # Same for all
+        out_ents = spec.entities  # Same for all
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -311,20 +309,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 filtered_variances.append(var)
                 names.append(m['contrast'])
 
-        breakpoint()
 
-        dense = None
-        if info['dense'] not in (None, 'None'):
-            dense = pd.read_hdf(info['dense'], key='dense')
-            if dense.empty:
-                dense = None
-
-        mat = dense
-
-        
-        breakpoint()
-
-        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns)
+        contrasts = prepare_contrasts(spec.contrasts, spec.X.columns)
 
         is_cifti = filtered_effects[0].endswith('dscalar.nii')
         if is_cifti:
@@ -341,16 +327,15 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             if is_cifti:
                 effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
                                           for effect in filtered_effects])
-                labels, estimates = level1.run_glm(effect_data, mat.values, noise_model='ols')
+                labels, estimates = level1.run_glm(effect_data, spec.X.values, noise_model='ols')
             else:
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-                model.fit(filtered_effects, design_matrix=mat)
+                model.fit(filtered_effects, design_matrix=spec.X)
 
-        breakpoint()
-        for name, weights, contrast_type in contrasts:
+        for name, weights, contrast_test in contrasts:
             contrast_metadata.append(
                 {'contrast': name,
-                 'stat': contrast_type,
+                 'stat': contrast_test,
                  **out_ents})
 
             # Pass-through happens automatically as it can handle 1 input
@@ -358,7 +343,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 # Index design identity matrix on non-zero contrasts weights
                 con_ix = weights[0].astype(bool)
                 # Index of all input files "involved" with that contrast
-                dm_ix = mat.iloc[:, con_ix].any(axis=1)
+                dm_ix = spec.X.iloc[:, con_ix].any(axis=1)
 
                 contrast_imgs = np.array(filtered_effects)[dm_ix]
                 variance_imgs = np.array(filtered_variances)[dm_ix]
@@ -410,7 +395,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     maps[map_type].to_filename(fname)
                     map_list.append(fname)
 
-        breakpoint
 
         self._results['effect_maps'] = effect_maps
         self._results['variance_maps'] = variance_maps

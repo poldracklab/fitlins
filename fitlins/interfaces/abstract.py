@@ -9,7 +9,6 @@ also be written.
 """
 
 from nipype.interfaces.base import BaseInterface, TraitedSpec, File, traits
-from bids.modeling import BIDSStatsModelsNodeOutput
 
 class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
@@ -35,10 +34,7 @@ class FirstLevelEstimatorInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
     mask_file = traits.Either(File(exists=True), None)
     design_matrix = File(exists=True, mandatory=True)
-    # contrast_info = traits.List()
-    # entities = traits.List()
     spec = traits.Any()
-    # spec = BIDSStatsModelsNodeOutput
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
     smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
 
@@ -63,8 +59,8 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     effect_maps = traits.List(traits.List(File(exists=True)), mandatory=True)
     variance_maps = traits.List(traits.List(File(exists=True)))
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
-    design_info = traits.Dict()
-    contrast_info = traits.List(traits.Dict, mandatory=True)
+    spec = traits.Any()
+    # contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
     smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
 
