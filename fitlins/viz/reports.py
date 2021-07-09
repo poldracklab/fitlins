@@ -45,6 +45,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
         validate=False)
     wd_layout = BIDSLayout(
         Path(work_dir) / 'reportlets' / 'fitlins',
+        config = ['bids', 'derivatives', 'fitlins'],
         validate=False)
     all_pngs = fl_layout.get(extension='.png')
     fig_dirs = set(
@@ -85,22 +86,29 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 'contrasts': []
             }
             
-            for contrast in contrasts:
-                glassbrain = fl_layout.get(
-                    contrast=snake_to_camel(contrast.name),
-                    suffix='ortho', extension='png', **ents)
+            for contrast_info in contrasts:
+                glassbrain = []
+                # glassbrain = fl_layout.get(
+                #     contrast=snake_to_camel(contrast_info.name),
+                #     suffix='ortho', extension='png', **ents)
                 
                 analysis_dict['contrasts'].append(
-                    {'name': displayify(contrast.name),
+                    {'name': displayify(contrast_info.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
                 
-                report_step['analyses'].append(analysis_dict)
+                report_node['analyses'].append(analysis_dict)
                 
             ents.pop('space', None)
+            ents.pop('contrast', None)
             design_matrix = fl_layout.get(suffix='design', extension='svg', **ents)
             correlation_matrix = fl_layout.get(suffix='corr', extension='svg', **ents)
             contrast_matrix = fl_layout.get(suffix='contrasts', extension='svg', **ents)
+
+            print("NODE: ", node)
+            print("Contrast Matrix", contrast_matrix)
+            print("Entities", ents)
+
             warning = wd_layout.get(extension='.html', suffix='snippet', **ents)
             if design_matrix:
                 analysis_dict['design_matrix'] = design_matrix[0].path

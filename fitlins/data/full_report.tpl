@@ -42,15 +42,15 @@ summary.heading-2 {
         <pre>{{ model|tojson(indent=2) }}</pre>
         </details>
 
-        <!-- { % for step in steps % } -->
-        {% set step = steps.0 %}
-        <h2>{{ step.name|capitalize }} level</h2>
+        <!-- { % for node in nodes % } -->
+        {% set node = nodes.0 %}
+        <h2>{{ node.name|capitalize }} level</h2>
 
         <!-- { % if loop.first %} -->
         <h3>Design matrices</h3>
-        <p>A design matrix was generated for each {{ step.name }}. All but the
+        <p>A design matrix was generated for each {{ node.name }}. All but the
         first are collapsed, but each should be inspected for correctness.
-        {% for analysis in step.analyses %}
+        {% for analysis in node.analyses %}
         <details{% if loop.first %} open{% endif %}>
         <summary class="heading-1">{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</summary>
         {{ analysis.warning }}
@@ -66,7 +66,7 @@ summary.heading-2 {
         {% endif %}
         <img src="{{ analysis.correlation_matrix }}" />
         </details>
-        {% if step.analyses|count > 1 and loop.first %}
+        {% if node.analyses|count > 1 and loop.first %}
         <details>
         <summary><em>...</em></summary>
         {% endif %}
@@ -75,15 +75,15 @@ summary.heading-2 {
         <!-- { % endif %} -->
 
         <h3>Contrasts</h3>
-        <p>A contrast matrix was generated for each {{ step.name }}. Except
+        <p>A contrast matrix was generated for each {{ node.name }}. Except
         in very rare cases, these should be identical, so these should be
         inspected to ensure no unexpected differences are present.</p>
-        {% for analysis in step.analyses %}
+        {% for analysis in node.analyses %}
         <details{% if loop.first %} open{% endif %}>
         <summary class="heading-1">{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</summary>
         <img src="{{ analysis.contrast_matrix }}" />
         </details>
-        {% if step.analyses|count > 1 and loop.first %}
+        {% if node.analyses|count > 1 and loop.first %}
         <details>
         <summary><em>...</em></summary>
         {% endif %}
@@ -95,9 +95,9 @@ summary.heading-2 {
     <div id="contrasts">
         <h1 class="sub-report-title">Contrasts</h1>
 
-        {% for step in steps %}
-        <h2>{{ step.name|capitalize }} level</h2>
-        {% for analysis in step.analyses %}
+        {% for node in nodes %}
+        <h2>{{ node.name|capitalize }} level</h2>
+        {% for analysis in node.analyses %}
         <h3>{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</h3>
         {% for contrast in analysis.contrasts %}
         <h4>{{ contrast.name }}</h4>

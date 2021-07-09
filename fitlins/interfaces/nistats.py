@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from pymare.estimators import WeightedLeastSquares
+
 from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
 
 from .abstract import (
@@ -22,15 +24,18 @@ def prepare_contrasts(contrasts, all_regressors):
     out_contrasts = []
     for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
-        # missing = any([[n for n, v in row.items()
-        #                 if v != 0 and n not in all_regressors]
-        #                for row in contrast['weights']])
         missing = False
+        if len(contrast_info.conditions) != len(contrast_info.weights):
+            missing = True
+        for c in contrast_info.conditions:
+            if c not in all_regressors:
+                missing = True
+
         if not missing:
             # Fill in zeros
             weights = np.array([
-                [contrast_info.weights[0] if col in contrast_info.name else 0 for col in all_regressors]
-                ])
+                [contrast_info.weights[contrast_info.conditions.index(col)]
+                    if col in contrast_info.conditions else 0 for col in all_regressors]])
 
             out_contrasts.append(
                 (contrast_info.name, weights, contrast_info.test))
@@ -319,7 +324,12 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         # Only fit model if any non-FEMA contrasts at this level
-        if any(c[2] != 'FEMA' for c in contrasts):
+        # if any(c[2] != 'Meta' for c in contrasts):
+        model_type = ''
+        if 'type' in spec.node.model:
+            model_type = spec.node.model['type']
+
+        if model_type != 'Meta':
             if len(filtered_effects) < 2:
                 raise RuntimeError(
                     "At least two inputs are required for a 't' for 'F' "
@@ -331,6 +341,10 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             else:
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=spec.X)
+        else:
+            # USE PYMARE HERE
+            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+            model.fit(filtered_effects, design_matrix=spec.X)
 
         for name, weights, contrast_test in contrasts:
             contrast_metadata.append(
@@ -339,7 +353,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                  **out_ents})
 
             # Pass-through happens automatically as it can handle 1 input
-            if contrast_type == 'FEMA':
+            if contrast_test == 'Meta':
                 # Index design identity matrix on non-zero contrasts weights
                 con_ix = weights[0].astype(bool)
                 # Index of all input files "involved" with that contrast
@@ -371,7 +385,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             else:
                 if is_cifti:
                     contrast = compute_contrast(labels, estimates, weights,
-                                                contrast_type=contrast_type)
+                                                contrast_type=contrast_test)
                     img = nb.load(filtered_effects[0])
                     maps = {
                         map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
@@ -381,7 +395,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 else:
                     maps = model.compute_contrast(
                         second_level_contrast=weights,
-                        second_level_stat_type=contrast_type,
+                        second_level_stat_type=contrast_test,
                         output_type='all'
                     )
 

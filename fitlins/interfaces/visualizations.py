@@ -69,7 +69,7 @@ class DesignCorrelationPlot(Visualization):
     input_spec = DesignCorrelationPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c.name: c.weights
+        contrast_matrix = pd.DataFrame({c[0]: c[2]
                                         for c in self.inputs.contrast_info})
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
@@ -92,7 +92,7 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c.name: c.weights
+        contrast_matrix = pd.DataFrame({c[0]: c[2]
                                         for c in self.inputs.contrast_info},
                                        index=data.columns)
         contrast_matrix.fillna(value=0, inplace=True)

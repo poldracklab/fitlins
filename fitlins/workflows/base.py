@@ -54,32 +54,33 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
                        'extension': ['.nii', '.nii.gz', '.dtseries.nii', '.func.gii']}),
         name='getter')
 
-    # if smoothing:
-    #     smoothing_params = smoothing.split(':', 2)
-    #     # Convert old style and warn; this should turn into an (informative) error around 0.5.0
-    #     if smoothing_params[0] == 'iso':
-    #         smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
-    #         warnings.warn(
-    #             "The format for smoothing arguments has changed. Please use "
-    #             f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
-    #     # Add defaults to simplify later logic
-    #     if len(smoothing_params) == 1:
-    #         smoothing_params.extend(('l1', 'iso'))
-    #     elif len(smoothing_params) == 2:
-    #         smoothing_params.append('iso')
+    if smoothing:
+        smoothing_params = smoothing.split(':', 2)
+        # Convert old style and warn; this should turn into an (informative) error around 0.5.0
+        if smoothing_params[0] == 'iso':
+            smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
+            warnings.warn(
+                "The format for smoothing arguments has changed. Please use "
+                f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
+        # Add defaults to simplify later logic
+        if len(smoothing_params) == 1:
+            smoothing_params.extend(('l1', 'iso'))
+        elif len(smoothing_params) == 2:
+            smoothing_params.append('iso')
 
-    #     smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
-    #     smoothing_fwhm = float(smoothing_fwhm)
-    #     if smoothing_type not in (['iso', 'isoblurto']):
-    #         raise ValueError(f"Unknown smoothing type {smoothing_type}")
+        smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
+        smoothing_fwhm = float(smoothing_fwhm)
+        if smoothing_type not in (['iso', 'isoblurto']):
+            raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
-    #     # Check that smmoothing level exists in model
-    #     if smoothing_level.lower().startswith("l"):
-    #         if int(smoothing_level[1:]) > len(model_dict['Steps']):
-    #             raise ValueError(f"Invalid smoothing level {smoothing_level}")
-    #     elif smoothing_level.lower() not in (step['Level'].lower()
-    #                                          for step in model_dict['Steps']):
-    #         raise ValueError(f"Invalid smoothing level {smoothing_level}")
+        # Check that smoothing level exists in model
+        if smoothing_level.lower().startswith("l"):
+            ## TODO: HARD-CODING 3 HERE, FIX THIS LATER
+            if int(smoothing_level[1:]) > 3:
+                raise ValueError(f"Invalid smoothing level {smoothing_level}")
+        elif smoothing_level.lower() not in (node['Level'].lower()
+                                             for node in model_dict['Nodes']):
+            raise ValueError(f"Invalid smoothing level {smoothing_level}")
 
     design_matrix = pe.MapNode(
         DesignMatrix(drop_missing=drop_missing),
@@ -357,32 +358,31 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
                                 ('contrast_metadata', 'stat_metadata')]),
             ])
 
-            # if smoothing and smoothing_level:
-            # # No need to do smoothing independently if it's nistats iso
-            # if ((smoothing_type == "iso") and (estimator == "nistats")):
-            #     model.inputs.smoothing_fwhm = smoothing_fwhm
-            #     model.inputs.smoothing_type = smoothing_type
-            # else:
-            #     if smoothing_type == "isoblurto":
-            #         from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
-            #     elif smoothing_type == "iso":
-            #         from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
-            #     smooth = pe.MapNode(
-            #         smooth_interface(),
-            #         iterfield=["in_file", "mask"],
-            #         name="smooth"
-            #     )
-            #     smooth.inputs.fwhm = smoothing_fwhm
-            #     smooth.inputs.outputtype = 'NIFTI_GZ'
-            #     wf.disconnect([
-            #         (getter, l1_model, [('bold_files', 'bold_file')])
-            #     ])
-            #     wf.connect([
-            #         (getter, smooth, [('mask_files', 'mask')]),
-            #         (getter, smooth, [('bold_files', 'in_file')]),
-            #         (smooth, l1_model, [('out_file', 'bold_file')])
-            #     ])
-
+        # if smoothing and smoothing_level in ():
+        #     # No need to do smoothing independently if it's nistats iso
+        #     if ((smoothing_type == "iso") and (estimator == "nistats")):
+        #         model.inputs.smoothing_fwhm = smoothing_fwhm
+        #         model.inputs.smoothing_type = smoothing_type
+        #     else:
+        #         if smoothing_type == "isoblurto":
+        #             from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+        #         elif smoothing_type == "iso":
+        #             from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+        #         smooth = pe.MapNode(
+        #             smooth_interface(),
+        #             iterfield=["in_file", "mask"],
+        #             name="smooth"
+        #         )
+        #         smooth.inputs.fwhm = smoothing_fwhm
+        #         smooth.inputs.outputtype = 'NIFTI_GZ'
+        #         wf.disconnect([
+        #             (getter, l1_model, [('bold_files', 'bold_file')])
+        #         ])
+        #         wf.connect([
+        #             (getter, smooth, [('mask_files', 'mask')]),
+        #             (getter, smooth, [('bold_files', 'in_file')]),
+        #             (smooth, l1_model, [('out_file', 'bold_file')])
+        #         ])
 
 
         wf.connect([
