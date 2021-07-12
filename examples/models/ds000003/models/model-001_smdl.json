@@ -99,16 +99,16 @@
   "Edges": [
     {
       "Source": "run",
-      "Destionation": "subject"
+      "Destination": "subject"
     },
     {
       "Source": "subject",
-      "Destionation": "t-test",
+      "Destination": "t-test",
       "Filter": {"contrast": ["task_vs_baseline", "word_gt_pseudo"]}
     },
     {
       "Source": "subject",
-      "Destionation": "F-test",
+      "Destination": "F-test",
       "Filter": {"contrast": ["trial_type.word", "trial_type.pseudoword"]}
     }
   ]
