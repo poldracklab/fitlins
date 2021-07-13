@@ -4,6 +4,15 @@
         {
             "name": "contrast",
             "pattern": "[_/\\\\]contrast-([a-zA-Z0-9]+)"
+        },
+	{
+            "name": "level",
+            "pattern": "[_/\\\\]level-([a-zA-Z0-9]+)"
+        },
+	{
+
+            "name": "name",
+            "pattern": "[_/\\\\]name-([a-zA-Z0-9]+)"
         }
     ]
 }

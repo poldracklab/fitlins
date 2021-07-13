@@ -223,9 +223,13 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         for name, weights, contrast_test in prepare_contrasts(
               spec.contrasts, mat.columns):
             contrast_metadata.append(
-                {'contrast': name,
-                 'stat': contrast_test,
-                 **out_ents}
+                    {
+                        "name": name,
+                        "contrast": name,
+                        "level": spec.node.level,
+                        "stat": contrast_test,
+                        **out_ents,
+                    }
                 )
             if is_cifti:
                 contrast = compute_contrast(labels, estimates, weights,
@@ -348,9 +352,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
 
         for name, weights, contrast_test in contrasts:
             contrast_metadata.append(
-                {'contrast': name,
-                 'stat': contrast_test,
-                 **out_ents})
+                    {
+                        "name": name,
+                        "level": spec.node.level,
+                        "stat": contrast_test,
+                        **out_ents,
+                    }
+                )
 
             # Pass-through happens automatically as it can handle 1 input
             if contrast_test == 'Meta':

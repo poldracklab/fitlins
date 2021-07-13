@@ -8,7 +8,7 @@ from ..utils import snake_to_camel
 from ..utils.bids import load_all_specs
 
 PATH_PATTERNS = [
-    'reports/[sub-{subject}/][ses-{session}/][sub-{subject}_][ses-{session}_]'
+    'reports/[sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_][ses-{session}_]'
     '[run-{run}_]model-{model}.html'
 ]
 
@@ -72,6 +72,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
         report['nodes'].append(report_node)
         for coll in colls:
             ents = coll.entities.copy()
+            ents["level"] = coll.node.level
             contrasts = coll.contrasts
             for key in ('datatype', 'desc', 'suffix', 'extension'):
                 ents.pop(key, None)
@@ -88,26 +89,21 @@ def build_report_dict(deriv_dir, work_dir, graph):
             
             for contrast_info in contrasts:
                 glassbrain = []
-                # glassbrain = fl_layout.get(
-                #     contrast=snake_to_camel(contrast_info.name),
-                #     suffix='ortho', extension='png', **ents)
+                if node != 'run':
+                    ents["name"] = snake_to_camel(contrast_info.name)
+                glassbrain = fl_layout.get(suffix='ortho', extension='png', **ents)
                 
                 analysis_dict['contrasts'].append(
-                    {'name': displayify(contrast_info.name),
+                    {'name': displayify(contrast_info.name + "_conditions_" + "_".join(contrast_info.conditions)),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
                 
-                report_node['analyses'].append(analysis_dict)
+            report_node['analyses'].append(analysis_dict)
                 
             ents.pop('space', None)
-            ents.pop('contrast', None)
             design_matrix = fl_layout.get(suffix='design', extension='svg', **ents)
             correlation_matrix = fl_layout.get(suffix='corr', extension='svg', **ents)
             contrast_matrix = fl_layout.get(suffix='contrasts', extension='svg', **ents)
-
-            print("NODE: ", node)
-            print("Contrast Matrix", contrast_matrix)
-            print("Entities", ents)
 
             warning = wd_layout.get(extension='.html', suffix='snippet', **ents)
             if design_matrix:

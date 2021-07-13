@@ -110,26 +110,37 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
                              iterfield=['tsv'], name='deindex_tsv')
 
     # Set up common patterns
-    image_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
-        '[sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]' \
-        '[rec-{reconstruction}_][run-{run}_][echo-{echo}_]' \
-        '{suffix<design|corr|contrasts>}{extension<.svg>|.svg}'
-    contrast_plot_pattern = 'reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]' \
-        '[sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]' \
-        '[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_ortho{extension<.png>|.png}'
-    design_matrix_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]' \
-        '[rec-{reconstruction}_][run-{run}_][echo-{echo}_]_{suffix<design>}{extension<.tsv>|.tsv}'
-    contrast_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]' \
-        '[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]' \
-        'contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|FEMA>}_' \
-        'statmap{extension<.nii.gz|.dscalar.nii>}'
-    model_map_pattern = '[sub-{subject}/][ses-{session}/]' \
-        '[sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]' \
-        '[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]' \
-        'stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}'
+    image_pattern = (
+            "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
+            "{suffix<design|corr|contrasts>}{extension<.svg>|.svg}"
+    )
+
+    contrast_plot_pattern = (
+            "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+            "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_ortho{extension<.png>|.png}"
+    )
+    design_matrix_pattern = (
+            "[sub-{subject}/][ses-{session}/]"
+            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]_{suffix<design>}{extension<.tsv>|.tsv}"
+    )
+    contrast_pattern = (
+            "[sub-{subject}/][ses-{session}/]"
+            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+            "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_"
+            "statmap{extension<.nii.gz|.dscalar.nii>}"
+    )
+    model_map_pattern = (
+            "[sub-{subject}/][ses-{session}/]"
+            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+            "stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}"
+    )
     # Set up general interfaces
     #
     # HTML snippets to be included directly in report, not
@@ -138,7 +149,7 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
 
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
-    snippet_pattern = '[sub-{subject}/][ses-{session}/][sub-{subject}_]' \
+    snippet_pattern = '[sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_]' \
         '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
     ds_model_warnings = pe.MapNode(
         BIDSDataSink(base_directory=str(reportlet_dir),
@@ -163,28 +174,28 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
         name='plot_run_contrast_matrix')
 
     ds_design = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'design'},
+        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'design'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_design')
 
     ds_design_matrix = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'design'},
+        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'design'},
                      path_patterns=design_matrix_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_design_matrix')
 
     ds_corr = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'corr'},
+        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'corr'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_corr')
 
     ds_run_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={'suffix': 'contrasts'},
+        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'contrasts'},
                      path_patterns=image_pattern),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
