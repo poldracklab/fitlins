@@ -298,9 +298,8 @@ class LoadBIDSModel(SimpleInterface):
             specs = node.run(contrasts, group_by=node.group_by)
 
         all_specs[node.name] = specs
-        children = copy.deepcopy(node.children)
-        while children:
-            self._load_all_specs(runtime, graph, all_specs, specs, children.pop().destination)
+        for child in node.children:
+            self._load_all_specs(runtime, graph, all_specs, specs, child.destination)
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
