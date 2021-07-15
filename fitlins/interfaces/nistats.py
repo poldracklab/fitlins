@@ -24,12 +24,10 @@ def prepare_contrasts(contrasts, all_regressors):
     out_contrasts = []
     for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
-        missing = False
-        if len(contrast_info.conditions) != len(contrast_info.weights):
-            missing = True
-        for c in contrast_info.conditions:
-            if c not in all_regressors:
-                missing = True
+        missing = (
+            len(contrast_info.conditions) != len(contrast_info.weights) or
+            any(cond not in all_regressors for cond in contrast_info.conditions)
+        )
 
         if not missing:
             # Fill in zeros
