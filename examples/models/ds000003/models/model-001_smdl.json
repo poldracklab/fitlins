@@ -1,12 +1,15 @@
 {
   "Name": "ds003_model001",
+  "BIDSModelVersion": "1.0.0",
   "Description": "",
   "Input": {
     "task": "rhymejudgment"
   },
-  "Steps": [
+  "Nodes": [
     {
       "Level": "run",
+      "Name": "run",
+      "GroupBy": ["run", "subject"],
       "Transformations": [
         {
           "Name": "Factor",
@@ -27,12 +30,13 @@
           "framewise_displacement",
           "trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z",
           "a_comp_cor_00", "a_comp_cor_01", "a_comp_cor_02",
-          "a_comp_cor_03", "a_comp_cor_04", "a_comp_cor_05"
+          "a_comp_cor_03", "a_comp_cor_04", "a_comp_cor_05",
+          1
         ]
       },
       "DummyContrasts": {
         "Conditions": ["trial_type.word", "trial_type.pseudoword"],
-        "Type": "t"
+        "Test": "t"
         },
       "Contrasts": [
         {
@@ -42,7 +46,7 @@
             "trial_type.pseudoword"
           ],
           "Weights": [1, -1],
-          "Type": "t"
+          "Test": "t"
         },
         {
           "Name": "task_vs_baseline",
@@ -51,23 +55,32 @@
             "trial_type.pseudoword"
           ],
           "Weights": [0.5, 0.5],
-          "Type": "t"
+          "Test": "t"
         }
       ]
     },
     {
       "Level": "subject",
+      "Name": "subject",
+      "GroupBy": ["subject", "contrast"],
+      "Model": {
+        "X": [1],
+        "Type": "meta"
+      },
+      "DummyContrasts": {}
+    },
+    {
+      "Level": "dataset",
+      "Name": "t-test",
+      "GroupBy": ["contrast"],
       "DummyContrasts": {
-        "Type": "FEMA"
+        "Test": "t"
       }
     },
     {
       "Level": "dataset",
-      "DummyContrasts": {
-        "Conditions": ["word_gt_pseudo", "task_vs_baseline"],
-        "Type": "t"
-        },
-      "Contrasts":[
+      "Name": "F-test",
+      "Contrasts": [
         {
           "Name": "any_words",
           "ConditionList": [
@@ -78,9 +91,25 @@
             [1, 0],
             [0, 1]
           ],
-          "Type": "F"
+          "Test": "F"
         }
       ]
+    }
+  ],
+  "Edges": [
+    {
+      "Source": "run",
+      "Destination": "subject"
+    },
+    {
+      "Source": "subject",
+      "Destination": "t-test",
+      "Filter": {"contrast": ["task_vs_baseline", "word_gt_pseudo"]}
+    },
+    {
+      "Source": "subject",
+      "Destination": "F-test",
+      "Filter": {"contrast": ["trial_type.word", "trial_type.pseudoword"]}
     }
   ]
 }
