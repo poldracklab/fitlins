@@ -2,7 +2,7 @@ from pathlib import Path
 import warnings
 
 
-def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
+def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     desc=None, model=None, participants=None,
                     smoothing=None, drop_missing=False,
                     estimator=None, errorts=False, drift_model=None,
@@ -220,8 +220,6 @@ def init_fitlins_wf(database_path, out_dir, layout, analysis_level, space,
 
     stage = None
     model = l1_model
-
-    graph = BIDSStatsModelsGraph(layout, model_dict)
 
     def select_stats_spec(all_specs, name):
         return all_specs[name]
