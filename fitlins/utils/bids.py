@@ -46,9 +46,8 @@ def load_all_specs(all_specs, specs, node):
         specs = node.run(contrasts, group_by=node.group_by)  
     
     all_specs[node.name] = specs
-    children = copy.deepcopy(node.children)
-    while children:
-        load_all_specs(all_specs, specs, children.pop().destination)
+    for child in node.children:
+        load_all_specs(all_specs, specs, children.destination)
 
 
 def collect_participants(layout, participant_label=None, strict=False):
