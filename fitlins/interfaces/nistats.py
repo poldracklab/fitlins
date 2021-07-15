@@ -2,8 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 
-from pymare.estimators import WeightedLeastSquares
-
 from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
 
 from .abstract import (
