@@ -69,8 +69,20 @@ class DesignCorrelationPlot(Visualization):
     input_spec = DesignCorrelationPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c[0]: c[2]
-                                        for c in self.inputs.contrast_info})
+        columns = []
+        names = []
+        for c in self.inputs.contrast_info:
+            columns = list(set(c[1]) | set(columns))
+            names.append(c[0])
+
+        contrast_matrix = pd.DataFrame(
+                np.zeros((len(self.inputs.contrast_info), len(columns))),
+                columns=columns,
+                index=names)
+
+        for i, c in enumerate(self.inputs.contrast_info):
+            contrast_matrix.loc[c[0]][c[1]] = c[2]
+
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
         if set(contrast_matrix.index) != all_cols[:len(evs)]:
@@ -92,10 +104,20 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c[0]: c[2]
-                                        for c in self.inputs.contrast_info},
-                                       index=data.columns)
-        contrast_matrix.fillna(value=0, inplace=True)
+        columns = []
+        names = []
+        for c in self.inputs.contrast_info:
+            columns = list(set(c[1]) | set(columns))
+            names.append(c[0])
+
+        contrast_matrix = pd.DataFrame(
+                np.zeros((len(self.inputs.contrast_info), len(columns))),
+                columns=columns,
+                index=names)
+
+        for i, c in enumerate(self.inputs.contrast_info):
+            contrast_matrix.loc[c[0]][c[1]] = c[2]
+
         if 'constant' in contrast_matrix.index:
             contrast_matrix = contrast_matrix.drop(index='constant')
         plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,
