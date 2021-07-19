@@ -258,6 +258,7 @@ def run_fitlins(argv=None):
     #         model_dict = json.loads(Path(model).read_text())
     #     models = [model_dict]
 
+    model_dict = None
     if model == 'default':
         retcode = 1
         raise NotImplementedError("The default model has not been implemented yet.")
@@ -265,6 +266,9 @@ def run_fitlins(argv=None):
         import json
         if op.exists(model):
             model_dict = json.loads(Path(model).read_text())
+
+    if not model_dict:
+        raise ValueError(f'model_dict cannot be empty. Invalid model filepath {model}.')
 
     graph = BIDSStatsModelsGraph(layout, model_dict)
 

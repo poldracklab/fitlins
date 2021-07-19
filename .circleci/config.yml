@@ -261,14 +261,13 @@ jobs:
             docker run --rm -v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/data/fitlins_tests/ds003/models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-new \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /models/model-001_smdl.json -w /scratch \
+                -d /data -m /src/fitlins/examples/models/ds000003/models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
@@ -279,14 +278,13 @@ jobs:
             docker run --rm -v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/data/fitlins_tests/ds003/models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-exists \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /models/model-001_smdl.json -w /scratch \
+                -d /data -m /src/fitlins/examples/models/ds000003/models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
