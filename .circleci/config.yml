@@ -210,7 +210,7 @@ jobs:
                 --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
                 --output-dir=/out \
                 --derivatives=/data/ds003/ds003_fmriprep \
-                --model=/data/ds003/models/model-001_smdl.json \
+                --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
                 --work-dir=/scratch \
                 --test-name=<< parameters.test_name >> \
                 --database-path=/out/ds003_database \

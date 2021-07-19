@@ -329,22 +329,22 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         if 'type' in spec.node.model:
             model_type = spec.node.model['type']
 
-        if model_type != 'Meta':
-            if len(filtered_effects) < 2:
-                raise RuntimeError(
-                    "At least two inputs are required for a 't' for 'F' "
-                    "second level contrast")
-            if is_cifti:
-                effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
-                                          for effect in filtered_effects])
-                labels, estimates = level1.run_glm(effect_data, spec.X.values, noise_model='ols')
-            else:
-                model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-                model.fit(filtered_effects, design_matrix=spec.X)
+        # if model_type != 'Meta':
+        if len(filtered_effects) < 2:
+            raise RuntimeError(
+                "At least two inputs are required for a 't' for 'F' "
+                "second level contrast")
+        if is_cifti:
+            effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
+                                      for effect in filtered_effects])
+            labels, estimates = level1.run_glm(effect_data, spec.X.values, noise_model='ols')
         else:
-            # USE PYMARE HERE
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
             model.fit(filtered_effects, design_matrix=spec.X)
+        # else:
+        #     # USE PYMARE HERE
+        #     model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+        #     model.fit(filtered_effects, design_matrix=spec.X)
 
         for name, weights, contrast_test in contrasts:
             contrast_metadata.append(
@@ -357,7 +357,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 )
 
             # Pass-through happens automatically as it can handle 1 input
-            if contrast_test == 'Meta':
+            if model_type == 'Meta':
                 # Index design identity matrix on non-zero contrasts weights
                 con_ix = weights[0].astype(bool)
                 # Index of all input files "involved" with that contrast
