@@ -91,8 +91,9 @@ def build_report_dict(deriv_dir, work_dir, analysis):
                 )
             report_step['analyses'].append(analysis_dict)
 
-            # Space doesn't apply to design/contrast matrices
-            ents.pop('space', None)
+            # Space doesn't apply to design/contrast matrices, or resolution
+            for k in ['space', 'res']:
+                ents.pop(k, None)
             design_matrix = fl_layout.get(suffix='design', extension='svg', **ents)
             correlation_matrix = fl_layout.get(suffix='corr', extension='svg', **ents)
             contrast_matrix = fl_layout.get(suffix='contrasts', extension='svg', **ents)
