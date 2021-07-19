@@ -89,12 +89,15 @@ def build_report_dict(deriv_dir, work_dir, graph):
             
             for contrast_info in contrasts:
                 glassbrain = []
-                if node != 'run':
-                    ents["name"] = snake_to_camel(contrast_info.name)
+                if coll.node.level != 'run':
+                    cname = snake_to_camel((contrast_info.name).replace('.', '_'))
+                    ents["name"] = cname
+                    ents["contrast"] = cname
+
                 glassbrain = fl_layout.get(suffix='ortho', extension='png', **ents)
-                
+
                 analysis_dict['contrasts'].append(
-                    {'name': displayify(contrast_info.name + "_conditions_" + "_".join(contrast_info.conditions)),
+                    {'name': displayify(contrast_info.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
                 
