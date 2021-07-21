@@ -1,3 +1,11 @@
+0.9.2 (July 21, 2021)
+======================
+
+Minor bugfix release in the 0.9.x series.
+
+* FIX: Exclude res from report entities (https://github.com/poldracklab/fitlins/pull/301)
+
+
 0.9.1 (April 21, 2021)
 ======================
 
