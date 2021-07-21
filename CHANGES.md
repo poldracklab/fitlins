@@ -4,7 +4,8 @@
 Minor bugfix release in the 0.9.x series.
 
 * FIX: Exclude res from report entities (https://github.com/poldracklab/fitlins/pull/301)
-
+* MNT: Update to versioneer 0.20 (https://github.com/poldracklab/fitlins/pull/300) 
+* MNT: codespell run + ignore (https://github.com/poldracklab/fitlins/pull/289) 
 
 0.9.1 (April 21, 2021)
 ======================
