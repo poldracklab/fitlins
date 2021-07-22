@@ -78,6 +78,14 @@ def sample_model_dict():
                     "Conditions": ["icecream_gt_cake", "eating_vs_baseline"],
                     "Test": "t",
                 },
+                "Contrasts": [
+                    {
+                        "Name": "all_food_good_food",
+                        "ConditionList": ["trial_type.ice_cream", "trial_type.cake"],
+                        "Weights": [[1, 0], [0, 1]],
+                        "Test": "F",
+                    }
+                ],
             },
         ],
         "Edges": [

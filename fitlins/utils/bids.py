@@ -47,7 +47,7 @@ def load_all_specs(all_specs, specs, node):
     
     all_specs[node.name] = specs
     for child in node.children:
-        load_all_specs(all_specs, specs, children.destination)
+        load_all_specs(all_specs, specs, child.destination)
 
 
 def collect_participants(layout, participant_label=None, strict=False):

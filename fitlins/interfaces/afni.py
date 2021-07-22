@@ -70,8 +70,9 @@ class FirstLevelModel(FirstLevelModel):
 
         logger = logging.getLogger("nipype.interface")
 
+        spec = self.inputs.spec
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
-        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns.tolist())
+        contrasts = prepare_contrasts(spec.contrasts, mat.columns.tolist())
         t_r = mat.index[1]
         design_fname = op.join(runtime.cwd, "design.xmat.1D")
         stim_labels = self.get_stim_labels()
@@ -147,7 +148,7 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        out_ents = self.inputs.contrast_info[0]["entities"]
+        out_ents = spec.entities 
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
@@ -240,7 +241,7 @@ class FirstLevelModel(FirstLevelModel):
         pvalue_maps = []
         fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
-        out_ents = self.inputs.contrast_info[0]["entities"]
+        out_ents = self.inputs.spec.entities 
 
         stats_img_info = parse_afni_ext(maps["stat"])
 
@@ -329,8 +330,8 @@ class FirstLevelModel(FirstLevelModel):
     def get_stim_labels(self):
         # Iterate through all weight specifications to get a list of stimulus
         # column labels.
-        weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
-        return list(set(_flatten([x.keys() for x in weights])))
+        conditions = _flatten([contrast_info.conditions for contrast_info in self.inputs.spec.contrasts])
+        return list(set(conditions))
 
     def save_tsnr(self, runtime, rbetas, rvars):
         vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
