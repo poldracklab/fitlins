@@ -209,7 +209,7 @@ class LoadBIDSModel(SimpleInterface):
 
         return runtime
 
-    def _load_all_specs(self, runtime, graph, all_specs, specs, node):
+    def _load_all_specs(self, runtime, graph, all_specs, specs, node, **filters):
 
         step_subdir = Path(runtime.cwd) / node.level
         step_subdir.mkdir(parents=True, exist_ok=True)
@@ -295,11 +295,18 @@ class LoadBIDSModel(SimpleInterface):
                 
         else:
             contrasts = list(chain(*[s.contrasts for s in specs]))
-            specs = node.run(contrasts, group_by=node.group_by)
+            specs = node.run(contrasts, group_by=node.group_by, **filters)
 
         all_specs[node.name] = specs
         for child in node.children:
-            self._load_all_specs(runtime, graph, all_specs, specs, child.destination)
+            self._load_all_specs(
+                    runtime,
+                    graph,
+                    all_specs,
+                    specs,
+                    child.destination,
+                    **child.filter
+            )
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):

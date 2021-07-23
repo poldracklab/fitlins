@@ -38,16 +38,16 @@ class BIDSWarning(RuntimeWarning):
     pass
 
 
-def load_all_specs(all_specs, specs, node):
+def load_all_specs(all_specs, specs, node, **filters):
     if node.level == 'run':
         specs = node.run(group_by=node.group_by, force_dense=False)
     else:
         contrasts = list(chain(*[s.contrasts for s in specs]))
-        specs = node.run(contrasts, group_by=node.group_by)  
+        specs = node.run(contrasts, group_by=node.group_by, **filters)  
     
     all_specs[node.name] = specs
     for child in node.children:
-        load_all_specs(all_specs, specs, child.destination)
+        load_all_specs(all_specs, specs, child.destination, **child.filter)
 
 
 def collect_participants(layout, participant_label=None, strict=False):
