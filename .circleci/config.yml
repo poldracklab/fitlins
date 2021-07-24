@@ -78,12 +78,12 @@ jobs:
       - run:
           name: Install fMRIPrep derivatives of ds000003 and reference data
           command: |
-            datalad install -r -s https://gin.g-node.org/shotgunosine/fitlins_tests
+            datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
             datalad update --merge fitlins_tests
-            datalad get fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
-                                    fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
-                                    fitlins_tests/ds003/ds003_fmriprep/dataset_description.json \
-                                    fitlins_tests/ds003/ds003_fmriprep/sub-*/*/*.json
+            datalad get fitlins_tests/ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                                    fitlins_tests/ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                                    fitlins_tests/ds003/fmriprep/dataset_description.json \
+                                    fitlins_tests/ds003/fmriprep/sub-*/*/*.json
             datalad get -r fitlins_tests/ds003/nistats_smooth/ fitlins_tests/ds003/afni_smooth/ fitlins_tests/ds003/afni_blurto/ fitlins_tests/ds003/nistats_blurto/
       - save_cache:
          key: ds003-v1-{{ .Branch }}-{{ .BuildNum }}
@@ -208,9 +208,9 @@ jobs:
                 --cov-report xml:/scratch/.coverage_pytest_<< parameters.test_name >>.xml \
                 $CONDA_PREFIX/lib/python3.6/site-packages/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
-                --bids-dir=/data/ds003/ds003_fmriprep/sourcedata \
+                --bids-dir=/data/ds003/fmriprep/sourcedata \
                 --output-dir=/out \
-                --derivatives=/data/ds003/ds003_fmriprep \
+                --derivatives=/data/ds003/fmriprep \
                 --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
                 --work-dir=/scratch \
                 --test-name=<< parameters.test_name >> \
@@ -259,17 +259,17 @@ jobs:
             mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
             chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
+            docker run --rm -v /tmp/data/fitlins_tests/ds003/fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/src/fitlins:/src/fitlins \
+                -v /tmp/data/fitlins_tests/ds003/models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-new \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /src/fitlins/examples/models/ds000003/models/model-001_smdl.json -w /scratch \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
@@ -277,17 +277,17 @@ jobs:
           no_output_timeout: 2h
           command: |
             export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-            docker run --rm -v /tmp/data/fitlins_tests/ds003/ds003_fmriprep:/data:ro \
+            docker run --rm -v /tmp/data/fitlins_tests/ds003/fmriprep:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
-                -v /tmp/src/fitlins:/src/fitlins \
+                -v /tmp/data/fitlins_tests/ds003/models:/models \
                 -e COVERAGE_FILE=/scratch/.coverage.database-file-exists \
                 --entrypoint="/neurodocker/startup.sh" \
                 poldracklab/fitlins:latest \
                 coverage run \
                 --rcfile /src/fitlins/docker/multiproc.coveragerc \
                 $CONDA_PREFIX/bin/fitlins /data/sourcedata /out dataset \
-                -d /data -m /src/fitlins/examples/models/ds000003/models/model-001_smdl.json -w /scratch \
+                -d /data -m /models/model-001_smdl.json -w /scratch \
                 --participant-label 01 02 03 --space MNI152NLin2009cAsym \
                 --n-cpus 2 --database-path /out/pybidsdb -vv
       - run:
