@@ -90,7 +90,11 @@ def sample_model_dict():
         ],
         "Edges": [
             {"Source": "run", "Destination": "subject"},
-            {"Source": "subject", "Destination": "all_food_good_food"},
+            {
+                "Source": "subject",
+                "Destination": "all_food_good_food",
+                "Filter": {"contrast": ["icecream_gt_cake", "eating_vs_baseline"]},
+            },
         ],
     }
 

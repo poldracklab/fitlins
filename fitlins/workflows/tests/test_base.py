@@ -13,13 +13,13 @@ from ...utils import config
 
 @pytest.mark.parametrize("estimator", ["nistats", "afni"])
 def test_init_fitlins_wf(estimator, tmp_path, bids_dir, bids_dset, sample_model):
-    _, database_path = bids_dset
+    layout, database_path = bids_dset
     out_dir = bids_dir / 'derivatives' / 'fitlins'
     analysis_level = 'participant'
     space = "T1w"
     model = str(sample_model)
     desc = "preproc"
-    layout = bids.BIDSLayout(bids_dir, database_path=database_path)
+    # layout = bids.BIDSLayout(bids_dir, database_path=database_path)
 
     import json
     if os.path.exists(model):
