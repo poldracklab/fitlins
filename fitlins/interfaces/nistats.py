@@ -11,7 +11,6 @@ from .abstract import (
 class NistatsBaseInterface(LibraryBaseInterface):
     _pkg = 'nilearn.glm'
 
-
 def prepare_contrasts(contrasts, all_regressors):
     """ Make mutable copy of contrast list, and
     generate contrast design_matrix from dictionary weight mapping
@@ -26,15 +25,23 @@ def prepare_contrasts(contrasts, all_regressors):
             len(contrast_info.conditions) != len(contrast_info.weights) or
             any(cond not in all_regressors for cond in contrast_info.conditions)
         )
-
         if not missing:
-            # Fill in zeros
-            weights = np.array([
-                [contrast_info.weights[contrast_info.conditions.index(col)]
-                    if col in contrast_info.conditions else 0 for col in all_regressors]])
+            wshape = np.array(contrast_info.weights).shape
+            if len(wshape) > 1:
+                # init a weights matrix for (all_regressors x no. of contrasts)
+                weights = np.zeros((wshape[-1], len(all_regressors)))
+                for r in range(len(weights)):
+                    cw = contrast_info.weights[r]
+                    for c, cond in enumerate(contrast_info.conditions):
+                        if cond in all_regressors:
+                            weights[r][list(all_regressors).index(cond)] = cw[c]
+            else:
+                weights = np.array([
+                    [contrast_info.weights[contrast_info.conditions.index(col)]
+                        if col in contrast_info.conditions else 0 for col in all_regressors]])
 
             out_contrasts.append(
-                (contrast_info.name, weights, contrast_info.test))
+                (contrast_info.name, np.array(weights), contrast_info.test))
 
     return out_contrasts
 
@@ -198,7 +205,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                     _get_voxelwise_stat(flm.labels_[0], flm.results_[0], 'logL'))
             }
 
-        out_ents = spec.entities
+        out_ents = spec.entities.copy()
 
         # Save model level images
 
@@ -298,7 +305,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        out_ents = spec.entities  # Same for all
+        spec_metadata = spec.metadata.to_dict('records')
+        out_ents = spec.entities.copy()  # Same for all
+        out_ents.setdefault("contrast", spec.contrasts[0].name)
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -309,10 +318,11 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         filtered_variances = []
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
-            if _match(out_ents, m):
-                filtered_effects.append(eff)
-                filtered_variances.append(var)
-                names.append(m['contrast'])
+            for ents in spec_metadata:
+                if _match(ents, m):
+                    filtered_effects.append(eff)
+                    filtered_variances.append(var)
+                    names.append(m['contrast'])
 
 
         contrasts = prepare_contrasts(spec.contrasts, spec.X.columns)

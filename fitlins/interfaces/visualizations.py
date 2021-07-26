@@ -71,17 +71,29 @@ class DesignCorrelationPlot(Visualization):
     def _visualize(self, data, out_name):
         columns = []
         names = []
-        for c in self.inputs.contrast_info:
+        contrast_info = self.inputs.contrast_info 
+        
+        for c in contrast_info:
             columns = list(set(c[1]) | set(columns))
-            names.append(c[0])
-
+            # split f-tests with a 2d weights into 2 rows
+            if len(np.array(c[2]).shape) > 1:
+                for cond in c[1]:
+                    names.append(c[0] + '_' + cond)
+            else:
+                names.append(c[0])
+        
         contrast_matrix = pd.DataFrame(
-                np.zeros((len(self.inputs.contrast_info), len(columns))),
+                np.zeros((len(names), len(columns))),
                 columns=columns,
                 index=names)
-
-        for i, c in enumerate(self.inputs.contrast_info):
-            contrast_matrix.loc[c[0]][c[1]] = c[2]
+        
+        for i, c in enumerate(contrast_info):
+            if len(np.array(c[2]).shape) > 1:
+                for cond in c[1]:
+                    name = c[0] + '_' + cond
+                    contrast_matrix.loc[name][c[1]] = c[2][c[1].index(cond)]
+            else:
+                contrast_matrix.loc[c[0]][c[1]] = c[2]
 
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
@@ -106,17 +118,29 @@ class ContrastMatrixPlot(Visualization):
     def _visualize(self, data, out_name):
         columns = []
         names = []
-        for c in self.inputs.contrast_info:
+        contrast_info = self.inputs.contrast_info 
+        
+        for c in contrast_info:
             columns = list(set(c[1]) | set(columns))
-            names.append(c[0])
-
+            # split f-tests with a 2d weights into 2 rows
+            if len(np.array(c[2]).shape) > 1:
+                for cond in c[1]:
+                    names.append(c[0] + '_' + cond)
+            else:
+                names.append(c[0])
+        
         contrast_matrix = pd.DataFrame(
-                np.zeros((len(self.inputs.contrast_info), len(columns))),
+                np.zeros((len(names), len(columns))),
                 columns=columns,
                 index=names)
-
-        for i, c in enumerate(self.inputs.contrast_info):
-            contrast_matrix.loc[c[0]][c[1]] = c[2]
+        
+        for i, c in enumerate(contrast_info):
+            if len(np.array(c[2]).shape) > 1:
+                for cond in c[1]:
+                    name = c[0] + '_' + cond
+                    contrast_matrix.loc[name][c[1]] = c[2][c[1].index(cond)]
+            else:
+                contrast_matrix.loc[c[0]][c[1]] = c[2]
 
         if 'constant' in contrast_matrix.index:
             contrast_matrix = contrast_matrix.drop(index='constant')

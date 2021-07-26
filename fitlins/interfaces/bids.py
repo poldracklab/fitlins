@@ -161,10 +161,6 @@ class LoadBIDSModelOutputSpec(TraitedSpec):
     design_info = traits.List(traits.Dict,
                               desc='Descriptions of design matrices with sparse events, '
                                    'dense regressors and TR')
-    # contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
-    #                             desc='A list of contrast specifications at each unit of analysis')
-    # entities = traits.List(traits.List(traits.Dict),
-    #                        desc='A list of applicable entities at each unit of analysis')
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
     all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel', mandatory=True)
 
@@ -215,7 +211,7 @@ class LoadBIDSModel(SimpleInterface):
         step_subdir.mkdir(parents=True, exist_ok=True)
 
         if node.level == 'run':
-            specs = node.run(group_by=node.group_by, force_dense=False)
+            specs = node.run(group_by=node.group_by, force_dense=True)
 
             entities = []
             design_info = []
