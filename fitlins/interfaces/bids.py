@@ -162,7 +162,7 @@ class LoadBIDSModelOutputSpec(TraitedSpec):
                               desc='Descriptions of design matrices with sparse events, '
                                    'dense regressors and TR')
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
-    all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel', mandatory=True)
+    all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel')
 
 
 class LoadBIDSModel(SimpleInterface):
