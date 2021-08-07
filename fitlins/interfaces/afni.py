@@ -148,7 +148,7 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        out_ents = spec.entities 
+        out_ents = spec.entities.copy()
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
@@ -241,7 +241,7 @@ class FirstLevelModel(FirstLevelModel):
         pvalue_maps = []
         fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
-        out_ents = self.inputs.spec.entities 
+        out_ents = self.inputs.spec.entities.copy()
 
         stats_img_info = parse_afni_ext(maps["stat"])
 
@@ -263,13 +263,19 @@ class FirstLevelModel(FirstLevelModel):
                 clean_vol_labels.append(x.rsplit('_', 1)[0])
             else:
                 clean_vol_labels.append(x)
-        for (name, weights, contrast_type) in contrasts:
+        for (name, weights, contrast_test) in contrasts:
             contrast_metadata.append(
-                {"contrast": name, "stat": contrast_type, **out_ents}
+                    {
+                        "name": name,
+                        "contrast": name,
+                        "level": self.inputs.spec.node.level,
+                        "stat": contrast_test,
+                        **out_ents
+                    }
             )
 
             # Get boolean to index appropriate values
-            stat_bool = stat_types == contrast_type.upper()
+            stat_bool = stat_types == contrast_test.upper()
             contrast_bool = np.array(clean_vol_labels) == name
 
             # Indices for multi image nibabel object  should have length 1 and be integers

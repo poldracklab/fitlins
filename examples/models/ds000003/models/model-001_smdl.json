@@ -88,9 +88,7 @@
       {
          "Level":"dataset",
          "Name":"t-test",
-         "GroupBy":[
-            "contrast"
-         ],
+         "GroupBy":["contrast"],
          "Model":{
             "X":[
                1
@@ -100,6 +98,38 @@
          "DummyContrasts":{
             "Test":"t"
          }
+      },
+      {
+         "Level":"dataset",
+         "Name":"F-test",
+         "GroupBy": [],
+         "Model":{
+            "X":[
+                "trial_type.word",
+                "trial_type.pseudoword"
+            ],
+            "Type":"glm"
+         },
+         "Contrasts":[
+            {
+               "Name":"any_words",
+               "ConditionList":[
+                  "trial_type.word",
+                  "trial_type.pseudoword"
+               ],
+               "Weights":[
+                  [
+                     1,
+                     0
+                  ],
+                  [
+                     0,
+                     1
+                  ]
+               ],
+               "Test":"F"
+            }
+         ]
       }
    ],
    "Edges":[
@@ -110,6 +140,16 @@
             "contrast":[
                "task_vs_baseline",
                "word_gt_pseudo"
+            ]
+         }
+      },
+      {
+         "Source":"subject",
+         "Destination":"F-test",
+         "Filter":{
+            "contrast":[
+               "trial_type.word",
+               "trial_type.pseudoword"
             ]
          }
       }
