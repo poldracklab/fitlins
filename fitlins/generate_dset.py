@@ -1,14 +1,14 @@
 import json
 from itertools import product
-from tempfile import mkdtemp
 from pathlib import Path
+from tempfile import mkdtemp
 
-import pandas as pd
-import numpy as np
-from nilearn.glm.first_level.hemodynamic_models import compute_regressor
-import nibabel as nib
 import bids
+import nibabel as nib
+import numpy as np
+import pandas as pd
 from bids.layout.writing import build_path
+from nilearn.glm.first_level.hemodynamic_models import compute_regressor
 
 
 def write_metadata(filepath, metadata):

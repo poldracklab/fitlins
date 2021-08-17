@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
-from .corr import plot_corr_matrix
+
 from .contrasts import plot_contrast_matrix
+from .corr import plot_corr_matrix
 
 
 def plot_and_save(fname, plotter, *args, **kwargs):

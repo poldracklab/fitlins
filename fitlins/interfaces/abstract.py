@@ -8,7 +8,8 @@ subclass can be written and swapped in without demanding that an estimator
 also be written.
 """
 
-from nipype.interfaces.base import BaseInterface, TraitedSpec, File, traits
+from nipype.interfaces.base import BaseInterface, File, TraitedSpec, traits
+
 
 class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)

@@ -1,11 +1,12 @@
 import os
+
 import numpy as np
 import pandas as pd
+from nipype.interfaces.base import (LibraryBaseInterface, SimpleInterface,
+                                    isdefined)
 
-from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
-
-from .abstract import (
-    DesignMatrixInterface, FirstLevelEstimatorInterface, SecondLevelEstimatorInterface)
+from .abstract import (DesignMatrixInterface, FirstLevelEstimatorInterface,
+                       SecondLevelEstimatorInterface)
 
 
 class NistatsBaseInterface(LibraryBaseInterface):
@@ -117,8 +118,8 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
 
 
 def dscalar_from_cifti(img, data, name):
-    import numpy as np
     import nibabel as nb
+    import numpy as np
 
     # Clear old CIFTI-2 extensions from NIfTI header and set intent
     nifti_header = img.nifti_header.copy()
@@ -283,10 +284,11 @@ def _match(query, metadata):
 class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, SimpleInterface):
     def _run_interface(self, runtime):
         import nibabel as nb
-        from nilearn.glm import second_level as level2
         from nilearn.glm import first_level as level1
-        from nilearn.glm.contrasts import (compute_contrast, compute_fixed_effects,
-                                           _compute_fixed_effects_params)
+        from nilearn.glm import second_level as level2
+        from nilearn.glm.contrasts import (_compute_fixed_effects_params,
+                                           compute_contrast,
+                                           compute_fixed_effects)
 
 
         spec = self.inputs.spec

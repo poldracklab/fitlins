@@ -6,26 +6,26 @@ fMRI model-fitting
 ==================
 """
 
-import sys
+import logging
 import os
 import os.path as op
+import sys
 import time
-import logging
 import warnings
+from argparse import ArgumentParser, RawTextHelpFormatter
 from copy import deepcopy
+from multiprocessing import cpu_count
 from pathlib import Path
 from tempfile import mkdtemp
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
-from multiprocessing import cpu_count
 
 import bids
-from bids.modeling import auto_model, BIDSStatsModelsGraph
+from bids.modeling import BIDSStatsModelsGraph, auto_model
 
 from .. import __version__
-from ..workflows import init_fitlins_wf
-from ..utils import bids as fub, config
+from ..utils import bids as fub
+from ..utils import config
 from ..viz.reports import build_report_dict, write_full_report
+from ..workflows import init_fitlins_wf
 
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
@@ -150,6 +150,7 @@ def get_parser():
 
 def run_fitlins(argv=None):
     import re
+
     from nipype import logging as nlogging
     warnings.showwarning = _warn_redirect
     opts = get_parser().parse_args(argv)

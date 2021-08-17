@@ -1,25 +1,20 @@
 # coding: utf-8
-from pathlib import Path
+import io
 import os
 import os.path as op
-import numpy as np
-import pandas as pd
-import io
 import sys
 import xml.etree.ElementTree as ET
-import nibabel as nb
+from pathlib import Path
 
-from nipype.interfaces.afni.base import (
-    AFNICommand,
-    AFNICommandInputSpec,
-    AFNICommandOutputSpec,
-    Info,
-)
-from nipype.interfaces.base import traits, isdefined, File
+import nibabel as nb
+import numpy as np
+import pandas as pd
+from nipype.interfaces.afni.base import (AFNICommand, AFNICommandInputSpec,
+                                         AFNICommandOutputSpec, Info)
+from nipype.interfaces.base import File, isdefined, traits
 from nipype.utils.filemanip import fname_presuffix
 
-from .nistats import FirstLevelModel, prepare_contrasts, _flatten
-
+from .nistats import FirstLevelModel, _flatten, prepare_contrasts
 
 STAT_CODES = nb.volumeutils.Recoder(
     (
@@ -62,11 +57,10 @@ class FirstLevelModel(FirstLevelModel):
         """
         Fit a GLM using AFNI's 3dREMLfit
         """
-        from nipype import logging
         import nibabel as nb
-        from nipype.interfaces import afni
-
         import pandas as pd
+        from nipype import logging
+        from nipype.interfaces import afni
 
         logger = logging.getLogger("nipype.interface")
 

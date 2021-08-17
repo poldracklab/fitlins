@@ -1,8 +1,9 @@
-from subprocess import run
+import json
 from pathlib import Path
+from subprocess import run
+
 import nibabel as nib
 import numpy as np
-import json
 
 
 def test_get_nan_diff():

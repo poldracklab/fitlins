@@ -4,14 +4,14 @@
 Minor bugfix release in the 0.9.x series.
 
 * FIX: Exclude res from report entities (https://github.com/poldracklab/fitlins/pull/301)
-* MNT: Update to versioneer 0.20 (https://github.com/poldracklab/fitlins/pull/300) 
-* MNT: codespell run + ignore (https://github.com/poldracklab/fitlins/pull/289) 
+* MNT: Update to versioneer 0.20 (https://github.com/poldracklab/fitlins/pull/300)
+* MNT: codespell run + ignore (https://github.com/poldracklab/fitlins/pull/289)
 
 0.9.1 (April 21, 2021)
 ======================
 
 Bugfix release in the 0.9.x series.
-Upgrades pybids and nilearn to latest versions. 
+Upgrades pybids and nilearn to latest versions.
 
 * PIN: nilearn 0.7.1+ (https://github.com/poldracklab/fitlins/pull/286)
 * PIN: Upgrade pybids to 0.13 (https://github.com/poldracklab/fitlins/pull/284)
@@ -30,7 +30,7 @@ in favor of nilearn.stats, added test reference outputs, among other minor impro
 * ENH: disable automatic drift modeling (https://github.com/poldracklab/fitlins/pull/276)
 * ENH: modify path patterns to make task optional (https://github.com/poldracklab/fitlins/pull/275)
 * ENH: Add AFNI 3dREMLfit for first-level estimation (https://github.com/poldracklab/fitlins/pull/171)
-* TST: Add dummy dataset for pytest/local testing (https://github.com/poldracklab/fitlins/pull/262) 
+* TST: Add dummy dataset for pytest/local testing (https://github.com/poldracklab/fitlins/pull/262)
 * MNT: Update PyBIDS and nilearn (https://github.com/poldracklab/fitlins/pull/268)
 * CI: Make faster? (https://github.com/poldracklab/fitlins/pull/264)
 

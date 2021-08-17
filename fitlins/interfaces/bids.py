@@ -3,22 +3,19 @@ import json
 import os
 import re
 import shutil
-
-import numpy as np
-import nibabel as nb
-
+from gzip import GzipFile
 from itertools import chain
 from pathlib import Path
-from gzip import GzipFile
 
+import nibabel as nb
+import numpy as np
 from nipype import logging
-from nipype.utils.filemanip import copyfile
-from nipype.interfaces.base import (
-    BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
-    InputMultiPath, OutputMultiPath, File, Directory,
-    traits, isdefined
-    )
+from nipype.interfaces.base import (BaseInterfaceInputSpec, Directory, File,
+                                    InputMultiPath, OutputMultiPath,
+                                    SimpleInterface, TraitedSpec, isdefined,
+                                    traits)
 from nipype.interfaces.io import IOBase
+from nipype.utils.filemanip import copyfile
 
 from ..utils import snake_to_camel
 
@@ -190,8 +187,8 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        from bids.modeling import BIDSStatsModelsGraph
         from bids.layout import BIDSLayout
+        from bids.modeling import BIDSStatsModelsGraph
 
         layout = BIDSLayout.load(database_path=self.inputs.database_path)
         selectors = self.inputs.selectors
@@ -288,7 +285,7 @@ class LoadBIDSModel(SimpleInterface):
 
             self._results['warnings'] = warnings
             self._results['design_info'] = design_info
-                
+
         else:
             contrasts = list(chain(*[s.contrasts for s in specs]))
             specs = node.run(contrasts, group_by=node.group_by, **filters)

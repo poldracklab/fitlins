@@ -14,10 +14,10 @@ Fetch some test data
     >>> os.chdir(data_root)
 
 """
-import os
-import json
-import warnings
 import copy
+import json
+import os
+import warnings
 from itertools import chain
 
 
@@ -43,8 +43,8 @@ def load_all_specs(all_specs, specs, node, **filters):
         specs = node.run(group_by=node.group_by, force_dense=False)
     else:
         contrasts = list(chain(*[s.contrasts for s in specs]))
-        specs = node.run(contrasts, group_by=node.group_by, **filters)  
-    
+        specs = node.run(contrasts, group_by=node.group_by, **filters)
+
     all_specs[node.name] = specs
     for child in node.children:
         load_all_specs(all_specs, specs, child.destination, **child.filter)
@@ -122,8 +122,9 @@ def collect_participants(layout, participant_label=None, strict=False):
 
 
 def write_derivative_description(bids_dir, deriv_dir, args):
-    from fitlins import __version__
     from pathlib import Path
+
+    from fitlins import __version__
 
     def _clean_relative(item):
         """ Turn absolute paths into relative paths """

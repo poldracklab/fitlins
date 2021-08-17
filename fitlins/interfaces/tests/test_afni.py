@@ -1,25 +1,22 @@
 # coding: utf-8
 import os
-import numpy as np
-import pandas as pd
 import os.path as op
 import subprocess as sp
-import pytest
 import sys
-
 from collections import namedtuple
-from nibabel.testing import data_path
-import nibabel as nb
 
+import nibabel as nb
+import numpy as np
+import pandas as pd
+import pytest
+from nibabel.testing import data_path
+
+from fitlins.interfaces.afni import (create_glt_test_info,
+                                     get_afni_design_matrix,
+                                     get_afni_intent_info,
+                                     get_afni_intent_info_for_subvol,
+                                     get_glt_rows, set_intents)
 from fitlins.interfaces.nistats import prepare_contrasts
-from fitlins.interfaces.afni import (
-    create_glt_test_info,
-    set_intents,
-    get_afni_design_matrix,
-    get_glt_rows,
-    get_afni_intent_info,
-    get_afni_intent_info_for_subvol,
-)
 
 ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights',
                                            'test', 'entities'))

@@ -6,6 +6,7 @@ Base module variables
 """
 
 from . import _version
+
 __version__ = _version.get_versions()['version']
 
 __copyright__ = ('Copyright 2019, Center for Reproducible Neuroscience, '

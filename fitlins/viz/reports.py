@@ -1,8 +1,9 @@
 from os import path as op
 from pathlib import Path
+
 import jinja2
 import pkg_resources as pkgr
-from bids.layout import add_config_paths, BIDSLayout
+from bids.layout import BIDSLayout, add_config_paths
 
 from ..utils import snake_to_camel
 from ..utils.bids import load_all_specs
@@ -63,10 +64,10 @@ def build_report_dict(deriv_dir, work_dir, graph):
 
     if 'DatasetDOI' in graph.layout.description:
         report['dataset']['doi'] = graph.layout.description['DatasetDOI']
-        
+
     all_specs = {}
     load_all_specs(all_specs, None, graph.root_node)
-    
+
     for node, colls in all_specs.items():
         report_node = {'name': node, 'analyses': []}
         report['nodes'].append(report_node)
@@ -78,7 +79,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 ents.pop(key, None)
             for key in graph.layout.get_entities(metadata=True):
                 ents.pop(key, None)
-                
+
             analysis_dict = {
                 'entities': {
                     key: val
@@ -86,7 +87,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
                     if key in ('subject', 'session', 'task', 'run') and val},
                 'contrasts': []
             }
-            
+
             for contrast_info in contrasts:
                 glassbrain = []
                 if coll.node.level != 'run':
@@ -100,7 +101,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
                     {'name': displayify(contrast_info.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
-                
+
             report_node['analyses'].append(analysis_dict)
             # Space doesn't apply to design/contrast matrices, or resolution
             for k in ['space', 'res']:

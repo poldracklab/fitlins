@@ -1,5 +1,4 @@
 import warnings
-
 from collections import OrderedDict
 from pathlib import Path
 
@@ -9,15 +8,18 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     smoothing=None, drop_missing=False,
                     estimator=None, errorts=False, drift_model=None,
                     base_dir=None, name='fitlins_wf'):
-    from nipype.pipeline import engine as pe
-    from nipype.interfaces import utility as niu
     from bids.modeling import BIDSStatsModelsGraph
-    from ..interfaces.bids import (
-        ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-    from ..interfaces.nistats import DesignMatrix, FirstLevelModel, SecondLevelModel
-    from ..interfaces.visualizations import (
-        DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
-    from ..interfaces.utils import MergeAll, CollateWithMetadata
+    from nipype.interfaces import utility as niu
+    from nipype.pipeline import engine as pe
+
+    from ..interfaces.bids import (BIDSDataSink, BIDSSelect, LoadBIDSModel,
+                                   ModelSpecLoader)
+    from ..interfaces.nistats import (DesignMatrix, FirstLevelModel,
+                                      SecondLevelModel)
+    from ..interfaces.utils import CollateWithMetadata, MergeAll
+    from ..interfaces.visualizations import (ContrastMatrixPlot,
+                                             DesignCorrelationPlot, DesignPlot,
+                                             GlassBrainPlot)
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -102,6 +104,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
     def _deindex(tsv):
         from pathlib import Path
+
         import pandas as pd
         out_tsv = str(Path.cwd() / Path(tsv).name)
         pd.read_csv(tsv, sep='\t', index_col=0).to_csv(out_tsv, sep='\t', index=False)
@@ -294,7 +297,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             GlassBrainPlot(image_type='png'),
             iterfield='data',
             name=f'plot_{select_spec_name}_contrasts')
-        
+
         #
         # Derivatives
         #
@@ -375,9 +378,11 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 model.inputs.smoothing_type = smoothing_type
             else:
                 if smoothing_type == "isoblurto":
-                    from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+                    from nipype.interfaces.afni.preprocess import \
+                        BlurToFWHM as smooth_interface
                 elif smoothing_type == "iso":
-                    from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+                    from nipype.interfaces.afni.preprocess import \
+                        BlurInMask as smooth_interface
                 smooth = pe.MapNode(
                     smooth_interface(),
                     iterfield=["in_file", "mask"],

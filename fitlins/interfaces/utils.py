@@ -1,6 +1,6 @@
+from nipype.interfaces.base import (DynamicTraitedSpec, SimpleInterface,
+                                    TraitedSpec, isdefined, traits)
 from nipype.interfaces.io import IOBase, add_traits
-from nipype.interfaces.base import (SimpleInterface, DynamicTraitedSpec,
-                                    TraitedSpec, traits, isdefined)
 
 
 class MergeAll(IOBase):

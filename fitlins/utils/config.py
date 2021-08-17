@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser
+
 from nipype.utils import config as nuc
 from pkg_resources import resource_filename
 

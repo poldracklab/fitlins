@@ -1,17 +1,16 @@
-from pkg_resources import resource_filename
-import numpy as np
-import pandas as pd
-import nibabel as nb
-from nilearn import plotting as nlp
 from collections import namedtuple
 
-from nipype.interfaces.base import (
-    SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    File, traits, isdefined
-    )
+import nibabel as nb
+import numpy as np
+import pandas as pd
+from nilearn import plotting as nlp
+from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
+                                    SimpleInterface, TraitedSpec, isdefined,
+                                    traits)
 from nipype.utils.filemanip import fname_presuffix, split_filename
+from pkg_resources import resource_filename
 
-from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
+from ..viz import plot_and_save, plot_contrast_matrix, plot_corr_matrix
 
 
 class VisualizationInputSpec(BaseInterfaceInputSpec):
@@ -71,8 +70,8 @@ class DesignCorrelationPlot(Visualization):
     def _visualize(self, data, out_name):
         columns = []
         names = []
-        contrast_info = self.inputs.contrast_info 
-        
+        contrast_info = self.inputs.contrast_info
+
         for c in contrast_info:
             columns = list(set(c[1]) | set(columns))
             # split f-tests with a 2d weights into 2 rows
@@ -81,12 +80,12 @@ class DesignCorrelationPlot(Visualization):
                     names.append(c[0] + '_' + cond)
             else:
                 names.append(c[0])
-        
+
         contrast_matrix = pd.DataFrame(
                 np.zeros((len(names), len(columns))),
                 columns=columns,
                 index=names)
-        
+
         for i, c in enumerate(contrast_info):
             if len(np.array(c[2]).shape) > 1:
                 for cond in c[1]:
@@ -118,8 +117,8 @@ class ContrastMatrixPlot(Visualization):
     def _visualize(self, data, out_name):
         columns = []
         names = []
-        contrast_info = self.inputs.contrast_info 
-        
+        contrast_info = self.inputs.contrast_info
+
         for c in contrast_info:
             columns = list(set(c[1]) | set(columns))
             # split f-tests with a 2d weights into 2 rows
@@ -128,12 +127,12 @@ class ContrastMatrixPlot(Visualization):
                     names.append(c[0] + '_' + cond)
             else:
                 names.append(c[0])
-        
+
         contrast_matrix = pd.DataFrame(
                 np.zeros((len(names), len(columns))),
                 columns=columns,
                 index=names)
-        
+
         for i, c in enumerate(contrast_info):
             if len(np.array(c[2]).shape) > 1:
                 for cond in c[1]:

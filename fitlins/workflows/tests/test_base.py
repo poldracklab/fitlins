@@ -1,14 +1,13 @@
-from copy import deepcopy
-
-import bids
 import os
-import pytest
-
-from bids.modeling import BIDSStatsModelsGraph
+from copy import deepcopy
 from pathlib import Path
 
-from ..base import init_fitlins_wf
+import bids
+import pytest
+from bids.modeling import BIDSStatsModelsGraph
+
 from ...utils import config
+from ..base import init_fitlins_wf
 
 
 @pytest.mark.parametrize("estimator", ["nistats", "afni"])

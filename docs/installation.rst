@@ -163,11 +163,11 @@ Singularity installations often permit using filesystem paths without translatio
 
 .. note::
 
-   Singularity by default `exposes all environment variables from the host inside 
+   Singularity by default `exposes all environment variables from the host inside
    the container <https://github.com/singularityware/singularity/issues/445>`_.
-   Because of this your host libraries (such as nipype) could be accidentally used 
+   Because of this your host libraries (such as nipype) could be accidentally used
    instead of the ones inside the container - if they are included in ``PYTHONPATH``.
-   To avoid such situation we recommend using the ``--cleanenv`` singularity flag 
+   To avoid such situation we recommend using the ``--cleanenv`` singularity flag
    in production use, as in the above example.
 
 In some cases, your directories may not be available inside the container, in which
@@ -212,4 +212,3 @@ You can now run FitLins::
     fitlins /data/raw/dsX /data/analyzed/dsX dataset \
       -d /data/prep/dsX/fmriprep \
       -w /scratch
-

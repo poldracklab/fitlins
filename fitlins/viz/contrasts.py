@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import seaborn as sns
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
 
 sns.set_style('white')

@@ -10,19 +10,19 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 338.290482 
-L 453.588125 338.290482 
-L 453.588125 0 
-L 0 0 
+   <path d="M 0 338.290482
+L 453.588125 338.290482
+L 453.588125 0
+L 0 0
 z
 " style="fill:#ffffff;"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 44.028125 224.157559 
-L 442.888125 224.157559 
-L 442.888125 10.7 
-L 44.028125 10.7 
+    <path d="M 44.028125 224.157559
+L 442.888125 224.157559
+L 442.888125 10.7
+L 44.028125 10.7
 z
 " style="fill:#ffffff;"/>
    </g>
@@ -183,23 +183,23 @@ iVBORw0KGgoAAAANSUhEUgAAAioAAAEpCAYAAAC9TAmAAAAABHNCSVQICAgIfAhkiAAAIABJREFUeJzt
     </g>
    </g>
    <g id="patch_3">
-    <path d="M 44.028125 224.157559 
-L 44.028125 10.7 
+    <path d="M 44.028125 224.157559
+L 44.028125 10.7
 " style="fill:none;stroke:#262626;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;"/>
    </g>
    <g id="patch_4">
-    <path d="M 442.888125 224.157559 
-L 442.888125 10.7 
+    <path d="M 442.888125 224.157559
+L 442.888125 10.7
 " style="fill:none;stroke:#262626;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;"/>
    </g>
    <g id="patch_5">
-    <path d="M 44.028125 224.157559 
-L 442.888125 224.157559 
+    <path d="M 44.028125 224.157559
+L 442.888125 224.157559
 " style="fill:none;stroke:#262626;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;"/>
    </g>
    <g id="patch_6">
-    <path d="M 44.028125 10.7 
-L 442.888125 10.7 
+    <path d="M 44.028125 10.7
+L 442.888125 10.7
 " style="fill:none;stroke:#262626;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;"/>
    </g>
   </g>
