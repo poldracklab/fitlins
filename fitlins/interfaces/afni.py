@@ -322,7 +322,7 @@ class FirstLevelModel(FirstLevelModel):
             effect = effect_img.get_fdata()
             stat_img = nb.load(stat_fname)
             stat = stat_img.get_fdata()
-            variance = ((effect / stat)) ** 2
+            variance = (effect / stat) ** 2
             variance_img = nb.Nifti1Image(
                 variance, effect_img.affine, effect_img.header
             )
@@ -398,7 +398,7 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
     """
 
     cols = list(design.columns)
-    stim_col_nums = sorted([cols.index(x) for x in stim_labels])
+    stim_col_nums = sorted(cols.index(x) for x in stim_labels)
 
     # Currently multi-column stimuli not supported. If they were stim_tops
     # would need to be computed
@@ -531,7 +531,7 @@ def get_afni_intent_info(img):
         else:
             params = [x for x in val[1].split(",")]
             intent_info.append(
-                (STAT_CODES.label[val[0]], tuple([float(x) for x in params if x]))
+                (STAT_CODES.label[val[0]], tuple(float(x) for x in params if x))
             )
 
     return intent_info

@@ -17,3 +17,8 @@ repos:
       - id: isort
         name: Sort python imports (isort)
         args: ["--profile", "black", "--filter-files"]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.23.3
+    hooks:
+      - id: pyupgrade
+        exclude: ^(fitlins/_version.py|versioneer.py)

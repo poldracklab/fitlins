@@ -47,7 +47,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
         validate=False,
     )
     all_pngs = fl_layout.get(extension=".png")
-    fig_dirs = set(
+    fig_dirs = {
         (
             png.dirname,
             tuple(
@@ -57,7 +57,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
             ),
         )
         for png in fl_layout.get(extension=".png")
-    )
+    }
 
     report = {
         "dataset": {"name": graph.layout.description["Name"]},
