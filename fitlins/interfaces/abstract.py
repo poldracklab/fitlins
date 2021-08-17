@@ -15,10 +15,10 @@ class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
     design_info = traits.Dict()
     drop_missing = traits.Bool(
-        desc='Drop columns in design matrix with all missing values')
+        desc="Drop columns in design matrix with all missing values"
+    )
     drift_model = traits.Either(
-        traits.String(), None,
-        desc='Optional drift model to apply to design matrix'
+        traits.String(), None, desc="Optional drift model to apply to design matrix"
     )
 
 
@@ -36,8 +36,12 @@ class FirstLevelEstimatorInputSpec(TraitedSpec):
     mask_file = traits.Either(File(exists=True), None)
     design_matrix = File(exists=True, mandatory=True)
     spec = traits.Any()
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-    smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
+    smoothing_fwhm = traits.Float(
+        desc="Full-width half max (FWHM) in mm for smoothing in mask"
+    )
+    smoothing_type = traits.Enum(
+        "iso", "isoblurto", desc="Type of smoothing (iso or isoblurto)"
+    )
 
 
 class EstimatorOutputSpec(TraitedSpec):
@@ -62,8 +66,12 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     spec = traits.Any()
     # contrast_info = traits.List(traits.Dict, mandatory=True)
-    smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
-    smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
+    smoothing_fwhm = traits.Float(
+        desc="Full-width half max (FWHM) in mm for smoothing in mask"
+    )
+    smoothing_type = traits.Enum(
+        "iso", "isoblurto", desc="Type of smoothing (iso or isoblurto)"
+    )
 
 
 class SecondLevelEstimatorOutputSpec(EstimatorOutputSpec):

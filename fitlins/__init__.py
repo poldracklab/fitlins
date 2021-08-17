@@ -5,8 +5,8 @@
 
 import warnings
 
-warnings.filterwarnings('ignore', r'numpy.ufunc size changed')
-warnings.filterwarnings('ignore', r'resolve package from __spec__')
+warnings.filterwarnings("ignore", r"numpy.ufunc size changed")
+warnings.filterwarnings("ignore", r"resolve package from __spec__")
 del warnings
 
 try:
@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 else:
-    matplotlib.use('Agg')
+    matplotlib.use("Agg")
     del matplotlib
 
 from .__about__ import __version__
@@ -24,5 +24,5 @@ try:
 except ImportError:
     pass
 else:
-    bids.config.set_option('extension_initial_dot', True)
+    bids.config.set_option("extension_initial_dot", True)
     del bids

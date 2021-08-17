@@ -11,15 +11,20 @@ import pandas as pd
 import pytest
 from nibabel.testing import data_path
 
-from fitlins.interfaces.afni import (create_glt_test_info,
-                                     get_afni_design_matrix,
-                                     get_afni_intent_info,
-                                     get_afni_intent_info_for_subvol,
-                                     get_glt_rows, set_intents)
+from fitlins.interfaces.afni import (
+    create_glt_test_info,
+    get_afni_design_matrix,
+    get_afni_intent_info,
+    get_afni_intent_info_for_subvol,
+    get_glt_rows,
+    set_intents,
+)
 from fitlins.interfaces.nistats import prepare_contrasts
 
-ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights',
-                                           'test', 'entities'))
+ContrastInfo = namedtuple(
+    "ContrastInfo", ("name", "conditions", "weights", "test", "entities")
+)
+
 
 def get_reml_bucket_test_data():
     afni_test_dir = "/tmp/afni_reml_test_data"
@@ -39,26 +44,26 @@ def get_reml_bucket_test_data():
 
 def test_get_afni_design_matrix():
     entities = {
-            "space": "MNI152NLin2009cAsym",
-            "subject": "01",
-            "task": "rhymejudgment",
+        "space": "MNI152NLin2009cAsym",
+        "subject": "01",
+        "task": "rhymejudgment",
     }
 
     contrast_info = [
         ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
+            "a_test",
+            ["trial_type.pseudoword", "trial_type.word"],
             [2, 5],
-            'F',
+            "F",
             entities,
         ),
         ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
+            "a_test",
+            ["trial_type.pseudoword", "trial_type.word"],
             [1, -5],
-            'F',
+            "F",
             entities,
-        )
+        ),
     ]
 
     design = pd.DataFrame(
@@ -74,7 +79,7 @@ def test_get_afni_design_matrix():
 
     t_r = 2
     stim_labels = ["trial_type.pseudoword", "trial_type.word"]
-    stim_labels_with_tag = ['stim_' + sl for sl in stim_labels]
+    stim_labels_with_tag = ["stim_" + sl for sl in stim_labels]
     test_info = create_glt_test_info(design, contrasts)
     design_vals = design.to_csv(sep=" ", index=False, header=False)
     cols = "; ".join(design.columns)
@@ -105,26 +110,26 @@ def test_get_afni_design_matrix():
 def test_create_glt_test_info():
 
     entities = {
-            "space": "MNI152NLin2009cAsym",
-            "subject": "01",
-            "task": "rhymejudgment",
+        "space": "MNI152NLin2009cAsym",
+        "subject": "01",
+        "task": "rhymejudgment",
     }
 
     contrast_info = [
         ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
+            "a_test",
+            ["trial_type.pseudoword", "trial_type.word"],
             [2, 5],
-            'F',
+            "F",
             entities,
         ),
         ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
+            "a_test",
+            ["trial_type.pseudoword", "trial_type.word"],
             [1, -5],
-            'F',
+            "F",
             entities,
-        )
+        ),
     ]
 
     design = pd.DataFrame(

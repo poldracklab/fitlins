@@ -5,13 +5,13 @@ from .corr import plot_corr_matrix
 
 
 def plot_and_save(fname, plotter, *args, **kwargs):
-    if (kwargs.get('axes'), kwargs.get('ax')) == (None, None):
+    if (kwargs.get("axes"), kwargs.get("ax")) == (None, None):
         fig = plt.figure()
         axes = plt.gca()
-        if 'axes' in kwargs:
-            kwargs['axes'] = axes
+        if "axes" in kwargs:
+            kwargs["axes"] = axes
         else:
-            kwargs['ax'] = axes
+            kwargs["ax"] = axes
     plotter(*args, **kwargs)
-    fig.savefig(fname, bbox_inches='tight')
+    fig.savefig(fname, bbox_inches="tight")
     plt.close(fig)

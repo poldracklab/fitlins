@@ -3,12 +3,12 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-sns.set_style('white')
-plt.rcParams['svg.fonttype'] = 'none'
+sns.set_style("white")
+plt.rcParams["svg.fonttype"] = "none"
 
 
-def plot_contrast_matrix(contrast_matrix, ornt='vertical', ax=None):
-    """ Plot correlation matrix
+def plot_contrast_matrix(contrast_matrix, ornt="vertical", ax=None):
+    """Plot correlation matrix
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def plot_contrast_matrix(contrast_matrix, ornt='vertical', ax=None):
         plt.figure()
         ax = plt.gca()
 
-    if ornt == 'horizontal':
+    if ornt == "horizontal":
         contrast_matrix = contrast_matrix.T
 
     vmax = np.abs(contrast_matrix.values).max()
@@ -38,11 +38,20 @@ def plot_contrast_matrix(contrast_matrix, ornt='vertical', ax=None):
     # Use a red/blue (+1/-1) diverging colormap
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
-    sns.heatmap(contrast_matrix, vmin=-vmax, vmax=vmax, square=True,
-                linewidths=0.5, cmap=cmap,
-                cbar_kws={'shrink': 0.5, 'orientation': ornt,
-                          'ticks': np.linspace(-vmax, vmax, 5)},
-                ax=ax)
+    sns.heatmap(
+        contrast_matrix,
+        vmin=-vmax,
+        vmax=vmax,
+        square=True,
+        linewidths=0.5,
+        cmap=cmap,
+        cbar_kws={
+            "shrink": 0.5,
+            "orientation": ornt,
+            "ticks": np.linspace(-vmax, vmax, 5),
+        },
+        ax=ax,
+    )
 
     # Variables along top and left
     ax.xaxis.tick_top()

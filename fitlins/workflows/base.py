@@ -3,23 +3,41 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
-                    desc=None, model=None, participants=None,
-                    smoothing=None, drop_missing=False,
-                    estimator=None, errorts=False, drift_model=None,
-                    base_dir=None, name='fitlins_wf'):
+def init_fitlins_wf(
+    database_path,
+    out_dir,
+    graph,
+    analysis_level,
+    space,
+    desc=None,
+    model=None,
+    participants=None,
+    smoothing=None,
+    drop_missing=False,
+    estimator=None,
+    errorts=False,
+    drift_model=None,
+    base_dir=None,
+    name="fitlins_wf",
+):
     from bids.modeling import BIDSStatsModelsGraph
     from nipype.interfaces import utility as niu
     from nipype.pipeline import engine as pe
 
-    from ..interfaces.bids import (BIDSDataSink, BIDSSelect, LoadBIDSModel,
-                                   ModelSpecLoader)
-    from ..interfaces.nistats import (DesignMatrix, FirstLevelModel,
-                                      SecondLevelModel)
+    from ..interfaces.bids import (
+        BIDSDataSink,
+        BIDSSelect,
+        LoadBIDSModel,
+        ModelSpecLoader,
+    )
+    from ..interfaces.nistats import DesignMatrix, FirstLevelModel, SecondLevelModel
     from ..interfaces.utils import CollateWithMetadata, MergeAll
-    from ..interfaces.visualizations import (ContrastMatrixPlot,
-                                             DesignCorrelationPlot, DesignPlot,
-                                             GlassBrainPlot)
+    from ..interfaces.visualizations import (
+        ContrastMatrixPlot,
+        DesignCorrelationPlot,
+        DesignPlot,
+        GlassBrainPlot,
+    )
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -32,19 +50,24 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     if not model_dict:
         raise RuntimeError("Unable to find or construct models")
     if isinstance(model_dict, list):
-        raise RuntimeError("Currently unable to run multiple models in parallel - "
-                           "please specify model")
+        raise RuntimeError(
+            "Currently unable to run multiple models in parallel - "
+            "please specify model"
+        )
     #
     # Load and run the model
     #
     loader = pe.Node(
-        LoadBIDSModel(database_path=database_path,
-                      model=model_dict,
-                      selectors={'desc': desc, 'space': space}),
-        name='loader')
+        LoadBIDSModel(
+            database_path=database_path,
+            model=model_dict,
+            selectors={"desc": desc, "space": space},
+        ),
+        name="loader",
+    )
 
     if participants is not None:
-        loader.inputs.selectors['subject'] = participants
+        loader.inputs.selectors["subject"] = participants
     if database_path is not None:
         loader.inputs.database_path = database_path
 
@@ -52,30 +75,38 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     getter = pe.Node(
         BIDSSelect(
             database_path=database_path,
-            selectors={'suffix': 'bold',
-                       'desc': desc,
-                       'space': space,
-                       'extension': ['.nii', '.nii.gz', '.dtseries.nii', '.func.gii']}),
-        name='getter')
+            selectors={
+                "suffix": "bold",
+                "desc": desc,
+                "space": space,
+                "extension": [".nii", ".nii.gz", ".dtseries.nii", ".func.gii"],
+            },
+        ),
+        name="getter",
+    )
 
-    levels = list(OrderedDict.fromkeys([nobj.level for node, nobj in graph.nodes.items()]))
+    levels = list(
+        OrderedDict.fromkeys([nobj.level for node, nobj in graph.nodes.items()])
+    )
     if smoothing:
-        smoothing_params = smoothing.split(':', 2)
+        smoothing_params = smoothing.split(":", 2)
         # Convert old style and warn; this should turn into an (informative) error around 0.5.0
-        if smoothing_params[0] == 'iso':
-            smoothing_params = (smoothing_params[1], 'l1', smoothing_params[0])
+        if smoothing_params[0] == "iso":
+            smoothing_params = (smoothing_params[1], "l1", smoothing_params[0])
             warnings.warn(
                 "The format for smoothing arguments has changed. Please use "
-                f"{':'.join(smoothing_params)} instead of {smoothing}.", FutureWarning)
+                f"{':'.join(smoothing_params)} instead of {smoothing}.",
+                FutureWarning,
+            )
         # Add defaults to simplify later logic
         if len(smoothing_params) == 1:
-            smoothing_params.extend(('l1', 'iso'))
+            smoothing_params.extend(("l1", "iso"))
         elif len(smoothing_params) == 2:
-            smoothing_params.append('iso')
+            smoothing_params.append("iso")
 
         smoothing_fwhm, smoothing_level, smoothing_type = smoothing_params
         smoothing_fwhm = float(smoothing_fwhm)
-        if smoothing_type not in (['iso', 'isoblurto']):
+        if smoothing_type not in (["iso", "isoblurto"]):
             raise ValueError(f"Unknown smoothing type {smoothing_type}")
 
         # Check that smoothing level exists in model
@@ -83,67 +114,71 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             if int(smoothing_level[1:]) > len(levels):
                 raise ValueError(f"Invalid smoothing level {smoothing_level}")
             else:
-                smoothing_level = levels[int(smoothing_level[1:])-1]
+                smoothing_level = levels[int(smoothing_level[1:]) - 1]
 
     design_matrix = pe.MapNode(
         DesignMatrix(drop_missing=drop_missing),
-        iterfield=['design_info', 'bold_file'],
-        name='design_matrix')
+        iterfield=["design_info", "bold_file"],
+        name="design_matrix",
+    )
 
     design_matrix.inputs.drift_model = drift_model
 
-    if estimator == 'afni':
+    if estimator == "afni":
         from ..interfaces.afni import FirstLevelModel
     else:
         from ..interfaces.nistats import FirstLevelModel
     l1_model = pe.MapNode(
         FirstLevelModel(errorts=errorts),
-        iterfield=['design_matrix', 'spec', 'bold_file', 'mask_file'],
+        iterfield=["design_matrix", "spec", "bold_file", "mask_file"],
         mem_gb=3,
-        name='l1_model')
+        name="l1_model",
+    )
 
     def _deindex(tsv):
         from pathlib import Path
 
         import pandas as pd
+
         out_tsv = str(Path.cwd() / Path(tsv).name)
-        pd.read_csv(tsv, sep='\t', index_col=0).to_csv(out_tsv, sep='\t', index=False)
+        pd.read_csv(tsv, sep="\t", index_col=0).to_csv(out_tsv, sep="\t", index=False)
         return out_tsv
 
-    deindex_tsv = pe.MapNode(niu.Function(function=_deindex),
-                             iterfield=['tsv'], name='deindex_tsv')
+    deindex_tsv = pe.MapNode(
+        niu.Function(function=_deindex), iterfield=["tsv"], name="deindex_tsv"
+    )
 
     # Set up common patterns
     image_pattern = (
-            "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
-            "{suffix<design|corr|contrasts>}{extension<.svg>|.svg}"
+        "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+        "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
+        "{suffix<design|corr|contrasts>}{extension<.svg>|.svg}"
     )
 
     contrast_plot_pattern = (
-            "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
-            "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_ortho{extension<.png>|.png}"
+        "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+        "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+        "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_ortho{extension<.png>|.png}"
     )
     design_matrix_pattern = (
-            "[sub-{subject}/][ses-{session}/]"
-            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]_{suffix<design>}{extension<.tsv>|.tsv}"
+        "[sub-{subject}/][ses-{session}/]"
+        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+        "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]_{suffix<design>}{extension<.tsv>|.tsv}"
     )
     contrast_pattern = (
-            "[sub-{subject}/][ses-{session}/]"
-            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
-            "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_"
-            "statmap{extension<.nii.gz|.dscalar.nii>}"
+        "[sub-{subject}/][ses-{session}/]"
+        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+        "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+        "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_"
+        "statmap{extension<.nii.gz|.dscalar.nii>}"
     )
     model_map_pattern = (
-            "[sub-{subject}/][ses-{session}/]"
-            "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
-            "stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}"
+        "[sub-{subject}/][ses-{session}/]"
+        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
+        "[rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
+        "stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}"
     )
     # Set up general interfaces
     #
@@ -151,63 +186,83 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     # saved as individual derivative files
     #
 
-    reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
+    reportlet_dir = Path(base_dir) / "reportlets" / "fitlins"
     reportlet_dir.mkdir(parents=True, exist_ok=True)
-    snippet_pattern = '[sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_]' \
-        '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
+    snippet_pattern = (
+        "[sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_]"
+        "[ses-{session}_][task-{task}_][run-{run}_]snippet.html"
+    )
     ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(reportlet_dir),
-                     path_patterns=snippet_pattern),
-        iterfield=['entities', 'in_file'],
+        BIDSDataSink(base_directory=str(reportlet_dir), path_patterns=snippet_pattern),
+        iterfield=["entities", "in_file"],
         run_without_submitting=True,
-        name='ds_model_warning')
+        name="ds_model_warning",
+    )
 
     plot_design = pe.MapNode(
-        DesignPlot(image_type='svg'),
-        iterfield='data',
-        name='plot_design')
+        DesignPlot(image_type="svg"), iterfield="data", name="plot_design"
+    )
 
     plot_corr = pe.MapNode(
-        DesignCorrelationPlot(image_type='svg'),
-        iterfield=['data', 'contrast_info'],
-        name='plot_corr')
+        DesignCorrelationPlot(image_type="svg"),
+        iterfield=["data", "contrast_info"],
+        name="plot_corr",
+    )
 
     plot_run_contrast_matrix = pe.MapNode(
-        ContrastMatrixPlot(image_type='svg'),
-        iterfield=['data', 'contrast_info'],
-        name='plot_run_contrast_matrix')
+        ContrastMatrixPlot(image_type="svg"),
+        iterfield=["data", "contrast_info"],
+        name="plot_run_contrast_matrix",
+    )
 
     ds_design = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'design'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
+        BIDSDataSink(
+            base_directory=out_dir,
+            fixed_entities={"level": "run", "suffix": "design"},
+            path_patterns=image_pattern,
+        ),
+        iterfield=["entities", "in_file"],
         run_without_submitting=True,
-        name='ds_design')
+        name="ds_design",
+    )
 
     ds_design_matrix = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'design'},
-                     path_patterns=design_matrix_pattern),
-        iterfield=['entities', 'in_file'],
+        BIDSDataSink(
+            base_directory=out_dir,
+            fixed_entities={"level": "run", "suffix": "design"},
+            path_patterns=design_matrix_pattern,
+        ),
+        iterfield=["entities", "in_file"],
         run_without_submitting=True,
-        name='ds_design_matrix')
+        name="ds_design_matrix",
+    )
 
     ds_corr = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'corr'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
+        BIDSDataSink(
+            base_directory=out_dir,
+            fixed_entities={"level": "run", "suffix": "corr"},
+            path_patterns=image_pattern,
+        ),
+        iterfield=["entities", "in_file"],
         run_without_submitting=True,
-        name='ds_corr')
+        name="ds_corr",
+    )
 
     ds_run_contrasts = pe.MapNode(
-        BIDSDataSink(base_directory=out_dir, fixed_entities={"level": "run", 'suffix': 'contrasts'},
-                     path_patterns=image_pattern),
-        iterfield=['entities', 'in_file'],
+        BIDSDataSink(
+            base_directory=out_dir,
+            fixed_entities={"level": "run", "suffix": "contrasts"},
+            path_patterns=image_pattern,
+        ),
+        iterfield=["entities", "in_file"],
         run_without_submitting=True,
-        name='ds_run_contrasts')
+        name="ds_run_contrasts",
+    )
 
     #
     # General Connections
     #
+    # fmt: off
     wf.connect([
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
         (loader, design_matrix, [('design_info', 'design_info')]),
@@ -221,6 +276,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
         (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
         ])
+    # fmt: on
 
     stage = None
     model = l1_model
@@ -244,59 +300,75 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
     for node, nobj in graph.nodes.items():
 
-        level, name = nobj.level, nobj.name.replace('-', '_')
-        select_spec_name = f'{level}_{name}' if level != name else f'{level}'
+        level, name = nobj.level, nobj.name.replace("-", "_")
+        select_spec_name = f"{level}_{name}" if level != name else f"{level}"
 
         f1 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['spec'],
-                function = select_stats_spec
-             )
+            input_names=["all_specs", "name"],
+            output_names=["spec"],
+            function=select_stats_spec,
+        )
         f1.inputs.name = nobj.name
 
-        select_specs = pe.Node(f1,
-                name='select_{}_spec'.format(select_spec_name),
-                run_without_submitting=True)
+        select_specs = pe.Node(
+            f1,
+            name="select_{}_spec".format(select_spec_name),
+            run_without_submitting=True,
+        )
 
         f2 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['entities'],
-                function = select_ents
-             )
+            input_names=["all_specs", "name"],
+            output_names=["entities"],
+            function=select_ents,
+        )
         f2.inputs.name = nobj.name
 
-        select_entities = pe.Node(f2,
-                name='select_{}_entities'.format(select_spec_name),
-                run_without_submitting=True)
+        select_entities = pe.Node(
+            f2,
+            name="select_{}_entities".format(select_spec_name),
+            run_without_submitting=True,
+        )
 
         f3 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['contrasts'],
-                function = select_conts
-             )
+            input_names=["all_specs", "name"],
+            output_names=["contrasts"],
+            function=select_conts,
+        )
         f3.inputs.name = nobj.name
 
-        select_contrasts = pe.Node(f3,
-                name='select_{}_contrasts'.format(select_spec_name),
-                run_without_submitting=True)
+        select_contrasts = pe.Node(
+            f3,
+            name="select_{}_contrasts".format(select_spec_name),
+            run_without_submitting=True,
+        )
 
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
-                MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                          'pvalue_maps', 'contrast_metadata']),
-             name=f'collate_{select_spec_name}',
-             run_without_submitting=True)
+            MergeAll(
+                [
+                    "effect_maps",
+                    "variance_maps",
+                    "stat_maps",
+                    "zscore_maps",
+                    "pvalue_maps",
+                    "contrast_metadata",
+                ]
+            ),
+            name=f"collate_{select_spec_name}",
+            run_without_submitting=True,
+        )
 
         #
         # Plotting
         #
 
         plot_contrasts = pe.MapNode(
-            GlassBrainPlot(image_type='png'),
-            iterfield='data',
-            name=f'plot_{select_spec_name}_contrasts')
+            GlassBrainPlot(image_type="png"),
+            iterfield="data",
+            name=f"plot_{select_spec_name}_contrasts",
+        )
 
         #
         # Derivatives
@@ -304,41 +376,51 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
         collate_outputs = pe.Node(
             CollateWithMetadata(
-                fields=['effect_maps', 'variance_maps', 'stat_maps', 'pvalue_maps', 'zscore_maps'],
+                fields=[
+                    "effect_maps",
+                    "variance_maps",
+                    "stat_maps",
+                    "pvalue_maps",
+                    "zscore_maps",
+                ],
                 field_to_metadata_map={
-                    'effect_maps': {'stat': 'effect'},
-                    'variance_maps': {'stat': 'variance'},
-                    'pvalue_maps': {'stat': 'p'},
-                    'zscore_maps': {'stat': 'z'},
-                }),
-            name=f'collate_{select_spec_name}_outputs')
+                    "effect_maps": {"stat": "effect"},
+                    "variance_maps": {"stat": "variance"},
+                    "pvalue_maps": {"stat": "p"},
+                    "zscore_maps": {"stat": "z"},
+                },
+            ),
+            name=f"collate_{select_spec_name}_outputs",
+        )
 
         ds_contrast_maps = pe.Node(
-            BIDSDataSink(base_directory=out_dir,
-                         path_patterns=contrast_pattern),
+            BIDSDataSink(base_directory=out_dir, path_patterns=contrast_pattern),
             run_without_submitting=True,
-            name=f'ds_{select_spec_name}_contrast_maps')
+            name=f"ds_{select_spec_name}_contrast_maps",
+        )
 
         ds_contrast_plots = pe.Node(
-            BIDSDataSink(base_directory=out_dir,
-                         path_patterns=contrast_plot_pattern),
+            BIDSDataSink(base_directory=out_dir, path_patterns=contrast_plot_pattern),
             run_without_submitting=True,
-            name=f'ds_{select_spec_name}_contrast_plots')
+            name=f"ds_{select_spec_name}_contrast_plots",
+        )
 
-
-        if level == 'run':
+        if level == "run":
             ds_model_maps = pe.Node(
-                BIDSDataSink(base_directory=out_dir,
-                             path_patterns=model_map_pattern),
+                BIDSDataSink(base_directory=out_dir, path_patterns=model_map_pattern),
                 run_without_submitting=True,
-                name=f'ds_{select_spec_name}_model_maps')
+                name=f"ds_{select_spec_name}_model_maps",
+            )
 
             collate_mm = pe.Node(
-                MergeAll(['model_maps', 'model_metadata'],
-                         check_lengths=(not drop_missing)),
-                name=f'collate_mm_{select_spec_name}',
-                run_without_submitting=True)
+                MergeAll(
+                    ["model_maps", "model_metadata"], check_lengths=(not drop_missing)
+                ),
+                name=f"collate_mm_{select_spec_name}",
+                run_without_submitting=True,
+            )
 
+            # fmt: off
             wf.connect([
                 (loader, select_entities, [('all_specs', 'all_specs')]),
                 (loader, select_contrasts, [('all_specs', 'all_specs')]),
@@ -358,38 +440,47 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
                                        ('model_metadata', 'entities')]),
             ])
+            # fmt: on
 
         else:
             model = pe.MapNode(
-                    SecondLevelModel(),
-                    iterfield=['spec'],
-                    name=f'{select_spec_name}_model')
+                SecondLevelModel(), iterfield=["spec"], name=f"{select_spec_name}_model"
+            )
 
-            wf.connect([
-                (stage, model, [('effect_maps', 'effect_maps'),
-                                ('variance_maps', 'variance_maps'),
-                                ('contrast_metadata', 'stat_metadata')]),
-            ])
+            wf.connect(
+                [
+                    (
+                        stage,
+                        model,
+                        [
+                            ("effect_maps", "effect_maps"),
+                            ("variance_maps", "variance_maps"),
+                            ("contrast_metadata", "stat_metadata"),
+                        ],
+                    )
+                ]
+            )
 
         if smoothing and smoothing_level == level:
             # No need to do smoothing independently if it's nistats iso
-            if ((smoothing_type == "iso") and (estimator == "nistats")):
+            if (smoothing_type == "iso") and (estimator == "nistats"):
                 model.inputs.smoothing_fwhm = smoothing_fwhm
                 model.inputs.smoothing_type = smoothing_type
             else:
                 if smoothing_type == "isoblurto":
-                    from nipype.interfaces.afni.preprocess import \
-                        BlurToFWHM as smooth_interface
+                    from nipype.interfaces.afni.preprocess import (
+                        BlurToFWHM as smooth_interface,
+                    )
                 elif smoothing_type == "iso":
-                    from nipype.interfaces.afni.preprocess import \
-                        BlurInMask as smooth_interface
+                    from nipype.interfaces.afni.preprocess import (
+                        BlurInMask as smooth_interface,
+                    )
                 smooth = pe.MapNode(
-                    smooth_interface(),
-                    iterfield=["in_file", "mask"],
-                    name="smooth"
+                    smooth_interface(), iterfield=["in_file", "mask"], name="smooth"
                 )
                 smooth.inputs.fwhm = smoothing_fwhm
-                smooth.inputs.outputtype = 'NIFTI_GZ'
+                smooth.inputs.outputtype = "NIFTI_GZ"
+                # fmt: off
                 wf.disconnect([
                     (getter, l1_model, [('bold_files', 'bold_file')])
                 ])
@@ -398,8 +489,9 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     (getter, smooth, [('bold_files', 'in_file')]),
                     (smooth, l1_model, [('out_file', 'bold_file')])
                 ])
+                # fmt: on
 
-
+        # fmt: off
         wf.connect([
             (loader, select_specs, [('all_specs', 'all_specs')]),
             (select_specs, model, [('spec', 'spec')]),
@@ -423,7 +515,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
             ])
-
+        # fmt: on
 
         if level != analysis_level:
             stage = model
