@@ -20,7 +20,6 @@ def init_fitlins_wf(
     base_dir=None,
     name="fitlins_wf",
 ):
-    from bids.modeling import BIDSStatsModelsGraph
     from nipype.interfaces import utility as niu
     from nipype.pipeline import engine as pe
 
@@ -271,11 +270,11 @@ def init_fitlins_wf(
                             ('mask_files', 'mask_file')]),
         (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
         (design_matrix, plot_design, [('design_matrix', 'data')]),
-        (design_matrix, plot_run_contrast_matrix,  [('design_matrix', 'data')]),
+        (design_matrix, plot_run_contrast_matrix, [('design_matrix', 'data')]),
         (design_matrix, plot_corr,  [('design_matrix', 'data')]),
         (design_matrix, deindex_tsv, [('design_matrix', 'tsv')]),
         (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
-        ])
+    ])
     # fmt: on
 
     stage = None
@@ -430,11 +429,11 @@ def init_fitlins_wf(
                 (select_entities, ds_design_matrix, [('entities', 'entities')]),
                 (select_entities, ds_run_contrasts, [('entities', 'entities')]),
                 (select_entities, ds_corr, [('entities', 'entities')]),
-                (select_contrasts, plot_run_contrast_matrix,  [('contrasts', 'contrast_info')]),
-                (select_contrasts, plot_corr,  [('contrasts', 'contrast_info')]),
+                (select_contrasts, plot_run_contrast_matrix, [('contrasts', 'contrast_info')]),
+                (select_contrasts, plot_corr, [('contrasts', 'contrast_info')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
-                (plot_run_contrast_matrix, ds_run_contrasts,  [('figure', 'in_file')]),
-                (plot_corr, ds_corr,  [('figure', 'in_file')]),
+                (plot_run_contrast_matrix, ds_run_contrasts, [('figure', 'in_file')]),
+                (plot_corr, ds_corr, [('figure', 'in_file')]),
                 (model, collate_mm, [('model_maps', 'model_maps'),
                                     ('model_metadata', 'model_metadata')]),
                 (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
@@ -508,13 +507,13 @@ def init_fitlins_wf(
                 ('stat_maps', 'stat_maps'),
                 ('zscore_maps', 'zscore_maps'),
                 ('pvalue_maps', 'pvalue_maps'),
-                ]),
+            ]),
             (collate, plot_contrasts, [('stat_maps', 'data')]),
             (collate_outputs, ds_contrast_maps, [('out', 'in_file'),
                                                  ('metadata', 'entities')]),
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
-            ])
+        ])
         # fmt: on
 
         if level != analysis_level:

@@ -2,6 +2,11 @@ scanner:
     diff_only: True  # Only show errors caused by the patch
     linter: flake8
 
+flake8:
+  max-line-length: 100
+  ignore:
+    - E501
+    - F821
 message:  # Customize the comment made by the bot
     opened:  # Messages when a new PR is submitted
         header: "Hello @{name}, thank you for submitting the Pull Request!"

@@ -14,7 +14,6 @@ Fetch some test data
     >>> os.chdir(data_root)
 
 """
-import copy
 import json
 import os
 import warnings

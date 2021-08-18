@@ -46,18 +46,6 @@ def build_report_dict(deriv_dir, work_dir, graph):
         config=["bids", "derivatives", "fitlins"],
         validate=False,
     )
-    all_pngs = fl_layout.get(extension=".png")
-    fig_dirs = {
-        (
-            png.dirname,
-            tuple(
-                ent
-                for ent in png.entities.items()
-                if ent[0] not in ("suffix", "contrast")
-            ),
-        )
-        for png in fl_layout.get(extension=".png")
-    }
 
     report = {
         "dataset": {"name": graph.layout.description["Name"]},

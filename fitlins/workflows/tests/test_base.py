@@ -2,7 +2,6 @@ import os
 from copy import deepcopy
 from pathlib import Path
 
-import bids
 import pytest
 from bids.modeling import BIDSStatsModelsGraph
 
@@ -18,7 +17,6 @@ def test_init_fitlins_wf(estimator, tmp_path, bids_dir, bids_dset, sample_model)
     space = "T1w"
     model = str(sample_model)
     desc = "preproc"
-    # layout = bids.BIDSLayout(bids_dir, database_path=database_path)
 
     import json
 

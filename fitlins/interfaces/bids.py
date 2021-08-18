@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import re
@@ -244,7 +243,6 @@ class LoadBIDSModel(SimpleInterface):
         if node.level == "run":
             specs = node.run(group_by=node.group_by, force_dense=True)
 
-            entities = []
             design_info = []
             warnings = []
 

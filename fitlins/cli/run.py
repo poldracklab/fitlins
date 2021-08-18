@@ -19,7 +19,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 import bids
-from bids.modeling import BIDSStatsModelsGraph, auto_model
+from bids.modeling import BIDSStatsModelsGraph
 
 from .. import __version__
 from ..utils import bids as fub
