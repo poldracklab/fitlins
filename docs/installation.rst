@@ -108,7 +108,7 @@ So a basic command would look like::
       -v /data/prep/dsX/fmriprep:/prep:ro \
       -v /data/analyzed/dsX:/out \
       -v /scratch:/scratch \
-    poldracklab/fitlins:0.4.0 \
+    poldracklab/fitlins:<VERSION> \
       /bids /out dataset -d /prep -w /scratch
 
 Singularity Container
@@ -156,7 +156,7 @@ Running a Singularity image
 
 Singularity installations often permit using filesystem paths without translation::
 
-    singularity run --cleanenv /my_images/fitlins-0.4.0.simg \
+    singularity run --cleanenv /my_images/fitlins-<VERSION>.simg \
       /data/raw/dsX /data/analyzed/dsX dataset \
       -d /data/prep/dsX/fmriprep \
       -w /scratch
@@ -178,7 +178,7 @@ case the ``-B`` flag works very similarly to the ``-v`` flag in Docker::
       -B /data/prep/dsX/fmriprep:/data/prep/dsX/fmriprep \
       -B /data/analyzed/dsX:/data/analyzed/dsX \
       -B /scratch:/scratch \
-    /my_images/fitlins-0.4.0.simg \
+    /my_images/fitlins-<VERSION>.simg \
       /data/raw/dsX /data/analyzed/dsX dataset \
       -d /data/prep/dsX/fmriprep \
       -w /scratch
