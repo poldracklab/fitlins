@@ -201,7 +201,26 @@ virtualenv_::
 
   pip install --upgrade virtualenv
   virtualenv --python=python3.6 fitlins.venv
+  
+For POSIX (Unix) users::
+
+Using bash/zsh::
+
   source fitlins.venv/bin/activate
+  
+Using csh/tcsh::
+
+  source fitlins.venv/bin/activate.csh
+  
+For Windows users::
+    
+Using cmd.exe::
+    
+   C:\> fitlins.venv\Scripts\activate.bat
+   
+Using PowerShell::
+    
+   PS C:\> fitlins.venv\Scripts\activate.ps1
 
 Once inside the environment::
 
