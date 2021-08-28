@@ -1,5 +1,5 @@
 ---
-name: "Get and cache test data"
+name: "CI build and test jobs"
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ on:
       - /.*/
 
 jobs:
-  get_dataset:
+  cache_test_data:
     runs-on: ubuntu-latest
 
     steps:
@@ -67,3 +67,41 @@ jobs:
                                     ds003/fmriprep/dataset_description.json \
                                     ds003/fmriprep/sub-*/*/*.json
           datalad get -r ds003/nistats_smooth/ ds003/afni_smooth/ ds003/afni_blurto/ ds003/nistats_blurto/
+
+  build_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Check python version and upgrade pip
+        run: |
+          python --version
+          python -m pip install -U pip setuptools
+
+      - name: Install pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - uses: actions/checkout@v2
+      - name: Install fitlins
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip install ".[docs]"
+
+      - name: Build docs
+        run: |
+          cd $GITHUB_WORKSPACE
+          make html
+          ls
+          pwd
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: docs/_build/html
