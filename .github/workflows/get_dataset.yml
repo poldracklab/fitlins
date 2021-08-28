@@ -1,0 +1,69 @@
+---
+name: "Get and cache test data"
+
+on:
+  pull_request:
+    branches-ignore:
+      - /doc\/.*/
+    tags:
+      - /.*/
+  push:
+    branches-ignore:
+      - /doc\/.*/
+    tags:
+      - /.*/
+
+jobs:
+  get_dataset:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Make cachedir"
+        run: |
+          mkdir -p /tmp/.cache/data && \
+          chmod 777 /tmp/.cache/data
+
+      - name: Set git ID
+        run: |
+          git config --global user.name 'Fitlins GH-Action User' && \
+          git config --global user.email 'shashankbansal56@gmail.com'
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y git git-annex
+          python -m pip install --upgrade pip
+          pip install datalad
+
+      - name: WTF!?
+        run: |
+         datalad wtf
+
+      - name: "cached data"
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.cache/data
+          key: ds003-v1-${{ runner.os }}-${{ github.job }}
+          restore-keys: |
+            ds003-v1-${{ runner.os }}-
+            ds003-v1-
+            ds003-
+
+      - name: "Install fMRIPrep derivatives of ds000003 and reference data"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd /tmp/.cache/data
+          datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
+          # datalad update --merge fitlins_tests
+          cd fitlins_tests
+          datalad get ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                                    ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                                    ds003/fmriprep/dataset_description.json \
+                                    ds003/fmriprep/sub-*/*/*.json
+          datalad get -r ds003/nistats_smooth/ ds003/afni_smooth/ ds003/afni_blurto/ ds003/nistats_blurto/
