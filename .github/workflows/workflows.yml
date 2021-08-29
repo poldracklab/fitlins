@@ -14,6 +14,59 @@ on:
       - /.*/
 
 jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Create version variable
+        run: |
+          export THISVERSION=$(python -c 'import fitlins; print(fitlins.__version__)' )
+          echo "Building version $THISVERSION"
+
+      - name: Build image and export
+        timeout-minutes: 30
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          build-args: |
+            BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            VCS_REF="$(git rev-parse --short HEAD)"
+            VERSION="0.9.1+59.gacefebe.dirty"
+          push: false
+          tags: shashankbansal56/fitlins:latest
+          load: true
+          # cache-from: type=registry,ref=shashankbansal56/fitlins:latest
+          # cache-to: type=registry,ref=shashankbansal56/fitlins:latest,mode=max
+          outputs: type=docker,dest=/tmp/docker.tar
+
+      - name: Verify executable can be run
+        run: |
+          docker run --rm shashankbansal56/fitlins:latest --help
+
+          # - name: Check version
+          #   run: |
+          #     THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+          #     DOCKERVERSION=$(docker run --rm poldracklab/fitlins:latest --version \
+          #                      | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
+          #     echo "$THISVERSION"
+          #     echo "$DOCKERVERSION"
+          #     test "$DOCKERVERSION" = "fitlins v$THISVERSION"
+
+      - name: Upload docker.tar as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker
+          path: /tmp/docker.tar
+
   cache_test_data:
     runs-on: ubuntu-latest
     steps:
@@ -105,6 +158,7 @@ jobs:
           path: docs/_build/html
 
   run_pytest:
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -113,34 +167,41 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          name: docker
+          path: /tmp
 
-      - name: Display python version
+      - name: Load docker image
         run: |
-          python --version
-          python -m pip install --upgrade pip
-
-      - name: Install fitlins
-        run: |
-          pip install ".[test]"
+          docker info
+          set +o pipefail
+          ls -l /tmp/docker.tar
+          docker load --input /tmp/docker.tar
+          docker images
 
       - name: Run pytest
         timeout-minutes: 120
         run: |
           mkdir -p /tmp/pytestcov
           chmod 777 /tmp/pytestcov
-          pytest --cov=./ --cov-report=xml \
-          --cov-config docker/multiproc.coveragerc \
-          --ignore-glob=fitlins/tests/* .
+          docker run --rm \
+              -v /tmp/pytestcov:/scratch \
+              -e COVERAGE_FILE=/scratch/.coverage.pytest \
+              --entrypoint="/neurodocker/startup.sh" \
+              shashankbansal56/fitlins:latest \
+              pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml \
+               --cov-config /src/fitlins/docker/multiproc.coveragerc \
+               --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
 
       - name: Submit pytest coverage
         uses: codecov/codecov-action@v2
         with:
-          directory: ./coverage/reports/
+          directory: /tmp/pytestcov
           env_vars: OS,PYTHON
-          files: ./coverage1.xml,./coverage2.xml
+          files: /tmp/pytestcov/cov_pytest.xml
           name: fitlins
-          path_to_write_report: ./coverage/codecov_report.txt
