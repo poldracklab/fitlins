@@ -16,7 +16,6 @@ on:
 jobs:
   cache_test_data:
     runs-on: ubuntu-latest
-
     steps:
       - name: "Make cachedir"
         run: |
@@ -70,7 +69,6 @@ jobs:
 
   build_docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: Setup python
         uses: actions/setup-python@v2
@@ -105,3 +103,44 @@ jobs:
         with:
           name: docs
           path: docs/_build/html
+
+  run_pytest:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Display python version
+        run: |
+          python --version
+          python -m pip install --upgrade pip
+
+      - name: Install fitlins
+        run: |
+          pip install ".[test]"
+
+      - name: Run pytest
+        timeout-minutes: 120
+        run: |
+          mkdir -p /tmp/pytestcov
+          chmod 777 /tmp/pytestcov
+          pytest --cov=./ --cov-report=xml \
+          --cov-config docker/multiproc.coveragerc \
+          --ignore-glob=fitlins/tests/* .
+
+      - name: Submit pytest coverage
+        uses: codecov/codecov-action@v2
+        with:
+          directory: ./coverage/reports/
+          env_vars: OS,PYTHON
+          files: ./coverage1.xml,./coverage2.xml
+          name: fitlins
+          path_to_write_report: ./coverage/codecov_report.txt
