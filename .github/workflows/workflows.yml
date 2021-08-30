@@ -333,6 +333,42 @@ jobs:
           echo "INSTALLED: \"$INSTALLED_VERSION\""
           test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
 
+  deploy_pypi:
+    needs: [test_packaging, test_ds003, build_docs]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Check python version and upgrade pip
+        run: |
+          python --version
+          python -m pip install -U pip setuptools virtualenv twine
+
+      - name: Build fitlins
+        run: |
+          virtualenv --python=python /tmp/venv/build
+          source /tmp/venv/build/bin/activate
+          pip install --upgrade pip setuptools wheel
+          python setup.py sdist
+          pip wheel --no-deps -w dist/ .
+
+      - name: Store artifacts
+        uses: actions/upload-artifacts@v2
+        with:
+          name: fitlins-dist
+          path: dist
+
+      - name: Upload packages to PyPI
+        run: |
+          twine check dist/fitlins*
+          twine upload dist/fitlins*
+
   deploy_docker:
     needs: [build_docs, test_ds003]
     runs-on: ubuntu-latest
