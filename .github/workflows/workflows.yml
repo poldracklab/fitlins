@@ -333,45 +333,6 @@ jobs:
           echo "INSTALLED: \"$INSTALLED_VERSION\""
           test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
 
-  deploy_pypi:
-    needs: [test_packaging, test_ds003, build_docs]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up python 3.9
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Check python version and upgrade pip
-        run: |
-          python --version
-          python -m pip install -U pip setuptools virtualenv twine
-
-      - name: Build fitlins
-        run: |
-          virtualenv --python=python /tmp/venv/build
-          source /tmp/venv/build/bin/activate
-          pip install --upgrade pip setuptools wheel
-          python setup.py sdist
-          pip wheel --no-deps -w dist/ .
-
-      - name: Store artifacts
-        uses: actions/upload-artifacts@v2
-        with:
-          name: fitlins-dist
-          path: dist
-
-      - name: Upload package to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          verify_metadata: true
-          verbose: true
-
   deploy_docker:
     needs: [build_docs, test_ds003]
     runs-on: ubuntu-latest

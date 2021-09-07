@@ -112,7 +112,7 @@ ARG VERSION
 
 # RUN echo "$VERSION" > /src/fitlins/VERSION
 
-# RUN sed -i -e 's/crashfile_format = pklz/crashfile_format = txt/' /src/fitlins/fitlins/data/nipype.cfg
+RUN sed -i -e 's/crashfile_format = pklz/crashfile_format = txt/' /src/fitlins/fitlins/data/nipype.cfg
 
 RUN bash -c "source activate neuro \
     &&   pip install --no-cache-dir -r \
