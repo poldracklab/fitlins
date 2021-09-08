@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Setup python
         uses: actions/setup-python@v2
@@ -281,57 +281,6 @@ jobs:
           flags: ${{ matrix.test_name }}
           env_vars: GITHUB_JOB
           verbose: true
-
-  test_packaging:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up python 3.9
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Check python version and upgrade pip
-        run: |
-          python --version
-          python -m pip install -U pip setuptools virtualenv twine
-
-      - name: Build fitlins
-        run: |
-          virtualenv --python=python /tmp/venv/build
-          source /tmp/venv/build/bin/activate
-          pip install --upgrade pip setuptools wheel
-          python setup.py sdist
-          pip wheel --no-deps -w dist/ .
-
-      - name: Check sdist distribution
-        run: |
-          THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
-          twine check dist/fitlins*.tar.gz
-          virtualenv --python=python /tmp/venv/sdist
-          source /tmp/venv/sdist/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install dist/fitlins*.tar.gz
-          which fitlins | grep sdist\\/bin
-          INSTALLED_VERSION=$(fitlins --version)
-          echo "VERSION: \"$THISVERSION\""
-          echo "INSTALLED: \"$INSTALLED_VERSION\""
-          test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
-
-      - name: Check wheel distribution
-        run: |
-          THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
-          twine check dist/fitlins*.whl
-          virtualenv --python=python /tmp/venv/wheel
-          source /tmp/venv/wheel/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install dist/fitlins*.whl
-          which fitlins | grep wheel\\/bin
-          INSTALLED_VERSION=$(fitlins --version)
-          echo "VERSION: \"$THISVERSION\""
-          echo "INSTALLED: \"$INSTALLED_VERSION\""
-          test "$INSTALLED_VERSION" = "fitlins v$THISVERSION"
 
   deploy_docker:
     needs: [build_docs, test_ds003]
