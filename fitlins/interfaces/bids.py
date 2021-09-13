@@ -199,110 +199,112 @@ class LoadBIDSModel(SimpleInterface):
         graph = BIDSStatsModelsGraph(layout, self.inputs.model)
         graph.load_collections(**selectors)
 
-        all_specs = {}
-        self._load_all_specs(runtime, graph, all_specs, None, graph.root_node)
-        self._results['all_specs'] = all_specs
+        self._results['all_specs'] = self._load_graph(runtime, graph)
 
         return runtime
 
-    def _load_all_specs(self, runtime, graph, all_specs, specs, node, **filters):
+    def _load_graph(self, runtime, graph, node=None, inputs=None, **filters):
+        if node is None:
+            node = graph.root_node
 
         step_subdir = Path(runtime.cwd) / node.level
         step_subdir.mkdir(parents=True, exist_ok=True)
 
+        specs = node.run(inputs, group_by=node.group_by, **filters)
+        outputs = list(chain(*[s.contrasts for s in specs]))
+
         if node.level == 'run':
-            specs = node.run(group_by=node.group_by, force_dense=True)
+            self._load_run_level(runtime, graph, specs)
 
-            entities = []
-            design_info = []
-            warnings = []
+        all_specs = {node.name: specs}
 
-            for coll in specs:
-                info = {}
-                ents = coll.entities.copy()
-                TR = coll.metadata['RepetitionTime'][0]
-                if TR is None:  # But is unreliable (for now?)
-                    preproc_files = graph.layout.get(
-                            extension=['.nii', '.nii.gz'], desc='preproc', **ents)
-
-                    if len(preproc_files) != 1:
-                        raise ValueError('Too many BOLD files found')
-
-                    fname = preproc_files[0].path
-                    TR = graph.layout.get_metadata(fname)['RepetitionTime']
-
-                # Ignore metadata entities
-                entity_whitelist = graph.layout.get_entities(metadata=False)
-                ents = {key: ents[key] for key in ents if key in entity_whitelist}
-
-                # ents is pretty populous
-                ents.pop('suffix', None)
-                ents.pop('datatype', None)
-
-                space = ents.get('space')
-                if space is None:
-                    spaces = graph.layout.get_spaces(
-                        suffix='bold',
-                        extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
-                    if spaces:
-                        spaces = sorted(spaces)
-                        space = spaces[0]
-                        if len(spaces) > 1:
-                            iflogger.warning(
-                                'No space was provided, but multiple spaces were detected: %s. '
-                                'Selecting the first (ordered lexicographically): %s'
-                                % (', '.join(spaces), space))
-                    ents['space'] = space
-
-                ent_string = '_'.join('{}-{}'.format(key, val)
-                                    for key, val in ents.items())
-
-                imputed = []
-                dense = coll.data
-                dense_file = None
-                for imputable in ('framewise_displacement',
-                                  'std_dvars', 'dvars'):
-                    if imputable in dense.columns:
-                        vals = dense[imputable].values
-                        if not np.isnan(vals[0]):
-                            continue
-
-                        # Impute the mean non-zero, non-NaN value
-                        dense[imputable][0] = np.nanmean(vals[vals != 0])
-                        imputed.append(imputable)
-
-                dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
-                dense.to_hdf(dense_file, key='dense')
-
-                info['dense'] = str(dense_file) if dense_file else None
-                info['repetition_time'] = TR
-
-                warning_file = step_subdir / '{}_warning.html'.format(ent_string)
-                with warning_file.open('w') as fobj:
-                    if imputed:
-                        fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
-
-                design_info.append(info)
-                warnings.append(str(warning_file))
-
-
-            self._results['warnings'] = warnings
-            self._results['design_info'] = design_info
-                
-        else:
-            contrasts = list(chain(*[s.contrasts for s in specs]))
-            specs = node.run(contrasts, group_by=node.group_by, **filters)
-
-        all_specs[node.name] = specs
         for child in node.children:
-            self._load_all_specs(
+            all_specs.update(
+                self._load_graph(
                     runtime,
                     graph,
-                    all_specs,
-                    specs,
                     child.destination,
+                    outputs,
                     **child.filter
+                )
             )
+
+        return all_specs
+
+    def _load_run_level(self, runtime, graph, specs):
+        design_info = []
+        warnings = []
+
+        for coll in specs:
+            info = {}
+            ents = coll.entities.copy()
+            TR = coll.metadata['RepetitionTime'][0]
+            if TR is None:  # But is unreliable (for now?)
+                preproc_files = graph.layout.get(
+                        extension=['.nii', '.nii.gz'], desc='preproc', **ents)
+
+                if len(preproc_files) != 1:
+                    raise ValueError('Too many BOLD files found')
+
+                fname = preproc_files[0].path
+                TR = graph.layout.get_metadata(fname)['RepetitionTime']
+
+            # Ignore metadata entities
+            entity_whitelist = graph.layout.get_entities(metadata=False)
+            ents = {key: ents[key] for key in ents if key in entity_whitelist}
+
+            # ents is pretty populous
+            ents.pop('suffix', None)
+            ents.pop('datatype', None)
+
+            space = ents.get('space')
+            if space is None:
+                spaces = graph.layout.get_spaces(
+                    suffix='bold',
+                    extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
+                if spaces:
+                    spaces = sorted(spaces)
+                    space = spaces[0]
+                    if len(spaces) > 1:
+                        iflogger.warning(
+                            'No space was provided, but multiple spaces were detected: %s. '
+                            'Selecting the first (ordered lexicographically): %s'
+                            % (', '.join(spaces), space))
+                ents['space'] = space
+
+            ent_string = '_'.join('{}-{}'.format(key, val)
+                                for key, val in ents.items())
+
+            imputed = []
+            dense = coll.data
+            dense_file = None
+            for imputable in ('framewise_displacement',
+                              'std_dvars', 'dvars'):
+                if imputable in dense.columns:
+                    vals = dense[imputable].values
+                    if not np.isnan(vals[0]):
+                        continue
+
+                    # Impute the mean non-zero, non-NaN value
+                    dense[imputable][0] = np.nanmean(vals[vals != 0])
+                    imputed.append(imputable)
+
+            dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
+            dense.to_hdf(dense_file, key='dense')
+
+            info['dense'] = str(dense_file) if dense_file else None
+            info['repetition_time'] = TR
+
+            warning_file = step_subdir / '{}_warning.html'.format(ent_string)
+            with warning_file.open('w') as fobj:
+                if imputed:
+                    fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
+
+            design_info.append(info)
+            warnings.append(str(warning_file))
+
+        self._results['warnings'] = warnings
+        self._results['design_info'] = design_info
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
