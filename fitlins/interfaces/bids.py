@@ -248,6 +248,10 @@ class LoadBIDSModel(SimpleInterface):
 
             ent_string = '_'.join(f"{key}-{val}" for key, val in spec.entities.items())
 
+            # These confounds are defined pairwise with the current volume and its
+            # predecessor, and thus may be undefined (have value NaN) at the first volume.
+            # In these cases, we impute the mean non-zero value, for the expected NaN only.
+            # Any other NaNs must be handled by an explicit transform in the BIDS model.
             imputed = []
             for imputable in ('framewise_displacement', 'std_dvars', 'dvars'):
                 if imputable in spec.data.columns:
