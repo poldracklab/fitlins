@@ -241,31 +241,26 @@ class LoadBIDSModel(SimpleInterface):
                 # This shouldn't happen, so raise a (hopefully informative)
                 # exception if I'm wrong
                 fname = graph.layout.get(**spec.entities, suffix='bold')[0].path
-                raise ValueError(f"Preprocessed file {fname} does not have an associated RepetitionTime")
+                raise ValueError(f"Preprocessed file {fname} does not have an "
+                                 "associated RepetitionTime")
 
             info["repetition_time"] = spec.metadata['RepetitionTime'][0]
 
             ent_string = '_'.join(f"{key}-{val}" for key, val in spec.entities.items())
 
             imputed = []
-            dense = spec.data
-            dense_file = None
-            for imputable in ('framewise_displacement',
-                              'std_dvars', 'dvars'):
-                if imputable in dense.columns:
-                    vals = dense[imputable].values
+            for imputable in ('framewise_displacement', 'std_dvars', 'dvars'):
+                if imputable in spec.data.columns:
+                    vals = spec.data[imputable].values
                     if not np.isnan(vals[0]):
                         continue
 
                     # Impute the mean non-zero, non-NaN value
-                    dense[imputable][0] = np.nanmean(vals[vals != 0])
+                    spec.data[imputable][0] = np.nanmean(vals[vals != 0])
                     imputed.append(imputable)
 
-            dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
-            dense.to_hdf(dense_file, key='dense')
-
-            info['dense'] = str(dense_file) if dense_file else None
-            info['repetition_time'] = TR
+            info["dense"] = str(step_subdir / '{}_dense.h5'.format(ent_string))
+            spec.data.to_hdf(info["dense"], key='dense')
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
