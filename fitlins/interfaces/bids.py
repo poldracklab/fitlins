@@ -237,7 +237,6 @@ class LoadBIDSModel(SimpleInterface):
 
         for spec in specs:
             info = {}
-            ents = spec.entities.copy()
             if "RepetitionTime" not in spec.metadata:
                 # This shouldn't happen, so raise a (hopefully informative)
                 # exception if I'm wrong
@@ -246,31 +245,7 @@ class LoadBIDSModel(SimpleInterface):
 
             info["repetition_time"] = spec.metadata['RepetitionTime'][0]
 
-            # Ignore metadata entities
-            entity_whitelist = graph.layout.get_entities(metadata=False)
-            ents = {key: ents[key] for key in ents if key in entity_whitelist}
-
-            # ents is pretty populous
-            ents.pop('suffix', None)
-            ents.pop('datatype', None)
-
-            space = ents.get('space')
-            if space is None:
-                spaces = graph.layout.get_spaces(
-                    suffix='bold',
-                    extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
-                if spaces:
-                    spaces = sorted(spaces)
-                    space = spaces[0]
-                    if len(spaces) > 1:
-                        iflogger.warning(
-                            'No space was provided, but multiple spaces were detected: %s. '
-                            'Selecting the first (ordered lexicographically): %s'
-                            % (', '.join(spaces), space))
-                ents['space'] = space
-
-            ent_string = '_'.join('{}-{}'.format(key, val)
-                                for key, val in ents.items())
+            ent_string = '_'.join(f"{key}-{val}" for key, val in spec.entities.items())
 
             imputed = []
             dense = spec.data
