@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import re
@@ -416,8 +415,8 @@ class BIDSDataSink(IOBase):
             ext = bids_split_filename(in_file)[2]
             ents['extension'] = self._extension_map.get(ext, ext)
             ents.update({k: str(v).replace('.', '_')
-                    for k, v in ents.items()
-                    if k=='name' or k=='contrast'})
+                         for k, v in ents.items()
+                         if k in ("name", "contrast")})
             ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
