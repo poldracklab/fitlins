@@ -238,16 +238,13 @@ class LoadBIDSModel(SimpleInterface):
         for spec in specs:
             info = {}
             ents = spec.entities.copy()
-            TR = spec.metadata['RepetitionTime'][0]
-            if TR is None:  # But is unreliable (for now?)
-                preproc_files = graph.layout.get(
-                        extension=['.nii', '.nii.gz'], desc='preproc', **ents)
+            if "RepetitionTime" not in spec.metadata:
+                # This shouldn't happen, so raise a (hopefully informative)
+                # exception if I'm wrong
+                fname = graph.layout.get(**spec.entities, suffix='bold')[0].path
+                raise ValueError(f"Preprocessed file {fname} does not have an associated RepetitionTime")
 
-                if len(preproc_files) != 1:
-                    raise ValueError('Too many BOLD files found')
-
-                fname = preproc_files[0].path
-                TR = graph.layout.get_metadata(fname)['RepetitionTime']
+            info["repetition_time"] = spec.metadata['RepetitionTime'][0]
 
             # Ignore metadata entities
             entity_whitelist = graph.layout.get_entities(metadata=False)
