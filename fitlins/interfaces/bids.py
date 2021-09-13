@@ -207,9 +207,6 @@ class LoadBIDSModel(SimpleInterface):
         if node is None:
             node = graph.root_node
 
-        step_subdir = Path(runtime.cwd) / node.level
-        step_subdir.mkdir(parents=True, exist_ok=True)
-
         specs = node.run(inputs, group_by=node.group_by, **filters)
         outputs = list(chain(*[s.contrasts for s in specs]))
 
@@ -234,6 +231,9 @@ class LoadBIDSModel(SimpleInterface):
     def _load_run_level(self, runtime, graph, specs):
         design_info = []
         warnings = []
+
+        step_subdir = Path(runtime.cwd) / "run"
+        step_subdir.mkdir(parents=True, exist_ok=True)
 
         for spec in specs:
             info = {}
