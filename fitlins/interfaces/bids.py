@@ -235,10 +235,10 @@ class LoadBIDSModel(SimpleInterface):
         design_info = []
         warnings = []
 
-        for coll in specs:
+        for spec in specs:
             info = {}
-            ents = coll.entities.copy()
-            TR = coll.metadata['RepetitionTime'][0]
+            ents = spec.entities.copy()
+            TR = spec.metadata['RepetitionTime'][0]
             if TR is None:  # But is unreliable (for now?)
                 preproc_files = graph.layout.get(
                         extension=['.nii', '.nii.gz'], desc='preproc', **ents)
@@ -276,7 +276,7 @@ class LoadBIDSModel(SimpleInterface):
                                 for key, val in ents.items())
 
             imputed = []
-            dense = coll.data
+            dense = spec.data
             dense_file = None
             for imputable in ('framewise_displacement',
                               'std_dvars', 'dvars'):
