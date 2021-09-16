@@ -14,34 +14,36 @@ class NistatsBaseInterface(LibraryBaseInterface):
 def prepare_contrasts(contrasts, all_regressors):
     """ Make mutable copy of contrast list, and
     generate contrast design_matrix from dictionary weight mapping
+
     """
     if not isdefined(contrasts):
         return []
 
     out_contrasts = []
+    ## ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights', 'test', 'entities'))
     for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
         missing = (
-            len(contrast_info.conditions) != len(contrast_info.weights) or
-            any(cond not in all_regressors for cond in contrast_info.conditions)
+            len(contrast_info[1]) != len(contrast_info[2]) or
+            any(cond not in all_regressors for cond in contrast_info[1])
         )
         if not missing:
-            wshape = np.array(contrast_info.weights).shape
+            wshape = np.array(contrast_info[2]).shape
             if len(wshape) > 1:
                 # init a weights matrix for (all_regressors x no. of contrasts)
                 weights = np.zeros((wshape[-1], len(all_regressors)))
                 for r in range(len(weights)):
-                    cw = contrast_info.weights[r]
-                    for c, cond in enumerate(contrast_info.conditions):
+                    cw = contrast_info[2][r]
+                    for c, cond in enumerate(contrast_info[1]):
                         if cond in all_regressors:
                             weights[r][list(all_regressors).index(cond)] = cw[c]
             else:
                 weights = np.array([
-                    [contrast_info.weights[contrast_info.conditions.index(col)]
-                        if col in contrast_info.conditions else 0 for col in all_regressors]])
+                    [contrast_info[2][contrast_info[1].index(col)]
+                        if col in contrast_info[1] else 0 for col in all_regressors]])
 
             out_contrasts.append(
-                (contrast_info.name, np.array(weights), contrast_info.test))
+                (contrast_info[0], np.array(weights), contrast_info[3]))
 
     return out_contrasts
 
@@ -205,7 +207,7 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
                     _get_voxelwise_stat(flm.labels_[0], flm.results_[0], 'logL'))
             }
 
-        out_ents = spec.entities.copy()
+        out_ents = spec['entities'].copy()
 
         # Save model level images
 
@@ -224,12 +226,12 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         pvalue_maps = []
         contrast_metadata = []
         for name, weights, contrast_test in prepare_contrasts(
-              spec.contrasts, mat.columns):
+              spec['contrasts'], mat.columns):
             contrast_metadata.append(
                     {
                         "name": name,
                         "contrast": name,
-                        "level": spec.node.level,
+                        "level": spec['level'],
                         "stat": contrast_test,
                         **out_ents,
                     }
@@ -305,9 +307,9 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        spec_metadata = spec.metadata.to_dict('records')
-        out_ents = spec.entities.copy()  # Same for all
-        out_ents.setdefault("contrast", spec.contrasts[0].name)
+        spec_metadata = spec['metadata'].to_dict('records')
+        out_ents = spec['entities'].copy()  # Same for all
+        out_ents.setdefault("contrast", spec['contrasts'][0][0])
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
@@ -319,13 +321,15 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         names = []
         for m, eff, var in zip(stat_metadata, input_effects, input_variances):
             for ents in spec_metadata:
+                for key in ('datatype', 'desc', 'suffix', 'extension'):
+                    ents.pop(key, None)
                 if _match(ents, m):
                     filtered_effects.append(eff)
                     filtered_variances.append(var)
                     names.append(m['contrast'])
 
 
-        contrasts = prepare_contrasts(spec.contrasts, spec.X.columns)
+        contrasts = prepare_contrasts(spec['contrasts'], spec['X'].columns)
 
         is_cifti = filtered_effects[0].endswith('dscalar.nii')
         if is_cifti:
@@ -336,8 +340,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         # Only fit model if any non-FEMA contrasts at this level
         # if any(c[2] != 'Meta' for c in contrasts):
         model_type = ''
-        if 'type' in spec.node.model:
-            model_type = spec.node.model['type']
+        if 'type' in spec['model']:
+            model_type = spec['model']['type']
 
         # if model_type != 'Meta':
         if len(filtered_effects) < 2:
@@ -347,10 +351,10 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         if is_cifti:
             effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
                                       for effect in filtered_effects])
-            labels, estimates = level1.run_glm(effect_data, spec.X.values, noise_model='ols')
+            labels, estimates = level1.run_glm(effect_data, spec['X'].values, noise_model='ols')
         else:
             model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-            model.fit(filtered_effects, design_matrix=spec.X)
+            model.fit(filtered_effects, design_matrix=spec['X'])
         # else:
         #     # USE PYMARE HERE
         #     model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
@@ -360,7 +364,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             contrast_metadata.append(
                     {
                         "name": name,
-                        "level": spec.node.level,
+                        "level": spec['level'],
                         "stat": contrast_test,
                         **out_ents,
                     }
@@ -371,7 +375,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 # Index design identity matrix on non-zero contrasts weights
                 con_ix = weights[0].astype(bool)
                 # Index of all input files "involved" with that contrast
-                dm_ix = spec.X.iloc[:, con_ix].any(axis=1)
+                dm_ix = spec['X'].iloc[:, con_ix].any(axis=1)
 
                 contrast_imgs = np.array(filtered_effects)[dm_ix]
                 variance_imgs = np.array(filtered_variances)[dm_ix]

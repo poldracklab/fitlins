@@ -289,6 +289,8 @@ def run_fitlins(argv=None):
     retcode = 0
     if not opts.reports_only:
         try:
+            # Plot out the workflow graph
+            fitlins_wf.write_graph(dotfilename=os.path.join(opts.work_dir, 'graph.dot'), graph2use='exec')
             fitlins_wf.run(**plugin_settings)
         except Exception:
             retcode = 1

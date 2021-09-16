@@ -92,7 +92,7 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 if coll.node.level != 'run':
                     cname = snake_to_camel((contrast_info.name).replace('.', '_'))
                     ents["name"] = cname
-                    ents["contrast"] = cname
+                    ents.pop("contrast", None)
 
                 glassbrain = fl_layout.get(suffix='ortho', extension='png', **ents)
 
