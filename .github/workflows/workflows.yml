@@ -85,12 +85,29 @@ jobs:
         with:
           python-version: 3.9
 
+          # - uses: conda-incubator/setup-miniconda@v2
+          #   with:
+          #     miniconda-version: "latest"
+          #     activate-environment: datalad
+          #     channels: conda-forge
+          #     channel-priority: flexible
+          #     allow-softlinks: true
+          #     show-channel-urls: true
+          #     use-only-tar-bz2: true
+
+          # - name: Check conda installation
+          #   shell: bash -l {0}
+          #   run: |
+          #     conda info
+          #     conda list
+
       - name: Install dependencies
+        shell: bash -l {0}
         run: |
           sudo apt-get update -y && sudo apt-get upgrade -y
-          sudo apt-get install -y git git-annex
+          sudo apt-get install -y git-annex
           python -m pip install --upgrade pip
-          pip install datalad
+          pip install datalad==0.14.7
 
       - name: WTF!?
         run: |
@@ -112,7 +129,7 @@ jobs:
         run: |
           cd /tmp/.cache/data
           datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
-          # datalad update --merge fitlins_tests
+          datalad update --merge -d fitlins_tests
           cd fitlins_tests
           datalad get ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
                                     ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
