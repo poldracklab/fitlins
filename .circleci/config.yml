@@ -1,14 +1,2 @@
 version: 2.1
-jobs:
-  nocircle:
-    docker:
-      - image: busybox:latest
-    steps:
-      - run: echo Not running Circle on this branch!
-
-
-workflows:
-  version: 2
-  nocircle:
-    jobs:
-      - nocircle
+jobs: []
