@@ -223,37 +223,20 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     model = l1_model
 
     def select_stats_spec(all_specs, name):
-        level_specs = []
-
-        for coll in all_specs[name]:
-            spec = {}
-            spec['contrasts'] = coll.contrasts
-            spec['entities'] = coll.entities.copy()
-            spec['level'] = coll.node.level
-            spec['X'] = coll.X.copy()
-            spec['model'] = coll.node.model.copy()
-
-            # slight optimization since metadata is only
-            # used in higher level models
-            if coll.node.level != 'run':
-                spec['metadata'] = coll.metadata.copy()
-
-            level_specs.append(spec)
-
-        return level_specs
+        return all_specs[name]
 
     def select_ents(all_specs, name):
         entities = []
         spec = all_specs[name]
         for coll in spec:
-            entities.append(coll.entities.copy())
+            entities.append(coll['entities'].copy())
         return entities
 
     def select_conts(all_specs, name):
         contrasts = []
         spec = all_specs[name]
         for coll in spec:
-            contrasts.append(coll.contrasts)
+            contrasts.append(coll['contrasts'])
         return contrasts
 
     for node, nobj in graph.nodes.items():
