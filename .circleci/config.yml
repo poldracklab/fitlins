@@ -2,4 +2,4 @@ version: 2.1
 jobs:
   empty:
     docker:
-      image: hello-world:latest
+      - image: hello-world:latest
