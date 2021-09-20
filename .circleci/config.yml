@@ -1,2 +1,5 @@
 version: 2.1
-jobs: {}
+jobs:
+  empty:
+    docker:
+      image: hello-world:latest
