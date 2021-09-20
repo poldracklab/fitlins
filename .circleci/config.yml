@@ -5,3 +5,10 @@ jobs:
       - image: busybox:latest
     steps:
       - run: echo Not running Circle on this branch!
+
+
+workflows:
+  version: 2
+  nocircle:
+    jobs:
+      - nocircle
