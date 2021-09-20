@@ -54,7 +54,7 @@ jobs:
           paths:
             - src/fitlins
       - save_cache:
-          key: docker-v2-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          key: docker-v3-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - /tmp/cache/docker.tar.gz
 
@@ -67,9 +67,9 @@ jobs:
           path: /tmp/src
       - restore_cache:
           keys:
-            - ds003-v2-{{ .Branch }}-
-            - ds003-v2-master-
-            - ds003-v2-
+            - ds003-v3-{{ .Branch }}-
+            - ds003-v3-master-
+            - ds003-v3-
       - run:
           name: Set git ID
           command: |
@@ -86,7 +86,7 @@ jobs:
                                     fitlins_tests/ds003/fmriprep/sub-*/*/*.json
             datalad get -r fitlins_tests/ds003/nistats_smooth/ fitlins_tests/ds003/afni_smooth/ fitlins_tests/ds003/afni_blurto/ fitlins_tests/ds003/nistats_blurto/
       - save_cache:
-         key: ds003-v2-{{ .Branch }}-{{ .BuildNum }}
+         key: ds003-v3-{{ .Branch }}-{{ .BuildNum }}
          paths:
             - /tmp/data
 
@@ -126,7 +126,7 @@ jobs:
           at: /tmp
       - restore_cache:
           keys:
-            - docker-v2-{{ .Branch }}-{{ .Revision }}
+            - docker-v3-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -172,12 +172,12 @@ jobs:
           at: /tmp
       - restore_cache:
           keys:
-            - docker-v2-{{ .Branch }}-{{ .Revision }}
+            - docker-v3-{{ .Branch }}-{{ .Revision }}
       - restore_cache:
           keys:
-            - ds003-v2-{{ .Branch }}-
-            - ds003-v2-master-
-            - ds003-v2-
+            - ds003-v3-{{ .Branch }}-
+            - ds003-v3-master-
+            - ds003-v3-
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -235,12 +235,12 @@ jobs:
           at: /tmp
       - restore_cache:
           keys:
-            - docker-v2-{{ .Branch }}-{{ .Revision }}
+            - docker-v3-{{ .Branch }}-{{ .Revision }}
       - restore_cache:
           keys:
-            - ds003-v2-{{ .Branch }}-
-            - ds003-v2-master-
-            - ds003-v2-
+            - ds003-v3-{{ .Branch }}-
+            - ds003-v3-master-
+            - ds003-v3-
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -395,7 +395,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - docker-v2-{{ .Branch }}-{{ .Revision }}
+            - docker-v3-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -423,7 +423,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - docker-v2-{{ .Branch }}-{{ .Revision }}
+            - docker-v3-{{ .Branch }}-{{ .Revision }}
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -492,6 +492,7 @@ workflows:
       - test_database_file:
           requires:
             - build
+            - cache_test_data
           filters:
             tags:
               only: /.*/
