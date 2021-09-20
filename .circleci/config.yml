@@ -1,5 +1,7 @@
 version: 2.1
 jobs:
-  empty:
+  nocircle:
     docker:
-      - image: hello-world:latest
+      - image: busybox:latest
+    steps:
+      - run: echo Not running Circle on this branch!
