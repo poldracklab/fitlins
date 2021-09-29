@@ -10,6 +10,7 @@ also be written.
 
 from nipype.interfaces.base import BaseInterface, TraitedSpec, File, traits
 
+
 class DesignMatrixInputSpec(TraitedSpec):
     bold_file = File(exists=True, mandatory=True)
     design_info = traits.Dict()
