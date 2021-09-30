@@ -60,7 +60,6 @@ class SecondLevelEstimatorInputSpec(TraitedSpec):
     variance_maps = traits.List(traits.List(File(exists=True)))
     stat_metadata = traits.List(traits.List(traits.Dict), mandatory=True)
     spec = traits.Dict()
-    # contrast_info = traits.List(traits.Dict, mandatory=True)
     smoothing_fwhm = traits.Float(desc='Full-width half max (FWHM) in mm for smoothing in mask')
     smoothing_type = traits.Enum('iso', 'isoblurto', desc='Type of smoothing (iso or isoblurto)')
 

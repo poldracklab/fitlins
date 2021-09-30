@@ -15,12 +15,15 @@ def prepare_contrasts(contrasts, all_regressors):
     """ Make mutable copy of contrast list, and
     generate contrast design_matrix from dictionary weight mapping
 
+    Each value in the contrasts list is a ContrastInfo object:
+      ContrastInfo = namedtuple(
+          'ContrastInfo', ('name', 'conditions', 'weights', 'test', 'entities')
+      )
     """
     if not isdefined(contrasts):
         return []
 
     out_contrasts = []
-    ## ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights', 'test', 'entities'))
     for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
         missing = (
@@ -31,6 +34,8 @@ def prepare_contrasts(contrasts, all_regressors):
             wshape = np.array(contrast_info[2]).shape
             if len(wshape) > 1:
                 # init a weights matrix for (all_regressors x no. of contrasts)
+                # The following looping setup allows to create a unique weighted
+                # mapping for each contrast (including f-tests)
                 weights = np.zeros((wshape[-1], len(all_regressors)))
                 for r in range(len(weights)):
                     cw = contrast_info[2][r]

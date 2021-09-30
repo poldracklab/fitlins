@@ -179,8 +179,31 @@ class LoadBIDSModel(SimpleInterface):
                        regressors
             'repetition_time'   : float (in seconds)
 
-    all_specs : dictionary of list of BIDSStatsModelsNodeOutput objects
-        The collection of specs from each level
+    all_specs : dictionary of list of dictionaries
+        The collection of specs from each level. Each dict at individual levels
+        contains the following keys:
+            'contrasts'  : a list of ContrastInfo objects each unit of analysis.
+                A contrast specifiction is a list of contrast
+                dictionaries. Each dict has form:
+                  {
+                    'name': str,
+                    'conditions': list,
+                    'weights: list,
+                    test: str,
+                    'entities': dict,
+                  }
+            'entities'  : The entities list contains a list for each level of analysis.
+                At each level, the list contains a dictionary of entities that apply to 
+                each unit of analysis. For example, if the level is "Run" and there are 
+                20 runs in the dataset, the first entry will be a list of 20 dictionaries,
+                each uniquely identifying a run.
+            'level'  : The current level of the analysis [run, subject, dataset...]
+            'X'  : The design matrix
+            'model'  : The model part from the BIDS-StatsModels specification. 
+            'metadata' (only higher-levels): a parallel DataFrame with the same number of
+                rows as X that contains all known metadata variabes that vary on a row-by-row
+                basis but aren't actually predictiors
+
     warnings : list of files
         Files containing HTML snippets with any warnings produced while processing the first
         level.
@@ -222,7 +245,7 @@ class LoadBIDSModel(SimpleInterface):
             spec['model'] = coll.node.model.copy()
 
             # slight optimization since metadata is only
-            # used in higher level models
+            # used in higher level analysis
             if node.level != 'run':
                 spec['metadata'] = coll.metadata.copy()
 
@@ -430,6 +453,10 @@ class BIDSDataSink(IOBase):
             ents.update(entities)
             ext = bids_split_filename(in_file)[2]
             ents['extension'] = self._extension_map.get(ext, ext)
+            
+            # In some instances, name/contrast could have the following
+            # format (eg: gain.Range, gain.EqualIndifference).
+            # This prevents issues when creating/searching files for the report
             ents.update({k: str(v).replace('.', '_')
                          for k, v in ents.items()
                          if k in ("name", "contrast")})
