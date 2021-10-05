@@ -11,6 +11,7 @@ from .abstract import (
 class NistatsBaseInterface(LibraryBaseInterface):
     _pkg = 'nilearn.glm'
 
+
 def prepare_contrasts(contrasts, all_regressors):
     """ Make mutable copy of contrast list, and
     generate contrast design_matrix from dictionary weight mapping
@@ -27,28 +28,28 @@ def prepare_contrasts(contrasts, all_regressors):
     for contrast_info in contrasts:
         # Are any necessary values missing for contrast estimation?
         missing = (
-            len(contrast_info[1]) != len(contrast_info[2]) or
-            any(cond not in all_regressors for cond in contrast_info[1])
+            len(contrast_info['conditions']) != len(contrast_info['weights']) or
+            any(cond not in all_regressors for cond in contrast_info['conditions'])
         )
         if not missing:
-            wshape = np.array(contrast_info[2]).shape
+            wshape = np.array(contrast_info['weights']).shape
             if len(wshape) > 1:
                 # init a weights matrix for (all_regressors x no. of contrasts)
                 # The following looping setup allows to create a unique weighted
                 # mapping for each contrast (including f-tests)
                 weights = np.zeros((wshape[-1], len(all_regressors)))
                 for r in range(len(weights)):
-                    cw = contrast_info[2][r]
-                    for c, cond in enumerate(contrast_info[1]):
+                    cw = contrast_info['weights'][r]
+                    for c, cond in enumerate(contrast_info['conditions']):
                         if cond in all_regressors:
                             weights[r][list(all_regressors).index(cond)] = cw[c]
             else:
                 weights = np.array([
-                    [contrast_info[2][contrast_info[1].index(col)]
-                        if col in contrast_info[1] else 0 for col in all_regressors]])
+                    [contrast_info['weights'][contrast_info['conditions'].index(col)]
+                        if col in contrast_info['conditions'] else 0 for col in all_regressors]])
 
             out_contrasts.append(
-                (contrast_info[0], np.array(weights), contrast_info[3]))
+                (contrast_info['name'], np.array(weights), contrast_info['test']))
 
     return out_contrasts
 
@@ -314,7 +315,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         contrast_metadata = []
         spec_metadata = spec['metadata'].to_dict('records')
         out_ents = spec['entities'].copy()  # Same for all
-        out_ents.setdefault("contrast", spec['contrasts'][0][0])
+        out_ents.setdefault("contrast", spec['contrasts'][0]['name'])
 
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)

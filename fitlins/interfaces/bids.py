@@ -238,7 +238,7 @@ class LoadBIDSModel(SimpleInterface):
         level_spec = []
         for coll in specs:
             spec = {}
-            spec['contrasts'] = coll.contrasts
+            spec['contrasts'] = [c._asdict().copy() for c in coll.contrasts]
             spec['entities'] = coll.entities.copy()
             spec['level'] = coll.node.level
             spec['X'] = coll.X.copy()

@@ -336,7 +336,7 @@ class FirstLevelModel(FirstLevelModel):
     def get_stim_labels(self):
         # Iterate through all weight specifications to get a list of stimulus
         # column labels.
-        conditions = _flatten([contrast_info[1] for contrast_info in self.inputs.spec['contrasts']])
+        conditions = _flatten([contrast_info['conditions'] for contrast_info in self.inputs.spec['contrasts']])
         return list(set(conditions))
 
     def save_tsnr(self, runtime, rbetas, rvars):
