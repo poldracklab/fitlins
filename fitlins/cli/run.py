@@ -194,8 +194,6 @@ def run_fitlins(argv=None):
     if opts.mem_gb:
         plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
-    print(plugin_settings)
-
     model = default_path(opts.model, opts.bids_dir, 'model-default_smdl.json')
     if opts.model in (None, 'default') and not op.exists(model):
         model = 'default'
