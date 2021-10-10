@@ -51,14 +51,7 @@ def test_get_afni_design_matrix():
         ContrastInfo(
             'a_test',
             ['trial_type.pseudoword', 'trial_type.word'],
-            [2, 5],
-            'F',
-            entities,
-        ),
-        ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
-            [1, -5],
+            [[2, 5], [1, -5]],
             'F',
             entities,
         )
@@ -73,6 +66,7 @@ def test_get_afni_design_matrix():
         }
     )
 
+    contrast_info = [c._asdict().copy() for c in contrast_info]
     contrasts = prepare_contrasts(contrast_info, design.columns.tolist())
 
     t_r = 2
@@ -116,14 +110,7 @@ def test_create_glt_test_info():
         ContrastInfo(
             'a_test',
             ['trial_type.pseudoword', 'trial_type.word'],
-            [2, 5],
-            'F',
-            entities,
-        ),
-        ContrastInfo(
-            'a_test',
-            ['trial_type.pseudoword', 'trial_type.word'],
-            [1, -5],
+            [[2, 5], [1, -5]],
             'F',
             entities,
         )
@@ -137,13 +124,14 @@ def test_create_glt_test_info():
             "drift": [1, 2],
         }
     )
+
+    contrast_info = [c._asdict().copy() for c in contrast_info]
     contrasts = prepare_contrasts(contrast_info, design.columns.tolist())
 
-    expected = f"""
-# Nglt = "2"
-# GltLabels = "a_test; a_test"
-# GltMatrix_000000 = "1; 4; 2; 5; 0; 0; "
-# GltMatrix_000001 = "1; 4; 1; -5; 0; 0; "\
+    expected = """
+# Nglt = "1"
+# GltLabels = "a_test"
+# GltMatrix_000000 = "2; 4; 2; 5; 0; 0; 1; -5; 0; 0; "\
 """
     assert expected == create_glt_test_info(design, contrasts)
 
