@@ -322,7 +322,7 @@ def init_fitlins_wf(database_path, out_dir, analysis_level, space,
         if smoothing and smoothing_level in (step, level):
             # No need to do smoothing independently if it's nistats iso
             # If level is not 1, let nistats handle smoothing, regardless of estimator
-            if ((smoothing_type == "iso") and (estimator == "nistats" or level != "l1")):
+            if smoothing_type == "iso" and (estimator == "nistats" or level != "l1"):
                 model.inputs.smoothing_fwhm = smoothing_fwhm
                 model.inputs.smoothing_type = smoothing_type
             else:
