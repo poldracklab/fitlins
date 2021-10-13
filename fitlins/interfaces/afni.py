@@ -148,7 +148,6 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        out_ents = spec['entities'].copy()
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
@@ -166,7 +165,7 @@ class FirstLevelModel(FirstLevelModel):
         model_maps = []
         model_metadata = []
         for attr, (imgs, idx) in model_attr_extract.items():
-            model_metadata.append({'stat': attr, **out_ents})
+            model_metadata.append({'stat': attr, **spec['entities']})
             fname = fname_fmt('model', attr)
             extract_volume(imgs, idx, f"{attr} of model", fname)
             model_maps.append(fname)
@@ -181,7 +180,7 @@ class FirstLevelModel(FirstLevelModel):
             model_attr["errorts"] = reml_res.outputs.wherr_file
 
         for attr, fname in model_attr.items():
-            model_metadata.append({'stat': attr, **out_ents})
+            model_metadata.append({'stat': attr, **spec["entities"]})
             model_maps.append(fname)
 
         # get pvals and zscore buckets (niftis with heterogeneous intent codes)
@@ -241,8 +240,6 @@ class FirstLevelModel(FirstLevelModel):
         pvalue_maps = []
         fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
-        out_ents = self.inputs.spec['entities'].copy()
-
         stats_img_info = parse_afni_ext(maps["stat"])
 
         stat_types = np.array(
@@ -270,7 +267,7 @@ class FirstLevelModel(FirstLevelModel):
                         "contrast": name,
                         "level": self.inputs.spec['level'],
                         "stat": contrast_test,
-                        **out_ents
+                        **self.inputs.spec['entities'],
                     }
             )
 
