@@ -244,7 +244,7 @@ class LoadBIDSModel(SimpleInterface):
                     'X': spec.X,
                     'model': spec.node.model,
                     # Metadata is only used in higher level models; save space
-                    'metadata' = spec.metadata if spec.node.level != "run" else None,
+                    'metadata': spec.metadata if spec.node.level != "run" else None,
                 }
                 for spec in specs
             ]
