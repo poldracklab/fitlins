@@ -26,30 +26,24 @@ def prepare_contrasts(contrasts, all_regressors):
 
     out_contrasts = []
     for contrast_info in contrasts:
+        conds = contrast_info["conditions"]
+        in_weights = np.atleast_2d(contrast_info["weights"])
         # Are any necessary values missing for contrast estimation?
         missing = (
-            len(contrast_info['conditions']) != len(contrast_info['weights']) or
-            any(cond not in all_regressors for cond in contrast_info['conditions'])
+            len(conds) != in_weights.shape[1] or
+            any(cond not in all_regressors for cond in conds)
         )
-        if not missing:
-            wshape = np.array(contrast_info['weights']).shape
-            if len(wshape) > 1:
-                # init a weights matrix for (all_regressors x no. of contrasts)
-                # The following looping setup allows to create a unique weighted
-                # mapping for each contrast (including f-tests)
-                weights = np.zeros((wshape[-1], len(all_regressors)))
-                for r in range(len(weights)):
-                    cw = contrast_info['weights'][r]
-                    for c, cond in enumerate(contrast_info['conditions']):
-                        if cond in all_regressors:
-                            weights[r][list(all_regressors).index(cond)] = cw[c]
-            else:
-                weights = np.array([
-                    [contrast_info['weights'][contrast_info['conditions'].index(col)]
-                        if col in contrast_info['conditions'] else 0 for col in all_regressors]])
+        if missing:
+            continue
 
-            out_contrasts.append(
-                (contrast_info['name'], np.array(weights), contrast_info['test']))
+        weights = np.zeros((in_weights.shape[0], len(all_regressors)),
+                           dtype=in_weights.dtype)
+        # Find indices of input conditions in all_regressors list
+        sorter = np.argsort(all_regressors)
+        indices = sorter[np.searchsorted(all_regressors, conds, sorter=sorter)]
+        weights[:, indices] = in_weights
+
+        out_contrasts.append((contrast_info['name'], weights, contrast_info['test']))
 
     return out_contrasts
 
