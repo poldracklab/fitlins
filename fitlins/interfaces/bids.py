@@ -235,23 +235,20 @@ class LoadBIDSModel(SimpleInterface):
         if node.level == 'run':
             self._load_run_level(runtime, graph, specs)
 
-        level_spec = []
-        for coll in specs:
-            spec = {}
-            spec['contrasts'] = [c._asdict().copy() for c in coll.contrasts]
-            spec['entities'] = coll.entities.copy()
-            spec['level'] = coll.node.level
-            spec['X'] = coll.X.copy()
-            spec['model'] = coll.node.model.copy()
-
-            # slight optimization since metadata is only
-            # used in higher level analysis
-            if node.level != 'run':
-                spec['metadata'] = coll.metadata.copy()
-
-            level_spec.append(spec)
-
-        all_specs = {node.name: level_spec}
+        all_specs = {
+            node.name: [
+                {
+                    'contrasts': [c._asdict() for c in spec.contrasts],
+                    'entities': spec.entities,
+                    'level': spec.node.level,
+                    'X': spec.X,
+                    'model': spec.node.model,
+                    # Metadata is only used in higher level models; save space
+                    'metadata' = spec.metadata if spec.node.level != "run" else None,
+                }
+                for spec in specs
+            ]
+        }
 
         for child in node.children:
             all_specs.update(
