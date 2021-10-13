@@ -337,28 +337,21 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         else:
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
-        # Only fit model if any non-FEMA contrasts at this level
-        # if any(c[2] != 'Meta' for c in contrasts):
-        model_type = ''
-        if 'type' in spec['model']:
-            model_type = spec['model']['type']
+        model_type = spec["model"].get("type", "")
 
-        # if model_type != 'Meta':
-        if len(filtered_effects) < 2:
-            raise RuntimeError(
-                "At least two inputs are required for a 't' for 'F' "
-                "second level contrast")
-        if is_cifti:
-            effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
-                                      for effect in filtered_effects])
-            labels, estimates = level1.run_glm(effect_data, spec['X'].values, noise_model='ols')
-        else:
-            model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-            model.fit(filtered_effects, design_matrix=spec['X'])
-        # else:
-        #     # USE PYMARE HERE
-        #     model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
-        #     model.fit(filtered_effects, design_matrix=spec.X)
+        # Do not fit model for meta-analyses
+        if model_type != 'Meta':
+            if len(filtered_effects) < 2:
+                raise RuntimeError(
+                    "At least two inputs are required for a 't' for 'F' "
+                    "second level contrast")
+            if is_cifti:
+                effect_data = np.squeeze([nb.load(effect).get_fdata(dtype='f4')
+                                          for effect in filtered_effects])
+                labels, estimates = level1.run_glm(effect_data, spec['X'].values, noise_model='ols')
+            else:
+                model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
+                model.fit(filtered_effects, design_matrix=spec['X'])
 
         for name, weights, contrast_test in contrasts:
             contrast_metadata.append(
