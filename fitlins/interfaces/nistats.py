@@ -43,7 +43,7 @@ def prepare_contrasts(contrasts, all_regressors):
         indices = sorter[np.searchsorted(all_regressors, conds, sorter=sorter)]
         weights[:, indices] = in_weights
 
-        out_contrasts.append((contrast_info['name'], weights, contrast_info['test']))
+        out_contrasts.append((contrast_info['name'], weights, contrast_info['entities'].copy(), contrast_info['test']))
 
     return out_contrasts
 
@@ -225,15 +225,14 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         zscore_maps = []
         pvalue_maps = []
         contrast_metadata = []
-        for name, weights, contrast_test in prepare_contrasts(
+        for name, weights, cont_ents, contrast_test in prepare_contrasts(
               spec['contrasts'], mat.columns):
             contrast_metadata.append(
                     {
-                        "name": name,
-                        "contrast": name,
+                        "name": spec['name'],
                         "level": spec['level'],
                         "stat": contrast_test,
-                        **out_ents,
+                        **cont_ents,
                     }
                 )
             if is_cifti:
@@ -353,13 +352,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=spec['X'])
 
-        for name, weights, contrast_test in contrasts:
+        for name, weights, cont_ents, contrast_test in contrasts:
             contrast_metadata.append(
                     {
-                        "name": name,
+                        "name": spec['name'],
                         "level": spec['level'],
                         "stat": contrast_test,
-                        **out_ents,
+                        **cont_ents,
                     }
                 )
 

@@ -242,6 +242,7 @@ class LoadBIDSModel(SimpleInterface):
                     'entities': spec.entities,
                     'level': spec.node.level,
                     'X': spec.X,
+                    'name': spec.node.name,
                     'model': spec.node.model,
                     # Metadata is only used in higher level models; save space
                     'metadata': spec.metadata if spec.node.level != "run" else None,
@@ -454,10 +455,11 @@ class BIDSDataSink(IOBase):
             # In some instances, name/contrast could have the following
             # format (eg: gain.Range, gain.EqualIndifference).
             # This prevents issues when creating/searching files for the report
-            ents.update({k: str(v).replace('.', '_')
-                         for k, v in ents.items()
-                         if k in ("name", "contrast")})
-            ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
+            for k in ents:
+                if k in ("name", "contrast"):
+                    ents.update({k: str(ents[k]).replace('.', '_')})
+                    ents.update({k: str(ents[k]).replace('-', '_')})
+                    ents.update({k: snake_to_camel(str(ents[k]))})
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(

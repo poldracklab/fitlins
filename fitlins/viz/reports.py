@@ -71,36 +71,44 @@ def build_report_dict(deriv_dir, work_dir, graph):
         report_node = {'name': node, 'analyses': []}
         report['nodes'].append(report_node)
         for coll in colls:
-            ents = coll.entities.copy()
-            ents["level"] = coll.node.level
             contrasts = coll.contrasts
-            for key in ('datatype', 'desc', 'suffix', 'extension'):
-                ents.pop(key, None)
-            for key in graph.layout.get_entities(metadata=True):
-                ents.pop(key, None)
-                
+
             analysis_dict = {
-                'entities': {
-                    key: val
-                    for key, val in ents.items()
-                    if key in ('subject', 'session', 'task', 'run') and val},
-                'contrasts': []
+                    'entities': {},
+                    'contrasts': []
             }
-            
+
             for contrast_info in contrasts:
                 glassbrain = []
-                if coll.node.level != 'run':
-                    cname = snake_to_camel((contrast_info.name).replace('.', '_'))
-                    ents["name"] = cname
-                    ents.pop("contrast", None)
+                cents = contrast_info.entities.copy()
+                cents["level"] = coll.node.level
+                cents["name"] = coll.node.name
 
-                glassbrain = fl_layout.get(suffix='ortho', extension='png', **ents)
+                contrasts = coll.contrasts
+                for key in ('datatype', 'desc', 'suffix', 'extension'):
+                    cents.pop(key, None)
+                for key in graph.layout.get_entities(metadata=True):
+                    cents.pop(key, None)
+
+                for k in cents:
+                    if k in ("name", "contrast"):
+                        cents.update({k: str(cents[k]).replace('.', '_')})
+                        cents.update({k: str(cents[k]).replace('-', '_')})
+                        cents.update({k: snake_to_camel(str(cents[k]))})
+
+                glassbrain = fl_layout.get(suffix='ortho', extension='png', **cents)
+
+                analysis_dict['entities'] = {
+                        key: val for key, val in cents.items()
+                        if key in ('subject', 'session', 'task', 'run') and val
+                }
 
                 analysis_dict['contrasts'].append(
                     {'name': displayify(contrast_info.name),
                      'glassbrain': glassbrain[0].path if glassbrain else None}
                 )
-                
+
+            ents = coll.entities.copy()
             report_node['analyses'].append(analysis_dict)
             # Space doesn't apply to design/contrast matrices, or resolution
             for k in ['space', 'res']:

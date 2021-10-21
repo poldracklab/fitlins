@@ -109,7 +109,7 @@ class DesignCorrelationPlot(Visualization):
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
     contrast_info = traits.List(traits.Any)
-    orientation = traits.Enum('horizontal', 'vertical', usedefault=True,
+    orientation = traits.Enum('vertical', 'horizontal', usedefault=True,
                               desc='Display orientation of contrast matrix')
 
 

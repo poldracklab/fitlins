@@ -260,14 +260,13 @@ class FirstLevelModel(FirstLevelModel):
                 clean_vol_labels.append(x.rsplit('_', 1)[0])
             else:
                 clean_vol_labels.append(x)
-        for (name, weights, contrast_test) in contrasts:
+        for (name, weights, cont_ents, contrast_test) in contrasts:
             contrast_metadata.append(
                     {
-                        "name": name,
-                        "contrast": name,
+                        "name": self.inputs.spec['name'],
                         "level": self.inputs.spec['level'],
                         "stat": contrast_test,
-                        **self.inputs.spec['entities'],
+                        **cont_ents,
                     }
             )
 
@@ -309,7 +308,7 @@ class FirstLevelModel(FirstLevelModel):
                     map_list.append(fname)
 
         # calculate effect variance
-        for (name, weights, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
+        for (name, weights, contrast_entities, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
             map_type = "effect_variance"
             effect_img = nb.load(effect_fname)
             effect = effect_img.get_fdata()
@@ -423,7 +422,7 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
 
 def create_glt_test_info(design, contrasts):
 
-    labels, wts_arrays, test_vals = zip(*contrasts)
+    labels, wts_arrays, cont_ents, test_vals = zip(*contrasts)
 
     # Start defining a list containing the rows for the glt values in the
     # afni design matrix header:
