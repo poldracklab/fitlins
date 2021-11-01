@@ -149,4 +149,5 @@ def write_full_report(report_dict, run_context, deriv_dir):
         deriv_dir, fl_layout.build_path(
             {'model': model}, PATH_PATTERNS, validate=False))
     html = tpl.render(deroot({**report_dict, **run_context}, op.dirname(target_file)))
+    Path(target_file).parent.mkdir(parents=True, exist_ok=True)
     Path(target_file).write_text(html)
