@@ -336,7 +336,10 @@ class FirstLevelModel(FirstLevelModel):
         vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
         # find the name of the constant column
-        const_name = mat.columns[(mat != 1).sum(0) == 0].values[0]
+        if 'constant' in mat.columns:
+            const_name = 'constant'
+        else:
+            const_name = mat.columns[(mat != 1).sum(0) == 0].values[0]
         const_idx = np.where(np.array(vol_labels) == const_name)[0]
         const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
         std_img = rvars.slicer[..., 3]
