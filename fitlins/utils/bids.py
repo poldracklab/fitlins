@@ -85,7 +85,7 @@ def collect_participants(layout, participant_label=None, strict=False):
 
 
     """
-    all_participants = layout.get_subjects()
+    all_participants = sorted(layout.get_subjects())
 
     # Error: bids_dir does not contain subjects
     if not all_participants:
@@ -101,9 +101,10 @@ def collect_participants(layout, participant_label=None, strict=False):
         return all_participants
 
     # Drop sub- prefixes
-    participant_label = [sub[4:] if sub.startswith('sub-') else sub for sub in participant_label]
+    participant_label = [sub[4:] if sub.startswith('sub-') else sub
+                         for sub in participant_label]
 
-    found_label = layout.get_subjects(subject=participant_label)
+    found_label = sorted(layout.get_subjects(subject=participant_label))
 
     if not found_label:
         raise BIDSError('Could not find participants [{}]'.format(
