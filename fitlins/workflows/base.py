@@ -18,6 +18,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
+    from ..utils import snake_to_camel
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -241,8 +242,8 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
     for node, nobj in graph.nodes.items():
 
-        level, name = nobj.level, nobj.name.replace('-', '_')
-        select_spec_name = f'{level}_{name}' if level != name else f'{level}'
+        # Node names are unique, levels are not
+        name = snake_to_camel(nobj.name.replace('-', '_'))
 
         f1 = niu.Function(
                 input_names = ['all_specs', 'name'],
@@ -252,7 +253,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         f1.inputs.name = nobj.name
 
         select_specs = pe.Node(f1,
-                name='select_{}_spec'.format(select_spec_name),
+                name=f'select_{name}_spec',
                 run_without_submitting=True)
 
         f2 = niu.Function(
@@ -263,7 +264,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         f2.inputs.name = nobj.name
 
         select_entities = pe.Node(f2,
-                name='select_{}_entities'.format(select_spec_name),
+                name=f'select_{name}_entities',
                 run_without_submitting=True)
 
         f3 = niu.Function(
@@ -274,7 +275,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         f3.inputs.name = nobj.name
 
         select_contrasts = pe.Node(f3,
-                name='select_{}_contrasts'.format(select_spec_name),
+                name=f'select_{name}_contrasts',
                 run_without_submitting=True)
 
         # Squash the results of MapNodes that may have generated multiple maps
@@ -283,7 +284,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         collate = pe.Node(
                 MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
                           'pvalue_maps', 'contrast_metadata']),
-             name=f'collate_{select_spec_name}',
+             name=f'collate_{name}',
              run_without_submitting=True)
 
         #
@@ -293,7 +294,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         plot_contrasts = pe.MapNode(
             GlassBrainPlot(image_type='png'),
             iterfield='data',
-            name=f'plot_{select_spec_name}_contrasts')
+            name=f'plot_{name}_contrasts')
         
         #
         # Derivatives
@@ -308,19 +309,19 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     'pvalue_maps': {'stat': 'p'},
                     'zscore_maps': {'stat': 'z'},
                 }),
-            name=f'collate_{select_spec_name}_outputs')
+            name=f'collate_{name}_outputs')
 
         ds_contrast_maps = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_pattern),
             run_without_submitting=True,
-            name=f'ds_{select_spec_name}_contrast_maps')
+            name=f'ds_{name}_contrast_maps')
 
         ds_contrast_plots = pe.Node(
             BIDSDataSink(base_directory=out_dir,
                          path_patterns=contrast_plot_pattern),
             run_without_submitting=True,
-            name=f'ds_{select_spec_name}_contrast_plots')
+            name=f'ds_{name}_contrast_plots')
 
 
         if level == 'run':
@@ -328,12 +329,12 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 BIDSDataSink(base_directory=out_dir,
                              path_patterns=model_map_pattern),
                 run_without_submitting=True,
-                name=f'ds_{select_spec_name}_model_maps')
+                name=f'ds_{name}_model_maps')
 
             collate_mm = pe.Node(
                 MergeAll(['model_maps', 'model_metadata'],
                          check_lengths=(not drop_missing)),
-                name=f'collate_mm_{select_spec_name}',
+                name=f'collate_mm_{name}',
                 run_without_submitting=True)
 
             wf.connect([
@@ -357,10 +358,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             ])
 
         else:
-            model = pe.MapNode(
-                    SecondLevelModel(),
-                    iterfield=['spec'],
-                    name=f'{select_spec_name}_model')
+            model = pe.MapNode(SecondLevelModel(), iterfield=['spec'], name=f'{name}_model')
 
             wf.connect([
                 (stage, model, [('effect_maps', 'effect_maps'),
