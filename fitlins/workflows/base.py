@@ -127,7 +127,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     design_matrix_pattern = (
             "[sub-{subject}/][ses-{session}/]"
             "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_][acq-{acquisition}_]"
-            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]_{suffix<design>}{extension<.tsv>|.tsv}"
+            "[rec-{reconstruction}_][run-{run}_][echo-{echo}_]{suffix<design>}{extension<.tsv>|.tsv}"
     )
     contrast_pattern = (
             "[sub-{subject}/][ses-{session}/]"
