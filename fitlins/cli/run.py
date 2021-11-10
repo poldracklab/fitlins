@@ -6,26 +6,35 @@ fMRI model-fitting
 ==================
 """
 
-import sys
 import os
-import os.path as op
-import time
-import logging
-import warnings
-from copy import deepcopy
-from pathlib import Path
-from tempfile import mkdtemp
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
-from multiprocessing import cpu_count
+from multiprocessing import set_start_method
 
-import bids
-from bids.modeling import auto_model, BIDSStatsModelsGraph
+try:
+    set_start_method("forkserver")
+except RuntimeError:
+    pass  #
+finally:
+    import sys
+    import os.path as op
+    import time
+    import logging
+    import warnings
+    from copy import deepcopy
+    from pathlib import Path
+    from tempfile import mkdtemp
+    from argparse import ArgumentParser
+    from argparse import RawTextHelpFormatter
+    from multiprocessing import cpu_count
+    from multiprocessing import set_start_method
 
-from .. import __version__
-from ..workflows import init_fitlins_wf
-from ..utils import bids as fub, config
-from ..viz.reports import build_report_dict, write_full_report
+    import bids
+    from bids.modeling import auto_model, BIDSStatsModelsGraph
+
+    from .. import __version__
+    from ..workflows import init_fitlins_wf
+    from ..utils import bids as fub, config
+    from ..viz.reports import build_report_dict, write_full_report
+
 
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
