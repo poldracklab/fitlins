@@ -19,7 +19,7 @@ from nipype.interfaces.base import (
     )
 from nipype.interfaces.io import IOBase
 
-from ..utils import snake_to_camel
+from ..utils import snake_to_camel, to_alphanum
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -456,10 +456,7 @@ class BIDSDataSink(IOBase):
             # format (eg: gain.Range, gain.EqualIndifference).
             # This prevents issues when creating/searching files for the report
             for k in ents:
-                if k in ("name", "contrast"):
-                    ents.update({k: str(ents[k]).replace('.', '_')})
-                    ents.update({k: str(ents[k]).replace('-', '_')})
-                    ents.update({k: snake_to_camel(str(ents[k]))})
+                ents = {k: to_alphanum(str(v)) for k, v in ents.items()}
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(
