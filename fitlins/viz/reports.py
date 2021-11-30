@@ -4,7 +4,7 @@ import jinja2
 import pkg_resources as pkgr
 from bids.layout import add_config_paths, BIDSLayout
 
-from ..utils import snake_to_camel
+from ..utils import snake_to_camel, to_alphanum
 from ..utils.bids import load_all_specs
 
 PATH_PATTERNS = [
@@ -90,11 +90,9 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 for key in graph.layout.get_entities(metadata=True):
                     cents.pop(key, None)
 
-                for k in cents:
+                for k, v in cents.items():
                     if k in ("name", "contrast"):
-                        cents.update({k: str(cents[k]).replace('.', '_')})
-                        cents.update({k: str(cents[k]).replace('-', '_')})
-                        cents.update({k: snake_to_camel(str(cents[k]))})
+                        cents.update({k: to_alphanum(str(v))})
 
                 glassbrain = fl_layout.get(suffix='ortho', extension='png', **cents)
 

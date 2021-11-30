@@ -455,8 +455,9 @@ class BIDSDataSink(IOBase):
             # In some instances, name/contrast could have the following
             # format (eg: gain.Range, gain.EqualIndifference).
             # This prevents issues when creating/searching files for the report
-            for k in ents:
-                ents = {k: to_alphanum(str(v)) for k, v in ents.items()}
+            for k, v in ents.items():
+                if k in ("name", "contrast", "stat"):
+                    ents.update({k: to_alphanum(str(v))})
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(

@@ -36,10 +36,10 @@ def test_prepare_contrasts():
     all_regressors = ["x", "y", "z"]
     ret = prepare_contrasts(contrasts, all_regressors)
     assert len(ret) == 4
-    assert ret[0][::2] == ("a", "t")
-    assert ret[1][::2] == ("b", "t")
-    assert ret[2][::2] == ("c", "F")
-    assert ret[3][::2] == ("d", "t")
+    assert ret[0][::3] == ("a", "t")
+    assert ret[1][::3] == ("b", "t")
+    assert ret[2][::3] == ("c", "F")
+    assert ret[3][::3] == ("d", "t")
     # Adding columns
     assert np.array_equal(ret[0][1], np.array([[1, -1, 0]]))
     assert np.array_equal(ret[1][1], np.array([[0, 1, -1]]))

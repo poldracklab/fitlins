@@ -4,6 +4,5 @@ def snake_to_camel(string):
 
 
 def to_alphanum(string):
-    string.replace('.', '_')
-    string.replace('-', '_')
+    string = string.replace('.', '_').replace('-', '_')
     return snake_to_camel(string)
