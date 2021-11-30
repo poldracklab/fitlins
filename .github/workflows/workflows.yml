@@ -246,8 +246,8 @@ jobs:
         run: |
           docker info
           set +o pipefail
-          ls -l /tmp/docker.tar.gz
-          docker load < /tmp/docker.tar.gz
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
           docker images
 
       - name: Restore cached test data
@@ -318,8 +318,8 @@ jobs:
         run: |
           docker info
           set +o pipefail
-          ls -l /tmp/docker.tar.gz
-          docker load < /tmp/docker.tar.gz
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
           docker images
 
       - name: Login to DockerHub
@@ -354,8 +354,8 @@ jobs:
         run: |
           docker info
           set +o pipefail
-          ls -l /tmp/docker.tar.gz
-          docker load < /tmp/docker.tar.gz
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
           docker images
 
       - name: Login to DockerHub
