@@ -244,6 +244,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
         # Node names are unique, levels are not
         name = snake_to_camel(nobj.name.replace('-', '_'))
+        level = nobj.level
 
         f1 = niu.Function(
                 input_names = ['all_specs', 'name'],
