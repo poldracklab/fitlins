@@ -222,7 +222,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     stage = None
     model = l1_model
 
-    def select_specs(all_specs, name):
+    def _select_specs(all_specs, name):
         spec = all_specs[name]
         entities = [c['entities'] for c in spec]
         contrasts = [c['contrasts'] for c in spec]
@@ -235,7 +235,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         level = nobj.level
 
         select_specs = pe.Node(
-            niu.Function(function=select_specs, output_names=['spec', 'entities', 'contrasts']),
+            niu.Function(function=_select_specs, output_names=['spec', 'entities', 'contrasts']),
             name=f'select_{name}_specs',
             run_without_submitting=True)
         select_specs.inputs.name = nobj.name
