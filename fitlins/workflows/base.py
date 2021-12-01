@@ -222,22 +222,11 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
     stage = None
     model = l1_model
 
-    def select_stats_spec(all_specs, name):
-        return all_specs[name]
-
-    def select_ents(all_specs, name):
-        entities = []
+    def select_specs(all_specs, name):
         spec = all_specs[name]
-        for coll in spec:
-            entities.append(coll['entities'].copy())
-        return entities
-
-    def select_conts(all_specs, name):
-        contrasts = []
-        spec = all_specs[name]
-        for coll in spec:
-            contrasts.append(coll['contrasts'])
-        return contrasts
+        entities = [c['entities'] for c in spec]
+        contrasts = [c['contrasts'] for c in spec]
+        return spec, entities, contrasts
 
     for node, nobj in graph.nodes.items():
 
@@ -245,38 +234,11 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         name = snake_to_camel(nobj.name.replace('-', '_'))
         level = nobj.level
 
-        f1 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['spec'],
-                function = select_stats_spec
-             )
-        f1.inputs.name = nobj.name
-
-        select_specs = pe.Node(f1,
-                name=f'select_{name}_spec',
-                run_without_submitting=True)
-
-        f2 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['entities'],
-                function = select_ents
-             )
-        f2.inputs.name = nobj.name
-
-        select_entities = pe.Node(f2,
-                name=f'select_{name}_entities',
-                run_without_submitting=True)
-
-        f3 = niu.Function(
-                input_names = ['all_specs', 'name'],
-                output_names = ['contrasts'],
-                function = select_conts
-             )
-        f3.inputs.name = nobj.name
-
-        select_contrasts = pe.Node(f3,
-                name=f'select_{name}_contrasts',
-                run_without_submitting=True)
+        select_specs = pe.Node(
+            niu.Function(function=select_specs, output_names=['spec', 'entities', 'contrasts']),
+            name=f'select_{name}_specs',
+            run_without_submitting=True)
+        select_specs.inputs.name = nobj.name
 
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
@@ -338,16 +300,14 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 run_without_submitting=True)
 
             wf.connect([
-                (loader, select_entities, [('all_specs', 'all_specs')]),
-                (loader, select_contrasts, [('all_specs', 'all_specs')]),
-                (select_entities, getter, [('entities', 'entities')]),
-                (select_entities, ds_model_warnings, [('entities', 'entities')]),
-                (select_entities, ds_design, [('entities', 'entities')]),
-                (select_entities, ds_design_matrix, [('entities', 'entities')]),
-                (select_entities, ds_run_contrasts, [('entities', 'entities')]),
-                (select_entities, ds_corr, [('entities', 'entities')]),
-                (select_contrasts, plot_run_contrast_matrix,  [('contrasts', 'contrast_info')]),
-                (select_contrasts, plot_corr,  [('contrasts', 'contrast_info')]),
+                (select_specs, getter, [('entities', 'entities')]),
+                (select_specs, ds_model_warnings, [('entities', 'entities')]),
+                (select_specs, ds_design, [('entities', 'entities')]),
+                (select_specs, ds_design_matrix, [('entities', 'entities')]),
+                (select_specs, ds_run_contrasts, [('entities', 'entities')]),
+                (select_specs, ds_corr, [('entities', 'entities')]),
+                (select_specs, plot_run_contrast_matrix,  [('contrasts', 'contrast_info')]),
+                (select_specs, plot_corr,  [('contrasts', 'contrast_info')]),
                 (plot_design, ds_design, [('figure', 'in_file')]),
                 (plot_run_contrast_matrix, ds_run_contrasts,  [('figure', 'in_file')]),
                 (plot_corr, ds_corr,  [('figure', 'in_file')]),
