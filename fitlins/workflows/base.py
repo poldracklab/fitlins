@@ -244,8 +244,8 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         # into single lists.
         # Do the same with corresponding metadata - interface will complain if shapes mismatch
         collate = pe.Node(
-                MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
-                          'pvalue_maps', 'contrast_metadata']),
+             MergeAll(['effect_maps', 'variance_maps', 'stat_maps', 'zscore_maps',
+                       'pvalue_maps', 'contrast_metadata']),
              name=f'collate_{name}',
              run_without_submitting=True)
 
@@ -257,7 +257,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             GlassBrainPlot(image_type='png'),
             iterfield='data',
             name=f'plot_{name}_contrasts')
-        
+
         #
         # Derivatives
         #
@@ -285,7 +285,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             run_without_submitting=True,
             name=f'ds_{name}_contrast_plots')
 
-
         if level == 'run':
             ds_model_maps = pe.Node(
                 BIDSDataSink(base_directory=out_dir,
@@ -312,9 +311,9 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 (plot_run_contrast_matrix, ds_run_contrasts,  [('figure', 'in_file')]),
                 (plot_corr, ds_corr,  [('figure', 'in_file')]),
                 (model, collate_mm, [('model_maps', 'model_maps'),
-                                    ('model_metadata', 'model_metadata')]),
+                                     ('model_metadata', 'model_metadata')]),
                 (collate_mm, ds_model_maps, [('model_maps', 'in_file'),
-                                       ('model_metadata', 'entities')]),
+                                             ('model_metadata', 'entities')]),
             ])
 
         else:
@@ -352,7 +351,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     (smooth, l1_model, [('out_file', 'bold_file')])
                 ])
 
-
         wf.connect([
             (loader, select_specs, [('all_specs', 'all_specs')]),
             (select_specs, model, [('spec', 'spec')]),
@@ -376,7 +374,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
             ])
-
 
         if level != analysis_level:
             stage = model
