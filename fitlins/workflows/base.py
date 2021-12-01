@@ -11,10 +11,9 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                     base_dir=None, name='fitlins_wf'):
     from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
-    from bids.modeling import BIDSStatsModelsGraph
     from ..interfaces.bids import (
         ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink)
-    from ..interfaces.nistats import DesignMatrix, FirstLevelModel, SecondLevelModel
+    from ..interfaces.nistats import DesignMatrix, SecondLevelModel
     from ..interfaces.visualizations import (
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
