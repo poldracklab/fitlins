@@ -94,12 +94,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
     design_matrix.inputs.drift_model = drift_model
 
-    l1_model = pe.MapNode(
-        FirstLevelModel(errorts=errorts),
-        iterfield=['design_matrix', 'spec', 'bold_file', 'mask_file'],
-        mem_gb=3,
-        name='l1_model')
-
     def _deindex(tsv):
         from pathlib import Path
         import pandas as pd
@@ -209,9 +203,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         (loader, ds_model_warnings, [('warnings', 'in_file')]),
         (loader, design_matrix, [('design_info', 'design_info')]),
         (getter, design_matrix, [('bold_files', 'bold_file')]),
-        (getter, l1_model, [('bold_files', 'bold_file'),
-                            ('mask_files', 'mask_file')]),
-        (design_matrix, l1_model, [('design_matrix', 'design_matrix')]),
         (design_matrix, plot_design, [('design_matrix', 'data')]),
         (design_matrix, plot_run_contrast_matrix,  [('design_matrix', 'data')]),
         (design_matrix, plot_corr,  [('design_matrix', 'data')]),
@@ -219,20 +210,28 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         (deindex_tsv, ds_design_matrix, [('out', 'in_file')]),
         ])
 
-    stage = None
-    model = l1_model
-
     def _select_specs(all_specs, name):
         spec = all_specs[name]
         entities = [c['entities'] for c in spec]
         contrasts = [c['contrasts'] for c in spec]
         return spec, entities, contrasts
 
+    models = {}
     for node in graph.nodes.values():
 
         # Node names are unique, levels are not
         name = snake_to_camel(node.name.replace('-', '_'))
         level = node.level
+
+        if level == "run":
+            model = pe.MapNode(
+                FirstLevelModel(errorts=errorts),
+                iterfield=['design_matrix', 'spec', 'bold_file', 'mask_file'],
+                mem_gb=3,
+                name='l1_model')
+        else:
+            model = pe.MapNode(SecondLevelModel(), iterfield=['spec'], name=f'{name}_model')
+        models[node.name] = model
 
         select_specs = pe.Node(
             niu.Function(function=_select_specs, output_names=['spec', 'entities', 'contrasts']),
@@ -299,6 +298,9 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 run_without_submitting=True)
 
             wf.connect([
+                (getter, model, [('bold_files', 'bold_file'),
+                                    ('mask_files', 'mask_file')]),
+                (design_matrix, model, [('design_matrix', 'design_matrix')]),
                 (select_specs, getter, [('entities', 'entities')]),
                 (select_specs, ds_model_warnings, [('entities', 'entities')]),
                 (select_specs, ds_design, [('entities', 'entities')]),
@@ -317,12 +319,11 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             ])
 
         else:
-            model = pe.MapNode(SecondLevelModel(), iterfield=['spec'], name=f'{name}_model')
-
+            prev = node.parents[0].source.name
             wf.connect([
-                (stage, model, [('effect_maps', 'effect_maps'),
-                                ('variance_maps', 'variance_maps'),
-                                ('contrast_metadata', 'stat_metadata')]),
+                (models[prev], model, [('effect_maps', 'effect_maps'),
+                                       ('variance_maps', 'variance_maps'),
+                                       ('contrast_metadata', 'stat_metadata')]),
             ])
 
         if smoothing and smoothing_level == level:
@@ -343,12 +344,12 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                 smooth.inputs.fwhm = smoothing_fwhm
                 smooth.inputs.outputtype = 'NIFTI_GZ'
                 wf.disconnect([
-                    (getter, l1_model, [('bold_files', 'bold_file')])
+                    (getter, model, [('bold_files', 'bold_file')])
                 ])
                 wf.connect([
                     (getter, smooth, [('mask_files', 'mask')]),
                     (getter, smooth, [('bold_files', 'in_file')]),
-                    (smooth, l1_model, [('out_file', 'bold_file')])
+                    (smooth, model, [('out_file', 'bold_file')])
                 ])
 
         wf.connect([
@@ -374,8 +375,5 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
             (collate, ds_contrast_plots, [('contrast_metadata', 'entities')]),
             (plot_contrasts, ds_contrast_plots, [('figure', 'in_file')]),
             ])
-
-        if level != analysis_level:
-            stage = model
 
     return wf
