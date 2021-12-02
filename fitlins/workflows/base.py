@@ -56,7 +56,7 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
                        'extension': ['.nii', '.nii.gz', '.dtseries.nii', '.func.gii']}),
         name='getter')
 
-    levels = list(OrderedDict.fromkeys([nobj.level for node, nobj in graph.nodes.items()]))
+    levels = list(OrderedDict.fromkeys([node.level for node in graph.nodes.values()]))
     if smoothing:
         smoothing_params = smoothing.split(':', 2)
         # Convert old style and warn; this should turn into an (informative) error around 0.5.0
@@ -228,17 +228,17 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         contrasts = [c['contrasts'] for c in spec]
         return spec, entities, contrasts
 
-    for node, nobj in graph.nodes.items():
+    for node in graph.nodes.values():
 
         # Node names are unique, levels are not
-        name = snake_to_camel(nobj.name.replace('-', '_'))
-        level = nobj.level
+        name = snake_to_camel(node.name.replace('-', '_'))
+        level = node.level
 
         select_specs = pe.Node(
             niu.Function(function=_select_specs, output_names=['spec', 'entities', 'contrasts']),
             name=f'select_{name}_specs',
             run_without_submitting=True)
-        select_specs.inputs.name = nobj.name
+        select_specs.inputs.name = node.name
 
         # Squash the results of MapNodes that may have generated multiple maps
         # into single lists.
