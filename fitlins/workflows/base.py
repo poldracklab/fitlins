@@ -18,6 +18,10 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
         DesignPlot, DesignCorrelationPlot, ContrastMatrixPlot, GlassBrainPlot)
     from ..interfaces.utils import MergeAll, CollateWithMetadata
     from ..utils import snake_to_camel
+    if estimator == 'afni':
+        from ..interfaces.afni import FirstLevelModel
+    else:
+        from ..interfaces.nistats import FirstLevelModel
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
 
@@ -90,10 +94,6 @@ def init_fitlins_wf(database_path, out_dir, graph, analysis_level, space,
 
     design_matrix.inputs.drift_model = drift_model
 
-    if estimator == 'afni':
-        from ..interfaces.afni import FirstLevelModel
-    else:
-        from ..interfaces.nistats import FirstLevelModel
     l1_model = pe.MapNode(
         FirstLevelModel(errorts=errorts),
         iterfield=['design_matrix', 'spec', 'bold_file', 'mask_file'],
