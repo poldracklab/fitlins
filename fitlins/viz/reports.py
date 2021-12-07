@@ -16,9 +16,7 @@ add_config_paths(fitlins=pkgr.resource_filename('fitlins', 'data/fitlins.json'))
 
 
 def displayify(contrast_name):
-    for match, repl in (('_gt_', ' &gt; '),
-                        ('_lt_', ' &lt; '),
-                        ('_vs_', ' vs. ')):
+    for match, repl in (('_gt_', ' &gt; '), ('_lt_', ' &lt; '), ('_vs_', ' vs. ')):
         contrast_name = contrast_name.replace(match, repl)
     return contrast_name
 
@@ -39,44 +37,42 @@ def deroot(val, root):
 
 
 def build_report_dict(deriv_dir, work_dir, graph):
-    fl_layout = BIDSLayout(
-        deriv_dir,
-        config=['bids', 'derivatives', 'fitlins'],
-        validate=False)
+    fl_layout = BIDSLayout(deriv_dir, config=['bids', 'derivatives', 'fitlins'], validate=False)
     wd_layout = BIDSLayout(
         Path(work_dir) / 'reportlets' / 'fitlins',
-        config = ['bids', 'derivatives', 'fitlins'],
-        validate=False)
+        config=['bids', 'derivatives', 'fitlins'],
+        validate=False,
+    )
     all_pngs = fl_layout.get(extension='.png')
     fig_dirs = set(
-        (png.dirname, tuple(ent for ent in png.entities.items()
-                            if ent[0] not in ('suffix', 'contrast')))
-        for png in fl_layout.get(extension='.png'))
+        (
+            png.dirname,
+            tuple(ent for ent in png.entities.items() if ent[0] not in ('suffix', 'contrast')),
+        )
+        for png in fl_layout.get(extension='.png')
+    )
 
     report = {
         'dataset': {
             'name': graph.layout.description['Name'],
-            },
+        },
         'model': graph.model,
-        'nodes': []
-        }
+        'nodes': [],
+    }
 
     if 'DatasetDOI' in graph.layout.description:
         report['dataset']['doi'] = graph.layout.description['DatasetDOI']
-        
+
     all_specs = {}
     load_all_specs(all_specs, None, graph.root_node)
-    
+
     for node, colls in all_specs.items():
         report_node = {'name': node, 'analyses': []}
         report['nodes'].append(report_node)
         for coll in colls:
             contrasts = coll.contrasts
 
-            analysis_dict = {
-                    'entities': {},
-                    'contrasts': []
-            }
+            analysis_dict = {'entities': {}, 'contrasts': []}
 
             for contrast_info in contrasts:
                 glassbrain = []
@@ -97,13 +93,16 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 glassbrain = fl_layout.get(suffix='ortho', extension='png', **cents)
 
                 analysis_dict['entities'] = {
-                        key: val for key, val in cents.items()
-                        if key in ('subject', 'session', 'task', 'run') and val
+                    key: val
+                    for key, val in cents.items()
+                    if key in ('subject', 'session', 'task', 'run') and val
                 }
 
                 analysis_dict['contrasts'].append(
-                    {'name': displayify(contrast_info.name),
-                     'glassbrain': glassbrain[0].path if glassbrain else None}
+                    {
+                        'name': displayify(contrast_info.name),
+                        'glassbrain': glassbrain[0].path if glassbrain else None,
+                    }
                 )
 
             ents = coll.entities.copy()
@@ -127,27 +126,26 @@ def build_report_dict(deriv_dir, work_dir, graph):
                 analysis_dict['warning'] = Path(warning[0].path).read_text()
 
     # Get subjects hackily
-    report['subjects'] = sorted({
-        analysis_dict['entities']['subject']
-        for analysis_dict in report['nodes'][0]['analyses']})
+    report['subjects'] = sorted(
+        {analysis_dict['entities']['subject'] for analysis_dict in report['nodes'][0]['analyses']}
+    )
 
     return report
 
 
 def write_full_report(report_dict, run_context, deriv_dir):
-    fl_layout = BIDSLayout(
-        deriv_dir, config=['bids', 'derivatives', 'fitlins'])
+    fl_layout = BIDSLayout(deriv_dir, config=['bids', 'derivatives', 'fitlins'])
 
     env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(
-            searchpath=pkgr.resource_filename('fitlins', '/')))
+        loader=jinja2.FileSystemLoader(searchpath=pkgr.resource_filename('fitlins', '/'))
+    )
 
     tpl = env.get_template('data/full_report.tpl')
 
     model = snake_to_camel(report_dict['model']['name'])
     target_file = op.join(
-        deriv_dir, fl_layout.build_path(
-            {'model': model}, PATH_PATTERNS, validate=False))
+        deriv_dir, fl_layout.build_path({'model': model}, PATH_PATTERNS, validate=False)
+    )
     html = tpl.render(deroot({**report_dict, **run_context}, op.dirname(target_file)))
     Path(target_file).parent.mkdir(parents=True, exist_ok=True)
     Path(target_file).write_text(html)

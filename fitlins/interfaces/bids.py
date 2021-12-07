@@ -13,18 +13,32 @@ from gzip import GzipFile
 from nipype import logging
 from nipype.utils.filemanip import copyfile
 from nipype.interfaces.base import (
-    BaseInterfaceInputSpec, TraitedSpec, SimpleInterface,
-    InputMultiPath, OutputMultiPath, File, Directory,
-    traits, isdefined
-    )
+    BaseInterfaceInputSpec,
+    TraitedSpec,
+    SimpleInterface,
+    InputMultiPath,
+    OutputMultiPath,
+    File,
+    Directory,
+    traits,
+    isdefined,
+)
 from nipype.interfaces.io import IOBase
 
 from ..utils import snake_to_camel, to_alphanum
 
 iflogger = logging.getLogger('nipype.interface')
 
-ENTITY_WHITELIST = {'task', 'run', 'session', 'subject', 'space',
-                    'acquisition', 'reconstruction', 'echo'}
+ENTITY_WHITELIST = {
+    'task',
+    'run',
+    'session',
+    'subject',
+    'space',
+    'acquisition',
+    'reconstruction',
+    'echo',
+}
 
 
 def bids_split_filename(fname):
@@ -49,10 +63,13 @@ def bids_split_filename(fname):
         file extension of fname
     """
     special_extensions = [
-        ".surf.gii", ".func.gii",
-        ".dtseries.nii", ".dscalar.nii",
-        ".nii.gz", ".tsv.gz",
-        ]
+        ".surf.gii",
+        ".func.gii",
+        ".dtseries.nii",
+        ".dscalar.nii",
+        ".nii.gz",
+        ".tsv.gz",
+    ]
 
     pth = os.path.dirname(fname)
     fname = os.path.basename(fname)
@@ -82,28 +99,29 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=False,
-                              desc='Path to bids database')
-    model = traits.Either('default', InputMultiPath(File(exists=True)),
-                          desc='Model filename')
+    database_path = Directory(exists=False, desc='Path to bids database')
+    model = traits.Either('default', InputMultiPath(File(exists=True)), desc='Model filename')
     selectors = traits.Dict(desc='Limit models to those with matching inputs')
 
 
 class ModelSpecLoaderOutputSpec(TraitedSpec):
-    model_spec = OutputMultiPath(traits.Dict(),
-                                 desc='Model specification(s) as Python dictionaries')
+    model_spec = OutputMultiPath(
+        traits.Dict(), desc='Model specification(s) as Python dictionaries'
+    )
 
 
 class ModelSpecLoader(SimpleInterface):
     """
     Load BIDS Stats Models specifications from a BIDS directory
     """
+
     input_spec = ModelSpecLoaderInputSpec
     output_spec = ModelSpecLoaderOutputSpec
 
     def _run_interface(self, runtime):
         import bids
         from bids.modeling import auto_model
+
         models = self.inputs.model
         if not isinstance(models, list):
             database_path = self.inputs.database_path
@@ -113,11 +131,14 @@ class ModelSpecLoader(SimpleInterface):
                 # model is not yet standardized, so validate=False
                 # Ignore all subject directories and .git/ and .datalad/ directories
                 indexer = bids.BIDSLayoutIndexer(
-                    ignore=[re.compile(r'sub-'), re.compile(r'\.(git|datalad)')])
+                    ignore=[re.compile(r'sub-'), re.compile(r'\.(git|datalad)')]
+                )
                 small_layout = bids.BIDSLayout(
-                    layout.root, derivatives=[d.root for d in layout.derivatives.values()],
+                    layout.root,
+                    derivatives=[d.root for d in layout.derivatives.values()],
                     validate=False,
-                    indexer=indexer)
+                    indexer=indexer,
+                )
                 # PyBIDS can double up, so find unique models
                 models = list(set(small_layout.get(suffix='smdl', return_type='file')))
                 if not models:
@@ -129,9 +150,14 @@ class ModelSpecLoader(SimpleInterface):
 
         if self.inputs.selectors:
             # This is almost certainly incorrect
-            models = [model for model in models
-                      if all(val in model['Input'].get(key, [val])
-                             for key, val in self.inputs.selectors.items())]
+            models = [
+                model
+                for model in models
+                if all(
+                    val in model['Input'].get(key, [val])
+                    for key, val in self.inputs.selectors.items()
+                )
+            ]
 
         self._results['model_spec'] = models
 
@@ -149,17 +175,16 @@ IMPUTATION_SNIPPET = """\
 
 
 class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=True,
-                              mandatory=True,
-                              desc='Path to bids database directory.')
+    database_path = Directory(exists=True, mandatory=True, desc='Path to bids database directory.')
     model = traits.Dict(desc='Model specification', mandatory=True)
     selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
-    design_info = traits.List(traits.Dict,
-                              desc='Descriptions of design matrices with sparse events, '
-                                   'dense regressors and TR')
+    design_info = traits.List(
+        traits.Dict,
+        desc='Descriptions of design matrices with sparse events, ' 'dense regressors and TR',
+    )
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
     all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel')
 
@@ -193,13 +218,13 @@ class LoadBIDSModel(SimpleInterface):
                     'entities': dict,
                   }
             'entities'  : The entities list contains a list for each level of analysis.
-                At each level, the list contains a dictionary of entities that apply to 
-                each unit of analysis. For example, if the level is "Run" and there are 
+                At each level, the list contains a dictionary of entities that apply to
+                each unit of analysis. For example, if the level is "Run" and there are
                 20 runs in the dataset, the first entry will be a list of 20 dictionaries,
                 each uniquely identifying a run.
             'level'  : The current level of the analysis [run, subject, dataset...]
             'X'  : The design matrix
-            'model'  : The model part from the BIDS-StatsModels specification. 
+            'model'  : The model part from the BIDS-StatsModels specification.
             'metadata' (only higher-levels): a parallel DataFrame with the same number of
                 rows as X that contains all known metadata variabes that vary on a row-by-row
                 basis but aren't actually predictiors
@@ -208,6 +233,7 @@ class LoadBIDSModel(SimpleInterface):
         Files containing HTML snippets with any warnings produced while processing the first
         level.
     """
+
     input_spec = LoadBIDSModelInputSpec
     output_spec = LoadBIDSModelOutputSpec
 
@@ -253,13 +279,7 @@ class LoadBIDSModel(SimpleInterface):
 
         for child in node.children:
             all_specs.update(
-                self._load_graph(
-                    runtime,
-                    graph,
-                    child.destination,
-                    outputs,
-                    **child.filter
-                )
+                self._load_graph(runtime, graph, child.destination, outputs, **child.filter)
             )
 
         return all_specs
@@ -277,8 +297,9 @@ class LoadBIDSModel(SimpleInterface):
                 # This shouldn't happen, so raise a (hopefully informative)
                 # exception if I'm wrong
                 fname = graph.layout.get(**spec.entities, suffix='bold')[0].path
-                raise ValueError(f"Preprocessed file {fname} does not have an "
-                                 "associated RepetitionTime")
+                raise ValueError(
+                    f"Preprocessed file {fname} does not have an " "associated RepetitionTime"
+                )
 
             info["repetition_time"] = spec.metadata['RepetitionTime'][0]
 
@@ -315,12 +336,9 @@ class LoadBIDSModel(SimpleInterface):
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=True,
-                              mandatory=True,
-                              desc='Path to bids database.')
+    database_path = Directory(exists=True, mandatory=True, desc='Path to bids database.')
     entities = InputMultiPath(traits.Dict(), mandatory=True)
-    selectors = traits.Dict(desc='Additional selectors to be applied',
-                            usedefault=True)
+    selectors = traits.Dict(desc='Additional selectors to be applied', usedefault=True)
 
 
 class BIDSSelectOutputSpec(TraitedSpec):
@@ -348,17 +366,21 @@ class BIDSSelect(SimpleInterface):
             if len(bold_file) == 0:
                 raise FileNotFoundError(
                     "Could not find BOLD file in {} with entities {}"
-                    "".format(layout.root, selectors))
+                    "".format(layout.root, selectors)
+                )
             elif len(bold_file) > 1:
                 raise ValueError(
                     "Non-unique BOLD file in {} with entities {}.\n"
                     "Matches:\n\t{}"
-                    "".format(layout.root, selectors,
-                              "\n\t".join(
-                                  '{} ({})'.format(
-                                      f.path,
-                                      layout.files[f.path].entities)
-                                  for f in bold_file)))
+                    "".format(
+                        layout.root,
+                        selectors,
+                        "\n\t".join(
+                            '{} ({})'.format(f.path, layout.files[f.path].entities)
+                            for f in bold_file
+                        ),
+                    )
+                )
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_file_entities(bold_file[0].path)
@@ -410,16 +432,15 @@ def _copy_or_convert(in_file, out_file):
 
 
 class BIDSDataSinkInputSpec(BaseInterfaceInputSpec):
-    base_directory = Directory(
-        mandatory=True,
-        desc='Path to BIDS (or derivatives) root directory')
+    base_directory = Directory(mandatory=True, desc='Path to BIDS (or derivatives) root directory')
     in_file = InputMultiPath(File(exists=True), mandatory=True)
-    entities = InputMultiPath(traits.Dict, usedefault=True,
-                              desc='Per-file entities to include in filename')
-    fixed_entities = traits.Dict(usedefault=True,
-                                 desc='Entities to include in all filenames')
+    entities = InputMultiPath(
+        traits.Dict, usedefault=True, desc='Per-file entities to include in filename'
+    )
+    fixed_entities = traits.Dict(usedefault=True, desc='Entities to include in all filenames')
     path_patterns = InputMultiPath(
-        traits.Str, desc='BIDS path patterns describing format of file names')
+        traits.Str, desc='BIDS path patterns describing format of file names'
+    )
 
 
 class BIDSDataSinkOutputSpec(TraitedSpec):
@@ -435,6 +456,7 @@ class BIDSDataSink(IOBase):
 
     def _list_outputs(self):
         from bids.layout import BIDSLayout
+
         base_dir = self.inputs.base_directory
 
         os.makedirs(base_dir, exist_ok=True)
@@ -445,13 +467,12 @@ class BIDSDataSink(IOBase):
             path_patterns = None
 
         out_files = []
-        for entities, in_file in zip(self.inputs.entities,
-                                     self.inputs.in_file):
+        for entities, in_file in zip(self.inputs.entities, self.inputs.in_file):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
             ext = bids_split_filename(in_file)[2]
             ents['extension'] = self._extension_map.get(ext, ext)
-            
+
             # In some instances, name/contrast could have the following
             # format (eg: gain.Range, gain.EqualIndifference).
             # This prevents issues when creating/searching files for the report
@@ -460,8 +481,8 @@ class BIDSDataSink(IOBase):
                     ents.update({k: to_alphanum(str(v))})
 
             out_fname = os.path.join(
-                base_dir, layout.build_path(
-                    ents, path_patterns, validate=False))
+                base_dir, layout.build_path(ents, path_patterns, validate=False)
+            )
             os.makedirs(os.path.dirname(out_fname), exist_ok=True)
 
             _copy_or_convert(in_file, out_fname)

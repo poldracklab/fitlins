@@ -17,8 +17,8 @@ def get_fitlins_config():
 
     fitlins_config_file = resource_filename('fitlins', 'data/nipype.cfg')
     global_config_file = os.path.join(
-        os.path.expanduser(os.getenv("NIPYPE_CONFIG_DIR", default="~/.nipype")),
-        "nipype.cfg")
+        os.path.expanduser(os.getenv("NIPYPE_CONFIG_DIR", default="~/.nipype")), "nipype.cfg"
+    )
     local_config_file = "nipype.cfg"
     fitlins_conf = ConfigParser()
     fitlins_conf.read([fitlins_config_file, global_config_file, local_config_file])

@@ -25,10 +25,13 @@ class BIDSError(ValueError):
     def __init__(self, message, bids_root):
         indent = 10
         header = '{sep} BIDS root folder: "{bids_root}" {sep}'.format(
-            bids_root=bids_root, sep=''.join(['-'] * indent))
+            bids_root=bids_root, sep=''.join(['-'] * indent)
+        )
         self.msg = '\n{header}\n{indent}{message}\n{footer}'.format(
-            header=header, indent=''.join([' '] * (indent + 1)),
-            message=message, footer=''.join(['-'] * len(header))
+            header=header,
+            indent=''.join([' '] * (indent + 1)),
+            message=message,
+            footer=''.join(['-'] * len(header)),
         )
         super(BIDSError, self).__init__(self.msg)
         self.bids_root = bids_root
@@ -43,8 +46,8 @@ def load_all_specs(all_specs, specs, node, **filters):
         specs = node.run(group_by=node.group_by, force_dense=False)
     else:
         contrasts = list(chain(*[s.contrasts for s in specs]))
-        specs = node.run(contrasts, group_by=node.group_by, **filters)  
-    
+        specs = node.run(contrasts, group_by=node.group_by, **filters)
+
     all_specs[node.name] = specs
     for child in node.children:
         load_all_specs(all_specs, specs, child.destination, **child.filter)
@@ -94,27 +97,30 @@ def collect_participants(layout, participant_label=None, strict=False):
             'structure is present and correct. Datasets can be validated online '
             'using the BIDS Validator (http://incf.github.io/bids-validator/).\n'
             'If you are using Docker for Mac or Docker for Windows, you '
-            'may need to adjust your "File sharing" preferences.', bids_dir)
+            'may need to adjust your "File sharing" preferences.',
+            bids_dir,
+        )
 
     # No --participant-label was set, return all
     if not participant_label:
         return all_participants
 
     # Drop sub- prefixes
-    participant_label = [sub[4:] if sub.startswith('sub-') else sub
-                         for sub in participant_label]
+    participant_label = [sub[4:] if sub.startswith('sub-') else sub for sub in participant_label]
 
     found_label = sorted(layout.get_subjects(subject=participant_label))
 
     if not found_label:
-        raise BIDSError('Could not find participants [{}]'.format(
-            ', '.join(participant_label)), bids_dir)
+        raise BIDSError(
+            'Could not find participants [{}]'.format(', '.join(participant_label)), bids_dir
+        )
 
     # Warn if some IDs were not found
     notfound_label = sorted(set(participant_label) - set(found_label))
     if notfound_label:
-        exc = BIDSError('Some participants were not found: {}'.format(
-            ', '.join(notfound_label)), bids_dir)
+        exc = BIDSError(
+            'Some participants were not found: {}'.format(', '.join(notfound_label)), bids_dir
+        )
         if strict:
             raise exc
         warnings.warn(exc.msg, BIDSWarning)
@@ -127,7 +133,7 @@ def write_derivative_description(bids_dir, deriv_dir, args):
     from pathlib import Path
 
     def _clean_relative(item):
-        """ Turn absolute paths into relative paths """
+        """Turn absolute paths into relative paths"""
         try:
             p = Path(item)
             c = f"../{p.stem}"
@@ -153,10 +159,10 @@ def write_derivative_description(bids_dir, deriv_dir, args):
             'Version': __version__,
             'CodeURL': 'https://github.com/poldracklab/fitlins',
             'Parameters': out_args,
-            },
+        },
         'CodeURL': 'https://github.com/poldracklab/fitlins',
         'HowToAcknowledge': 'https://github.com/poldracklab/fitlins',
-        }
+    }
 
     # Keys that can only be set by environment
     if 'FITLINS_DOCKER_TAG' in os.environ:
@@ -178,8 +184,7 @@ def write_derivative_description(bids_dir, deriv_dir, args):
         orig_desc = {}
 
     if 'DatasetDOI' in orig_desc:
-        desc['SourceDatasetsURLs'] = ['https://doi.org/{}'.format(
-                                          orig_desc['DatasetDOI'])]
+        desc['SourceDatasetsURLs'] = ['https://doi.org/{}'.format(orig_desc['DatasetDOI'])]
     if 'License' in orig_desc:
         desc['License'] = orig_desc['License']
 

@@ -118,9 +118,7 @@ class FirstLevelModel(FirstLevelModel):
             img.to_filename(img_path)
 
         # Execute commands
-        logger.info(
-            f"3dREMLfit and 3dPval computation will be performed in: {runtime.cwd}\n"
-        )
+        logger.info(f"3dREMLfit and 3dPval computation will be performed in: {runtime.cwd}\n")
 
         # Define 3dREMLfit command
         remlfit = afni.Remlfit()
@@ -145,7 +143,7 @@ class FirstLevelModel(FirstLevelModel):
         fwhm.inputs.in_file = reml_res.outputs.wherr_file
         fwhm.inputs.out_file = fname_fmt("model", "residsmoothness").replace('.nii.gz', '.tsv')
         fwhm_res = fwhm.run()
-        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
+        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file, delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
         out_maps = nb.load(reml_res.outputs.out_file)
@@ -173,7 +171,7 @@ class FirstLevelModel(FirstLevelModel):
         # separate dict for maps that don't need to be extracted
         model_attr = {
             'residtsnr': self.save_tsnr(runtime, beta_maps, var_maps),
-            'residsmoothness': fwhm_res.outputs.out_file
+            'residsmoothness': fwhm_res.outputs.out_file,
         }
         # Save error time series if people want it
         if self.errorts:
@@ -262,12 +260,12 @@ class FirstLevelModel(FirstLevelModel):
                 clean_vol_labels.append(x)
         for (name, weights, cont_ents, contrast_test) in contrasts:
             contrast_metadata.append(
-                    {
-                        "name": self.inputs.spec['name'],
-                        "level": self.inputs.spec['level'],
-                        "stat": contrast_test,
-                        **cont_ents,
-                    }
+                {
+                    "name": self.inputs.spec['name'],
+                    "level": self.inputs.spec['level'],
+                    "stat": contrast_test,
+                    **cont_ents,
+                }
             )
 
             # Get boolean to index appropriate values
@@ -300,21 +298,20 @@ class FirstLevelModel(FirstLevelModel):
                     imgs = maps[map_type]
                     fname = fname_fmt(name, map_type)
                     extract_volume(
-                        imgs,
-                        idx,
-                        f"{map_type} of contrast {name}",
-                        fname_fmt(name, map_type)
+                        imgs, idx, f"{map_type} of contrast {name}", fname_fmt(name, map_type)
                     )
                     map_list.append(fname)
 
         # calculate effect variance
-        for (name, weights, contrast_entities, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
+        for (name, weights, contrast_entities, contrast_type), effect_fname, stat_fname in zip(
+            contrasts, effect_maps, stat_maps
+        ):
             map_type = "effect_variance"
             effect_img = nb.load(effect_fname)
             effect = effect_img.get_fdata()
             stat_img = nb.load(stat_fname)
             stat = stat_img.get_fdata()
-            variance = ((effect/stat)) ** 2
+            variance = ((effect / stat)) ** 2
             variance_img = nb.Nifti1Image(variance, effect_img.affine, effect_img.header)
             variance_img.header['descrip'] = f"{map_type} of contrast {name}"
 
@@ -332,7 +329,9 @@ class FirstLevelModel(FirstLevelModel):
     def get_stim_labels(self):
         # Iterate through all weight specifications to get a list of stimulus
         # column labels.
-        conditions = _flatten([contrast_info['conditions'] for contrast_info in self.inputs.spec['contrasts']])
+        conditions = _flatten(
+            [contrast_info['conditions'] for contrast_info in self.inputs.spec['contrasts']]
+        )
         return list(set(conditions))
 
     def save_tsnr(self, runtime, rbetas, rvars):
@@ -521,9 +520,7 @@ def get_afni_intent_info(img):
             intent_info.append(tuple(val))
         else:
             params = [x for x in val[1].split(",")]
-            intent_info.append(
-                (STAT_CODES.label[val[0]], tuple([float(x) for x in params if x]))
-            )
+            intent_info.append((STAT_CODES.label[val[0]], tuple([float(x) for x in params if x])))
 
     return intent_info
 
@@ -537,9 +534,7 @@ class PvalInputSpec(AFNICommandInputSpec):
         mandatory=True,
         exists=True,
     )
-    zscore = traits.Bool(
-        usedefault=False, argstr="-zscore", desc="convert to a z-score instead"
-    )
+    zscore = traits.Bool(usedefault=False, argstr="-zscore", desc="convert to a z-score instead")
     out_file = File(
         desc="Filename (AFNI prefix) for the output.",
         name_template="%s_stat",
@@ -590,9 +585,7 @@ class Pval(AFNICommand):
                 suffix = ""
         else:
             prefix = self.inputs.out_file
-            ext_ind = max(
-                [prefix.lower().rfind(".nii.gz"), prefix.lower().rfind(".nii")]
-            )
+            ext_ind = max([prefix.lower().rfind(".nii.gz"), prefix.lower().rfind(".nii")])
             if ext_ind == -1:
                 ext = ".HEAD"
                 suffix = "+tlrc"
@@ -635,7 +628,7 @@ def parse_afni_ext(nifti_file):
         vtype = type_mapping[attribute.attrib["ni_type"]]
         vname = attribute.attrib["atr_name"]
         vcount = attribute.attrib["ni_dimen"]
-        vval = attribute.text.strip('\n "').replace('"\n "','')
+        vval = attribute.text.strip('\n "').replace('"\n "', '')
         # Create a string object equivalent to what is observed when
         # parsing an AFNI ".HEAD" file.
         tmp = "type = {vtype}\nname = {vname}\ncount = {vcount}\n{vval}\n"

@@ -7,7 +7,7 @@ def snake_to_camel(string):
 
 
 def to_alphanum(string):
-    """ Convert string to alphanumeric
+    """Convert string to alphanumeric
 
     Replaces all other characters with underscores and then converts to camelCase
 
