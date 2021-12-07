@@ -98,7 +98,7 @@ def collect_participants(layout, participant_label=None, strict=False):
             'using the BIDS Validator (http://incf.github.io/bids-validator/).\n'
             'If you are using Docker for Mac or Docker for Windows, you '
             'may need to adjust your "File sharing" preferences.',
-            bids_dir,
+            layout.root,
         )
 
     # No --participant-label was set, return all
@@ -112,14 +112,14 @@ def collect_participants(layout, participant_label=None, strict=False):
 
     if not found_label:
         raise BIDSError(
-            'Could not find participants [{}]'.format(', '.join(participant_label)), bids_dir
+            'Could not find participants [{}]'.format(', '.join(participant_label)), layout.root
         )
 
     # Warn if some IDs were not found
     notfound_label = sorted(set(participant_label) - set(found_label))
     if notfound_label:
         exc = BIDSError(
-            'Some participants were not found: {}'.format(', '.join(notfound_label)), bids_dir
+            'Some participants were not found: {}'.format(', '.join(notfound_label)), layout.root
         )
         if strict:
             raise exc

@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+from functools import partial
 
 from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
 
@@ -177,10 +178,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
             # so include a check to make sure casting doesn't lose too much.
             slope32 = np.float32(img.dataobj._slope)
             inter32 = np.float32(img.dataobj._inter)
-            if (
-                max(np.abs(slope32 - img.dataobj._slope), np.abs(inter32 - img.dataobj._inter))
-                < 1e-7
-            ):
+            close = partial(np.isclose, atol=1e-7, rtol=0)
+            if close(slope32, img.dataobj._slope) and close(inter32, img.dataobj._inter):
                 img.dataobj._slope = slope32
                 img.dataobj._inter = inter32
 
