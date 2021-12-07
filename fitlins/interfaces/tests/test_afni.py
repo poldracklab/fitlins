@@ -7,6 +7,7 @@ import subprocess as sp
 import pytest
 import sys
 
+from collections import namedtuple
 from nibabel.testing import data_path
 import nibabel as nb
 
@@ -20,6 +21,8 @@ from fitlins.interfaces.afni import (
     get_afni_intent_info_for_subvol,
 )
 
+ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights',
+                                           'test', 'entities'))
 
 def get_reml_bucket_test_data():
     afni_test_dir = "/tmp/afni_reml_test_data"
@@ -38,21 +41,22 @@ def get_reml_bucket_test_data():
 
 
 def test_get_afni_design_matrix():
+    entities = {
+            "space": "MNI152NLin2009cAsym",
+            "subject": "01",
+            "task": "rhymejudgment",
+    }
+
     contrast_info = [
-        {
-            "entities": {
-                "space": "MNI152NLin2009cAsym",
-                "subject": "01",
-                "task": "rhymejudgment",
-            },
-            "name": "a_test",
-            "type": "F",
-            "weights": [
-                {"trial_type.pseudoword": 2, "trial_type.word": 5},
-                {"trial_type.pseudoword": 1, "trial_type.word": -5},
-            ],
-        }
+        ContrastInfo(
+            'a_test',
+            ['trial_type.pseudoword', 'trial_type.word'],
+            [[2, 5], [1, -5]],
+            'F',
+            entities,
+        )
     ]
+
     design = pd.DataFrame(
         {
             "trial_type.pseudoword": [11.2, 1],
@@ -61,7 +65,10 @@ def test_get_afni_design_matrix():
             "drift": [1, 2],
         }
     )
+
+    contrast_info = [c._asdict().copy() for c in contrast_info]
     contrasts = prepare_contrasts(contrast_info, design.columns.tolist())
+
     t_r = 2
     stim_labels = ["trial_type.pseudoword", "trial_type.word"]
     stim_labels_with_tag = ['stim_' + sl for sl in stim_labels]
@@ -93,21 +100,22 @@ def test_get_afni_design_matrix():
 
 def test_create_glt_test_info():
 
+    entities = {
+            "space": "MNI152NLin2009cAsym",
+            "subject": "01",
+            "task": "rhymejudgment",
+    }
+
     contrast_info = [
-        {
-            "entities": {
-                "space": "MNI152NLin2009cAsym",
-                "subject": "01",
-                "task": "rhymejudgment",
-            },
-            "name": "a_test",
-            "type": "F",
-            "weights": [
-                {"trial_type.pseudoword": 2, "trial_type.word": 5},
-                {"trial_type.pseudoword": 1, "trial_type.word": -5},
-            ],
-        }
+        ContrastInfo(
+            'a_test',
+            ['trial_type.pseudoword', 'trial_type.word'],
+            [[2, 5], [1, -5]],
+            'F',
+            entities,
+        )
     ]
+
     design = pd.DataFrame(
         {
             "trial_type.pseudoword": [11.2, 1],
@@ -116,6 +124,8 @@ def test_create_glt_test_info():
             "drift": [1, 2],
         }
     )
+
+    contrast_info = [c._asdict().copy() for c in contrast_info]
     contrasts = prepare_contrasts(contrast_info, design.columns.tolist())
 
     expected = """

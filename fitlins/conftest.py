@@ -21,60 +21,79 @@ def bids_dset(bids_dir):
 def sample_model_dict():
     return {
         "Name": "junkfood_model001",
+        "BIDSModelVersion": "1.0.0",
         "Description": "",
         "Input": {"task": "eating"},
-        "Steps": [
+        "Nodes": [
             {
                 "Level": "run",
-                "Transformations": [
-                    {"Name": "Factor", "Input": ["trial_type"]},
-                    {
-                        "Name": "Convolve",
-                        "Input": ["trial_type.ice_cream", "trial_type.cake"],
-                        "Model": "spm",
-                    },
-                ],
+                "Name": "run",
+                "GroupBy": ["run", "session", "subject"],
+                "Transformations": {
+                    "Transformer": "pybids-transforms-v1",
+                    "Instructions": [
+                        {"Name": "Factor", "Input": ["trial_type"]},
+                        {
+                            "Name": "Convolve",
+                            "Input": ["trial_type.ice_cream", "trial_type.cake"],
+                            "Model": "spm",
+                        },
+                    ],
+                },
                 "Model": {
-                    "X": [
-                        "trial_type.ice_cream",
-                        "trial_type.cake",
-                        "food_sweats",
-                    ]
+                    "X": ["trial_type.ice_cream", "trial_type.cake", "food_sweats"]
                 },
                 "DummyContrasts": {
                     "Conditions": ["trial_type.ice_cream", "trial_type.cake"],
-                    "Type": "t",
+                    "Test": "t",
                 },
                 "Contrasts": [
                     {
                         "Name": "icecream_gt_cake",
                         "ConditionList": ["trial_type.ice_cream", "trial_type.cake"],
                         "Weights": [1, -1],
-                        "Type": "t",
+                        "Test": "t",
                     },
                     {
                         "Name": "eating_vs_baseline",
                         "ConditionList": ["trial_type.ice_cream", "trial_type.cake"],
                         "Weights": [0.5, 0.5],
-                        "Type": "t",
+                        "Test": "t",
                     },
                 ],
             },
-            {"Level": "subject", "DummyContrasts": {"Type": "FEMA"}},
+            {
+                "Level": "subject",
+                "Name": "subject",
+                "GroupBy": ["subject", "contrast"],
+                "Model": {"X": [1], "Type": "Meta"},
+                "DummyContrasts": {"Test": "t"},
+            },
             {
                 "Level": "dataset",
+                "Name": "all_food_good_food",
+                "GroupBy": ["contrast", "group"],
+                "Model": {"X": [1]},
                 "DummyContrasts": {
                     "Conditions": ["icecream_gt_cake", "eating_vs_baseline"],
-                    "Type": "t",
+                    "Test": "t",
                 },
                 "Contrasts": [
                     {
                         "Name": "all_food_good_food",
                         "ConditionList": ["trial_type.ice_cream", "trial_type.cake"],
                         "Weights": [[1, 0], [0, 1]],
-                        "Type": "F",
+                        "Test": "F",
                     }
                 ],
+            },
+        ],
+        "Edges": [
+            {"Source": "run", "Destination": "subject"},
+            {
+                "Source": "subject",
+                "Destination": "all_food_good_food",
+                "Filter": {"contrast": ["icecream_gt_cake", "eating_vs_baseline"]},
             },
         ],
     }

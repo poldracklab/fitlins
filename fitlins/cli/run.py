@@ -6,26 +6,35 @@ fMRI model-fitting
 ==================
 """
 
-import sys
 import os
-import os.path as op
-import time
-import logging
-import warnings
-from copy import deepcopy
-from pathlib import Path
-from tempfile import mkdtemp
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
-from multiprocessing import cpu_count
+from multiprocessing import set_start_method
 
-import bids
-from bids.analysis import auto_model, Analysis
+try:
+    set_start_method("forkserver")
+except RuntimeError:
+    pass  #
+finally:
+    import sys
+    import os.path as op
+    import time
+    import logging
+    import warnings
+    from copy import deepcopy
+    from pathlib import Path
+    from tempfile import mkdtemp
+    from argparse import ArgumentParser
+    from argparse import RawTextHelpFormatter
+    from multiprocessing import cpu_count
+    from multiprocessing import set_start_method
 
-from .. import __version__
-from ..workflows import init_fitlins_wf
-from ..utils import bids as fub, config
-from ..viz.reports import build_report_dict, write_full_report
+    import bids
+    from bids.modeling import auto_model, BIDSStatsModelsGraph
+
+    from .. import __version__
+    from ..workflows import init_fitlins_wf
+    from ..utils import bids as fub, config
+    from ..viz.reports import build_report_dict, write_full_report
+
 
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logger = logging.getLogger('cli')
@@ -249,8 +258,31 @@ def run_fitlins(argv=None):
         subject_list=subject_list)
     )
 
+    # TODO: Fix AUTO_MODEL
+    # if model == 'default':
+    #     models = auto_model(layout)
+    # else:
+    #     import json
+    #     if op.exists(model):
+    #         model_dict = json.loads(Path(model).read_text())
+    #     models = [model_dict]
+
+    model_dict = None
+    if model == 'default':
+        retcode = 1
+        raise NotImplementedError("The default model has not been implemented yet.")
+    else:
+        import json
+        if op.exists(model):
+            model_dict = json.loads(Path(model).read_text())
+
+    if not model_dict:
+        raise ValueError(f'model_dict cannot be empty. Invalid model filepath {model}.')
+
+    graph = BIDSStatsModelsGraph(layout, model_dict)
+
     fitlins_wf = init_fitlins_wf(
-        database_path, deriv_dir,
+        database_path, deriv_dir, graph=graph,
         analysis_level=opts.analysis_level, model=model,
         space=opts.space, desc=opts.desc_label,
         participants=subject_list, base_dir=work_dir,
@@ -266,11 +298,11 @@ def run_fitlins(argv=None):
     retcode = 0
     if not opts.reports_only:
         try:
+            # Plot out the workflow graph
+            fitlins_wf.write_graph(dotfilename=os.path.join(opts.work_dir, 'graph.dot'), graph2use='exec')
             fitlins_wf.run(**plugin_settings)
         except Exception:
             retcode = 1
-
-    models = auto_model(layout) if model == 'default' else [model]
 
     run_context = {'version': __version__,
                    'command': ' '.join(sys.argv),
@@ -281,11 +313,9 @@ def run_fitlins(argv=None):
     if subject_list is not None:
         selectors['subject'] = subject_list
 
-    for model in models:
-        analysis = Analysis(layout, model=model)
-        analysis.setup(**selectors)
-        report_dict = build_report_dict(deriv_dir, work_dir, analysis)
-        write_full_report(report_dict, run_context, deriv_dir)
+    graph.load_collections(**selectors)
+    report_dict = build_report_dict(deriv_dir, work_dir, graph)
+    write_full_report(report_dict, run_context, deriv_dir)
 
     return retcode
 

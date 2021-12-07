@@ -1,86 +1,157 @@
 {
-  "Name": "ds003_model001",
-  "Description": "",
-  "Input": {
-    "task": "rhymejudgment"
-  },
-  "Steps": [
-    {
-      "Level": "run",
-      "Transformations": [
-        {
-          "Name": "Factor",
-          "Input": [
-            "trial_type"
-          ]
-        },
-        {
-          "Name": "Convolve",
-          "Input": ["trial_type.word", "trial_type.pseudoword"],
-          "Model": "spm"
-        }
-      ],
-      "Model": {
-        "X": [
-          "trial_type.word",
-          "trial_type.pseudoword",
-          "framewise_displacement",
-          "trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z",
-          "a_comp_cor_00", "a_comp_cor_01", "a_comp_cor_02",
-          "a_comp_cor_03", "a_comp_cor_04", "a_comp_cor_05"
-        ]
+   "Name":"ds003_model001",
+   "BIDSModelVersion":"1.0.0",
+   "Description":"",
+   "Input":{
+      "task":"rhymejudgment"
+   },
+   "Nodes":[
+      {
+         "Level":"run",
+         "Name":"subject",
+         "GroupBy":[
+            "subject"
+         ],
+         "Transformations":{
+            "Transformer":"pybids-transforms-v1",
+            "Instructions":[
+               {
+                  "Name":"Factor",
+                  "Input":[
+                     "trial_type"
+                  ]
+               },
+               {
+                  "Name":"Convolve",
+                  "Input":[
+                     "trial_type.word",
+                     "trial_type.pseudoword"
+                  ],
+                  "Model":"spm"
+               }
+            ]
+         },
+         "Model":{
+            "X":[
+               "trial_type.word",
+               "trial_type.pseudoword",
+               "framewise_displacement",
+               "trans_x",
+               "trans_y",
+               "trans_z",
+               "rot_x",
+               "rot_y",
+               "rot_z",
+               "a_comp_cor_00",
+               "a_comp_cor_01",
+               "a_comp_cor_02",
+               "a_comp_cor_03",
+               "a_comp_cor_04",
+               "a_comp_cor_05",
+               1
+            ]
+         },
+         "DummyContrasts":{
+            "Conditions":[
+               "trial_type.word",
+               "trial_type.pseudoword"
+            ],
+            "Test":"t"
+         },
+         "Contrasts":[
+            {
+               "Name":"word_gt_pseudo",
+               "ConditionList":[
+                  "trial_type.word",
+                  "trial_type.pseudoword"
+               ],
+               "Weights":[
+                  1,
+                  -1
+               ],
+               "Test":"t"
+            },
+            {
+               "Name":"task_vs_baseline",
+               "ConditionList":[
+                  "trial_type.word",
+                  "trial_type.pseudoword"
+               ],
+               "Weights":[
+                  0.5,
+                  0.5
+               ],
+               "Test":"t"
+            }
+         ]
       },
-      "DummyContrasts": {
-        "Conditions": ["trial_type.word", "trial_type.pseudoword"],
-        "Type": "t"
-        },
-      "Contrasts": [
-        {
-          "Name": "word_gt_pseudo",
-          "ConditionList": [
-            "trial_type.word",
-            "trial_type.pseudoword"
-          ],
-          "Weights": [1, -1],
-          "Type": "t"
-        },
-        {
-          "Name": "task_vs_baseline",
-          "ConditionList": [
-            "trial_type.word",
-            "trial_type.pseudoword"
-          ],
-          "Weights": [0.5, 0.5],
-          "Type": "t"
-        }
-      ]
-    },
-    {
-      "Level": "subject",
-      "DummyContrasts": {
-        "Type": "FEMA"
+      {
+         "Level":"dataset",
+         "Name":"t-test",
+         "GroupBy":["contrast"],
+         "Model":{
+            "X":[
+               1
+            ],
+            "Type":"glm"
+         },
+         "DummyContrasts":{
+            "Test":"t"
+         }
+      },
+      {
+         "Level":"dataset",
+         "Name":"F-test",
+         "GroupBy": [],
+         "Model":{
+            "X":[
+                "trial_type.word",
+                "trial_type.pseudoword"
+            ],
+            "Type":"glm"
+         },
+         "Contrasts":[
+            {
+               "Name":"any_words",
+               "ConditionList":[
+                  "trial_type.word",
+                  "trial_type.pseudoword"
+               ],
+               "Weights":[
+                  [
+                     1,
+                     0
+                  ],
+                  [
+                     0,
+                     1
+                  ]
+               ],
+               "Test":"F"
+            }
+         ]
       }
-    },
-    {
-      "Level": "dataset",
-      "DummyContrasts": {
-        "Conditions": ["word_gt_pseudo", "task_vs_baseline"],
-        "Type": "t"
-        },
-      "Contrasts":[
-        {
-          "Name": "any_words",
-          "ConditionList": [
-            "trial_type.word",
-            "trial_type.pseudoword"
-          ],
-          "Weights": [
-            [1, 0],
-            [0, 1]
-          ],
-          "Type": "F"
-        }
-      ]
-    }
-  ]
+   ],
+   "Edges":[
+      {
+         "Source":"subject",
+         "Destination":"t-test",
+         "Filter":{
+            "contrast":[
+               "task_vs_baseline",
+               "word_gt_pseudo"
+            ]
+         }
+      },
+      {
+         "Source":"subject",
+         "Destination":"F-test",
+         "Filter":{
+            "contrast":[
+               "trial_type.word",
+               "trial_type.pseudoword"
+            ]
+         }
+      }
+   ]
 }

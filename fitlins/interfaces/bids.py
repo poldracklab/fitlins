@@ -1,11 +1,14 @@
+import json
 import os
 import re
-from pathlib import Path
-from gzip import GzipFile
-import json
 import shutil
+
 import numpy as np
 import nibabel as nb
+
+from itertools import chain
+from pathlib import Path
+from gzip import GzipFile
 
 from nipype import logging
 from nipype.utils.filemanip import copyfile
@@ -16,7 +19,7 @@ from nipype.interfaces.base import (
     )
 from nipype.interfaces.io import IOBase
 
-from ..utils import snake_to_camel
+from ..utils import snake_to_camel, to_alphanum
 
 iflogger = logging.getLogger('nipype.interface')
 
@@ -100,7 +103,7 @@ class ModelSpecLoader(SimpleInterface):
 
     def _run_interface(self, runtime):
         import bids
-        from bids.analysis import auto_model
+        from bids.modeling import auto_model
         models = self.inputs.model
         if not isinstance(models, list):
             database_path = self.inputs.database_path
@@ -157,11 +160,8 @@ class LoadBIDSModelOutputSpec(TraitedSpec):
     design_info = traits.List(traits.Dict,
                               desc='Descriptions of design matrices with sparse events, '
                                    'dense regressors and TR')
-    contrast_info = traits.List(traits.List(traits.List(traits.Dict)),
-                                desc='A list of contrast specifications at each unit of analysis')
-    entities = traits.List(traits.List(traits.Dict),
-                           desc='A list of applicable entities at each unit of analysis')
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
+    all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel')
 
 
 class LoadBIDSModel(SimpleInterface):
@@ -171,7 +171,7 @@ class LoadBIDSModel(SimpleInterface):
 
     Outputs
     -------
-    design_info : list of dictionaries
+    design_info : list of list of dictionaries
         At the first level, a dictionary per-run containing the following keys:
             'sparse' : HDF5 file containing sparse representation of events
                        (onset, duration, amplitude)
@@ -179,28 +179,30 @@ class LoadBIDSModel(SimpleInterface):
                        regressors
             'repetition_time'   : float (in seconds)
 
-    entities : list of list of dictionaries
-        The entities list contains a list for each level of analysis.
-        At each level, the list contains a dictionary of entities that apply to each
-        unit of analysis. For example, if the first level is "Run" and there are 20
-        runs in the dataset, the first entry will be a list of 20 dictionaries, each
-        uniquely identifying a run.
-
-    contrast_info : list of lists of files
-        A list of contrast specifications at each unit of analysis; hence a list of
-        dictionaries for each entity dictionary.
-        A contrast specification is a list of contrast dictionaries
-        Each dictionary has form:
-          {
-            'entities': dict,
-            'name': str,
-            'type': 't' or 'F',
-            'weights': dict
-          }
-
-        The entities dictionary is a subset of the corresponding dictionary in the entities
-        output.
-        The weights dictionary is a mapping from design matrix column names to floats.
+    all_specs : dictionary of list of dictionaries
+        The collection of specs from each level. Each dict at individual levels
+        contains the following keys:
+            'contrasts'  : a list of ContrastInfo objects each unit of analysis.
+                A contrast specifiction is a list of contrast
+                dictionaries. Each dict has form:
+                  {
+                    'name': str,
+                    'conditions': list,
+                    'weights: list,
+                    test: str,
+                    'entities': dict,
+                  }
+            'entities'  : The entities list contains a list for each level of analysis.
+                At each level, the list contains a dictionary of entities that apply to 
+                each unit of analysis. For example, if the level is "Run" and there are 
+                20 runs in the dataset, the first entry will be a list of 20 dictionaries,
+                each uniquely identifying a run.
+            'level'  : The current level of the analysis [run, subject, dataset...]
+            'X'  : The design matrix
+            'model'  : The model part from the BIDS-StatsModels specification. 
+            'metadata' (only higher-levels): a parallel DataFrame with the same number of
+                rows as X that contains all known metadata variabes that vary on a row-by-row
+                basis but aren't actually predictiors
 
     warnings : list of files
         Files containing HTML snippets with any warnings produced while processing the first
@@ -210,180 +212,106 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        from bids.analysis import Analysis
+        from bids.modeling import BIDSStatsModelsGraph
         from bids.layout import BIDSLayout
 
         layout = BIDSLayout.load(database_path=self.inputs.database_path)
-
         selectors = self.inputs.selectors
 
-        analysis = Analysis(model=self.inputs.model, layout=layout)
-        analysis.setup(drop_na=False, **selectors)
-        self._load_level1(runtime, analysis)
-        self._load_higher_level(runtime, analysis)
+        graph = BIDSStatsModelsGraph(layout, self.inputs.model)
+        graph.load_collections(**selectors)
+
+        self._results['all_specs'] = self._load_graph(runtime, graph)
 
         return runtime
 
-    def _load_level1(self, runtime, analysis):
-        step = analysis.steps[0]
-        step_subdir = Path(runtime.cwd) / step.level
+    def _load_graph(self, runtime, graph, node=None, inputs=None, **filters):
+        if node is None:
+            node = graph.root_node
+
+        specs = node.run(inputs, group_by=node.group_by, **filters)
+        outputs = list(chain(*[s.contrasts for s in specs]))
+
+        if node.level == 'run':
+            self._load_run_level(runtime, graph, specs)
+
+        all_specs = {
+            node.name: [
+                {
+                    'contrasts': [c._asdict() for c in spec.contrasts],
+                    'entities': spec.entities,
+                    'level': spec.node.level,
+                    'X': spec.X,
+                    'name': spec.node.name,
+                    'model': spec.node.model,
+                    # Metadata is only used in higher level models; save space
+                    'metadata': spec.metadata if spec.node.level != "run" else None,
+                }
+                for spec in specs
+            ]
+        }
+
+        for child in node.children:
+            all_specs.update(
+                self._load_graph(
+                    runtime,
+                    graph,
+                    child.destination,
+                    outputs,
+                    **child.filter
+                )
+            )
+
+        return all_specs
+
+    def _load_run_level(self, runtime, graph, specs):
+        design_info = []
+        warnings = []
+
+        step_subdir = Path(runtime.cwd) / "run"
         step_subdir.mkdir(parents=True, exist_ok=True)
 
-        entities = []
-        design_info = []
-        contrast_info = []
-        warnings = []
-        for coll in step.get_collections():
-            sparse = dense = None
-            try:
-                sparse = coll.to_df(include_dense=False, format='long')
-            except ValueError:
-                pass
-            try:
-                dense = coll.to_df(include_sparse=False, sampling_rate="TR")
-            except ValueError:
-                pass
-            ents = coll.entities.copy()
-
+        for spec in specs:
             info = {}
+            if "RepetitionTime" not in spec.metadata:
+                # This shouldn't happen, so raise a (hopefully informative)
+                # exception if I'm wrong
+                fname = graph.layout.get(**spec.entities, suffix='bold')[0].path
+                raise ValueError(f"Preprocessed file {fname} does not have an "
+                                 "associated RepetitionTime")
 
-            # Metadata is now included in entities
-            TR = ents.pop('RepetitionTime', None)  # Required field in seconds
-            if TR is None:  # But is unreliable (for now?)
-                preproc_files = analysis.layout.get(
-                    extension=['.nii', '.nii.gz'], desc='preproc', **ents)
-                if len(preproc_files) != 1:
-                    raise ValueError('Too many BOLD files found')
+            info["repetition_time"] = spec.metadata['RepetitionTime'][0]
 
-                fname = preproc_files[0].path
-                TR = analysis.layout.get_metadata(fname)['RepetitionTime']
+            ent_string = '_'.join(f"{key}-{val}" for key, val in spec.entities.items())
 
-            # Ignore metadata entities
-            entity_whitelist = analysis.layout.get_entities(metadata=False)
-            ents = {key: ents[key] for key in ents if key in entity_whitelist}
-
-            # ents is now pretty populous
-            ents.pop('suffix', None)
-            ents.pop('datatype', None)
-
-            if step.level in ('session', 'subject', 'dataset'):
-                ents.pop('run', None)
-            if step.level in ('subject', 'dataset'):
-                ents.pop('session', None)
-            if step.level == 'dataset':
-                ents.pop('subject', None)
-            space = ents.get('space')
-            if space is None:
-                spaces = analysis.layout.get_spaces(
-                    suffix='bold',
-                    extension=['.nii', '.nii.gz', '.dtseries.nii', '.func.gii'])
-                if spaces:
-                    spaces = sorted(spaces)
-                    space = spaces[0]
-                    if len(spaces) > 1:
-                        iflogger.warning(
-                            'No space was provided, but multiple spaces were detected: %s. '
-                            'Selecting the first (ordered lexicographically): %s'
-                            % (', '.join(spaces), space))
-                ents['space'] = space
-
-            ent_string = '_'.join('{}-{}'.format(key, val)
-                                  for key, val in ents.items())
-
-            sparse_file = None
-            if sparse is not None:
-                sparse_file = step_subdir / '{}_sparse.h5'.format(ent_string)
-                sparse.to_hdf(sparse_file, key='sparse')
-
+            # These confounds are defined pairwise with the current volume and its
+            # predecessor, and thus may be undefined (have value NaN) at the first volume.
+            # In these cases, we impute the mean non-zero value, for the expected NaN only.
+            # Any other NaNs must be handled by an explicit transform in the BIDS model.
             imputed = []
-            if dense is not None:
-                # Note that FMRIPREP includes CosineXX columns to accompany
-                # t/aCompCor
-                # We may want to add criteria to include HPF columns that are not
-                # explicitly listed in the model
-                names = [var for var in step.model['x'] if var in dense.columns]
-                names.extend(col for col in dense.columns if col.startswith('non_steady_state'))
-                dense = dense[names]
+            for imputable in ('framewise_displacement', 'std_dvars', 'dvars'):
+                if imputable in spec.data.columns:
+                    vals = spec.data[imputable].values
+                    if not np.isnan(vals[0]):
+                        continue
 
-                # These confounds are defined pairwise with the current volume
-                # and its predecessor, and thus may be undefined (have value
-                # NaN) at the first volume.
-                # In these cases, we impute the mean non-zero value, for the
-                # expected NaN only.
-                # Any other NaNs must be handled by an explicit transform in
-                # the BIDS model.
-                for imputable in ('framewise_displacement',
-                                  'std_dvars', 'dvars'):
-                    if imputable in dense.columns:
-                        vals = dense[imputable].values
-                        if not np.isnan(vals[0]):
-                            continue
+                    # Impute the mean non-zero, non-NaN value
+                    spec.data[imputable][0] = np.nanmean(vals[vals != 0])
+                    imputed.append(imputable)
 
-                        # Impute the mean non-zero, non-NaN value
-                        dense[imputable][0] = np.nanmean(vals[vals != 0])
-                        imputed.append(imputable)
-
-                dense_file = step_subdir / '{}_dense.h5'.format(ent_string)
-                dense.to_hdf(dense_file, key='dense')
-
-            else:
-                dense_file = None
-
-            info['sparse'] = str(sparse_file) if sparse_file else None
-            info['dense'] = str(dense_file) if dense_file else None
-            info['repetition_time'] = TR
-
-            contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
-            for con in contrasts:
-                con['weights'] = con['weights'].to_dict('records')
-                # Ugly hack. This should be taken care of on the pybids side.
-                con['entities'] = {k: v for k, v in con['entities'].items()
-                                   if k in ENTITY_WHITELIST}
-                if step.level in ('session', 'subject', 'dataset'):
-                    con['entities'].pop('run', None)
-                if step.level in ('subject', 'dataset'):
-                    con['entities'].pop('session', None)
-                if step.level == 'dataset':
-                    con['entities'].pop('subject', None)
+            info["dense"] = str(step_subdir / '{}_dense.h5'.format(ent_string))
+            spec.data.to_hdf(info["dense"], key='dense')
 
             warning_file = step_subdir / '{}_warning.html'.format(ent_string)
             with warning_file.open('w') as fobj:
                 if imputed:
                     fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
 
-            entities.append(ents)
             design_info.append(info)
-            contrast_info.append(contrasts)
             warnings.append(str(warning_file))
 
-        self._results['design_info'] = design_info
         self._results['warnings'] = warnings
-        self._results.setdefault('entities', []).append(entities)
-        self._results.setdefault('contrast_info', []).append(contrast_info)
-
-    def _load_higher_level(self, runtime, analysis):
-        for step in analysis.steps[1:]:
-            contrast_info = []
-            for coll in step.get_collections():
-                contrasts = [dict(c._asdict()) for c in step.get_contrasts(coll)]
-                if all(c['weights'].empty for c in contrasts):
-                    continue
-
-                for contrast in contrasts:
-                    contrast['weights'] = contrast['weights'].to_dict('records')
-                    # Ugly hack. This should be taken care of on the pybids side.
-                    contrast['entities'] = {k: v
-                                            for k, v in contrast['entities'].items()
-                                            if k in ENTITY_WHITELIST}
-                    if step.level in ('session', 'subject', 'dataset'):
-                        contrast['entities'].pop('run', None)
-                    if step.level in ('subject', 'dataset'):
-                        contrast['entities'].pop('session', None)
-                    if step.level == 'dataset':
-                        contrast['entities'].pop('subject', None)
-                contrast_info.append(contrasts)
-
-            self._results['contrast_info'].append(contrast_info)
+        self._results['design_info'] = design_info
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
@@ -523,8 +451,13 @@ class BIDSDataSink(IOBase):
             ents.update(entities)
             ext = bids_split_filename(in_file)[2]
             ents['extension'] = self._extension_map.get(ext, ext)
-
-            ents = {k: snake_to_camel(str(v)) for k, v in ents.items()}
+            
+            # In some instances, name/contrast could have the following
+            # format (eg: gain.Range, gain.EqualIndifference).
+            # This prevents issues when creating/searching files for the report
+            for k, v in ents.items():
+                if k in ("name", "contrast", "stat"):
+                    ents.update({k: to_alphanum(str(v))})
 
             out_fname = os.path.join(
                 base_dir, layout.build_path(

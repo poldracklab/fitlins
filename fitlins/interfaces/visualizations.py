@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import nibabel as nb
 from nilearn import plotting as nlp
+from collections import namedtuple
 
 from nipype.interfaces.base import (
     SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
@@ -61,15 +62,40 @@ class DesignPlot(Visualization):
 
 
 class DesignCorrelationPlotInputSpec(VisualizationInputSpec):
-    contrast_info = traits.List(traits.Dict)
+    contrast_info = traits.List(traits.Any)
 
 
 class DesignCorrelationPlot(Visualization):
     input_spec = DesignCorrelationPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
-                                        for c in self.inputs.contrast_info})
+        columns = []
+        names = []
+        contrast_info = self.inputs.contrast_info
+        
+        for c in contrast_info:
+            columns = list(set(c['conditions']) | set(columns))
+            # split f-tests with 2d weights into 2 rows and append
+            # the condition to the name to create a unique name
+            if len(np.array(c['weights']).shape) > 1:
+                for cond in c['conditions']:
+                    names.append(c['name'] + '_' + cond)
+            else:
+                names.append(c['name'])
+        
+        contrast_matrix = pd.DataFrame(
+                np.zeros((len(names), len(columns))),
+                columns=columns,
+                index=names)
+        
+        for i, c in enumerate(contrast_info):
+            if len(np.array(c['weights']).shape) > 1:
+                for cond in c['conditions']:
+                    name = c['name'] + '_' + cond
+                    contrast_matrix.loc[name][c['conditions']] = c['weights'][c['conditions'].index(cond)]
+            else:
+                contrast_matrix.loc[c['name']][c['conditions']] = c['weights']
+
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
         if set(contrast_matrix.index) != all_cols[:len(evs)]:
@@ -77,13 +103,13 @@ class DesignCorrelationPlot(Visualization):
             confound_cols = [col for col in all_cols if col not in evs]
             data = data[ev_cols + confound_cols]
         plot_and_save(out_name, plot_corr_matrix,
-                      data.drop(columns='constant').corr(),
+                      data.drop(columns='constant', errors='ignore').corr(),
                       len(evs))
 
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
-    contrast_info = traits.List(traits.Dict)
-    orientation = traits.Enum('horizontal', 'vertical', usedefault=True,
+    contrast_info = traits.List(traits.Any)
+    orientation = traits.Enum('vertical', 'horizontal', usedefault=True,
                               desc='Display orientation of contrast matrix')
 
 
@@ -91,10 +117,32 @@ class ContrastMatrixPlot(Visualization):
     input_spec = ContrastMatrixPlotInputSpec
 
     def _visualize(self, data, out_name):
-        contrast_matrix = pd.DataFrame({c['name']: c['weights'][0]
-                                        for c in self.inputs.contrast_info},
-                                       index=data.columns)
-        contrast_matrix.fillna(value=0, inplace=True)
+        columns = []
+        names = []
+        contrast_info = self.inputs.contrast_info
+        
+        for c in contrast_info:
+            columns = list(set(c['conditions']) | set(columns))
+            # split f-tests with a 2d weights into 2 rows
+            if len(np.array(c['weights']).shape) > 1:
+                for cond in c['conditions']:
+                    names.append(c['name'] + '_' + cond)
+            else:
+                names.append(c['name'])
+        
+        contrast_matrix = pd.DataFrame(
+                np.zeros((len(names), len(columns))),
+                columns=columns,
+                index=names)
+        
+        for i, c in enumerate(contrast_info):
+            if len(np.array(c['weights']).shape) > 1:
+                for cond in c['conditions']:
+                    name = c['name'] + '_' + cond
+                    contrast_matrix.loc[name][c['conditions']] = c['weights'][c['conditions'].index(cond)]
+            else:
+                contrast_matrix.loc[c['name']][c['conditions']] = c['weights']
+
         if 'constant' in contrast_matrix.index:
             contrast_matrix = contrast_matrix.drop(index='constant')
         plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,

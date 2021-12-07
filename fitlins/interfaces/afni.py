@@ -70,8 +70,9 @@ class FirstLevelModel(FirstLevelModel):
 
         logger = logging.getLogger("nipype.interface")
 
+        spec = self.inputs.spec
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
-        contrasts = prepare_contrasts(self.inputs.contrast_info, mat.columns.tolist())
+        contrasts = prepare_contrasts(spec['contrasts'], mat.columns.tolist())
         t_r = mat.index[1]
         design_fname = op.join(runtime.cwd, "design.xmat.1D")
         stim_labels = self.get_stim_labels()
@@ -147,7 +148,6 @@ class FirstLevelModel(FirstLevelModel):
         fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file,  delim_whitespace=True, header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
-        out_ents = self.inputs.contrast_info[0]["entities"]
         out_maps = nb.load(reml_res.outputs.out_file)
         var_maps = nb.load(reml_res.outputs.var_file)
         beta_maps = nb.load(reml_res.outputs.rbeta_file)
@@ -165,7 +165,7 @@ class FirstLevelModel(FirstLevelModel):
         model_maps = []
         model_metadata = []
         for attr, (imgs, idx) in model_attr_extract.items():
-            model_metadata.append({'stat': attr, **out_ents})
+            model_metadata.append({'stat': attr, **spec['entities']})
             fname = fname_fmt('model', attr)
             extract_volume(imgs, idx, f"{attr} of model", fname)
             model_maps.append(fname)
@@ -180,7 +180,7 @@ class FirstLevelModel(FirstLevelModel):
             model_attr["errorts"] = reml_res.outputs.wherr_file
 
         for attr, fname in model_attr.items():
-            model_metadata.append({'stat': attr, **out_ents})
+            model_metadata.append({'stat': attr, **spec["entities"]})
             model_maps.append(fname)
 
         # get pvals and zscore buckets (niftis with heterogeneous intent codes)
@@ -240,8 +240,6 @@ class FirstLevelModel(FirstLevelModel):
         pvalue_maps = []
         fname_fmt = op.join(runtime.cwd, "{}_{}.nii.gz").format
 
-        out_ents = self.inputs.contrast_info[0]["entities"]
-
         stats_img_info = parse_afni_ext(maps["stat"])
 
         stat_types = np.array(
@@ -262,13 +260,18 @@ class FirstLevelModel(FirstLevelModel):
                 clean_vol_labels.append(x.rsplit('_', 1)[0])
             else:
                 clean_vol_labels.append(x)
-        for (name, weights, contrast_type) in contrasts:
+        for (name, weights, cont_ents, contrast_test) in contrasts:
             contrast_metadata.append(
-                {"contrast": name, "stat": contrast_type, **out_ents}
+                    {
+                        "name": self.inputs.spec['name'],
+                        "level": self.inputs.spec['level'],
+                        "stat": contrast_test,
+                        **cont_ents,
+                    }
             )
 
             # Get boolean to index appropriate values
-            stat_bool = stat_types == contrast_type.upper()
+            stat_bool = stat_types == contrast_test.upper()
             contrast_bool = np.array(clean_vol_labels) == name
 
             # Indices for multi image nibabel object  should have length 1 and be integers
@@ -305,7 +308,7 @@ class FirstLevelModel(FirstLevelModel):
                     map_list.append(fname)
 
         # calculate effect variance
-        for (name, weights, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
+        for (name, weights, contrast_entities, contrast_type), effect_fname, stat_fname in zip(contrasts, effect_maps, stat_maps):
             map_type = "effect_variance"
             effect_img = nb.load(effect_fname)
             effect = effect_img.get_fdata()
@@ -329,14 +332,17 @@ class FirstLevelModel(FirstLevelModel):
     def get_stim_labels(self):
         # Iterate through all weight specifications to get a list of stimulus
         # column labels.
-        weights = _flatten([x["weights"] for x in self.inputs.contrast_info])
-        return list(set(_flatten([x.keys() for x in weights])))
+        conditions = _flatten([contrast_info['conditions'] for contrast_info in self.inputs.spec['contrasts']])
+        return list(set(conditions))
 
     def save_tsnr(self, runtime, rbetas, rvars):
         vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
         # find the name of the constant column
-        const_name = mat.columns[(mat != 1).sum(0) == 0].values[0]
+        if 'constant' in mat.columnns:
+            const_name = 'constant'
+        else:
+            const_name = mat.columns[np.isclose(mat, 1).all(0)].values[0]
         const_idx = np.where(np.array(vol_labels) == const_name)[0]
         const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
         std_img = rvars.slicer[..., 3]
@@ -419,7 +425,7 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
 
 def create_glt_test_info(design, contrasts):
 
-    labels, wts_arrays, test_vals = zip(*contrasts)
+    labels, wts_arrays, cont_ents, test_vals = zip(*contrasts)
 
     # Start defining a list containing the rows for the glt values in the
     # afni design matrix header:
