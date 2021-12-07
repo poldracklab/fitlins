@@ -40,9 +40,7 @@ def sample_model_dict():
                         },
                     ],
                 },
-                "Model": {
-                    "X": ["trial_type.ice_cream", "trial_type.cake", "food_sweats"]
-                },
+                "Model": {"X": ["trial_type.ice_cream", "trial_type.cake", "food_sweats"]},
                 "DummyContrasts": {
                     "Conditions": ["trial_type.ice_cream", "trial_type.cake"],
                     "Test": "t",

@@ -4,6 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import warnings
+
 warnings.filterwarnings('ignore', r'numpy.ufunc size changed')
 warnings.filterwarnings('ignore', r'resolve package from __spec__')
 del warnings

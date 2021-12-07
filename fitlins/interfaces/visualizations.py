@@ -6,9 +6,13 @@ from nilearn import plotting as nlp
 from collections import namedtuple
 
 from nipype.interfaces.base import (
-    SimpleInterface, BaseInterfaceInputSpec, TraitedSpec,
-    File, traits, isdefined
-    )
+    SimpleInterface,
+    BaseInterfaceInputSpec,
+    TraitedSpec,
+    File,
+    traits,
+    isdefined,
+)
 from nipype.utils.filemanip import fname_presuffix, split_filename
 
 from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
@@ -29,18 +33,22 @@ class Visualization(SimpleInterface):
 
     def _run_interface(self, runtime):
         import matplotlib
+
         matplotlib.use('Agg')
         import seaborn as sns
         from matplotlib import pyplot as plt
+
         sns.set_style('white')
         plt.rcParams['svg.fonttype'] = 'none'
         plt.rcParams['image.interpolation'] = 'nearest'
 
         data = self._load_data(self.inputs.data)
-        out_name = fname_presuffix(self.inputs.data,
-                                   suffix='.' + self.inputs.image_type,
-                                   newpath=runtime.cwd,
-                                   use_ext=False)
+        out_name = fname_presuffix(
+            self.inputs.data,
+            suffix='.' + self.inputs.image_type,
+            newpath=runtime.cwd,
+            use_ext=False,
+        )
         self._visualize(data, out_name)
         self._results['figure'] = out_name
         return runtime
@@ -57,6 +65,7 @@ class Visualization(SimpleInterface):
 class DesignPlot(Visualization):
     def _visualize(self, data, out_name):
         from matplotlib import pyplot as plt
+
         plt.set_cmap('viridis')
         plot_and_save(out_name, nlp.plot_design_matrix, data)
 
@@ -72,7 +81,7 @@ class DesignCorrelationPlot(Visualization):
         columns = []
         names = []
         contrast_info = self.inputs.contrast_info
-        
+
         for c in contrast_info:
             columns = list(set(c['conditions']) | set(columns))
             # split f-tests with 2d weights into 2 rows and append
@@ -82,35 +91,40 @@ class DesignCorrelationPlot(Visualization):
                     names.append(c['name'] + '_' + cond)
             else:
                 names.append(c['name'])
-        
+
         contrast_matrix = pd.DataFrame(
-                np.zeros((len(names), len(columns))),
-                columns=columns,
-                index=names)
-        
+            np.zeros((len(names), len(columns))), columns=columns, index=names
+        )
+
         for i, c in enumerate(contrast_info):
             if len(np.array(c['weights']).shape) > 1:
                 for cond in c['conditions']:
                     name = c['name'] + '_' + cond
-                    contrast_matrix.loc[name][c['conditions']] = c['weights'][c['conditions'].index(cond)]
+                    contrast_matrix.loc[name][c['conditions']] = c['weights'][
+                        c['conditions'].index(cond)
+                    ]
             else:
                 contrast_matrix.loc[c['name']][c['conditions']] = c['weights']
 
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
-        if set(contrast_matrix.index) != all_cols[:len(evs)]:
+        if set(contrast_matrix.index) != all_cols[: len(evs)]:
             ev_cols = [col for col in all_cols if col in evs]
             confound_cols = [col for col in all_cols if col not in evs]
             data = data[ev_cols + confound_cols]
-        plot_and_save(out_name, plot_corr_matrix,
-                      data.drop(columns='constant', errors='ignore').corr(),
-                      len(evs))
+        plot_and_save(
+            out_name,
+            plot_corr_matrix,
+            data.drop(columns='constant', errors='ignore').corr(),
+            len(evs),
+        )
 
 
 class ContrastMatrixPlotInputSpec(VisualizationInputSpec):
     contrast_info = traits.List(traits.Any)
-    orientation = traits.Enum('vertical', 'horizontal', usedefault=True,
-                              desc='Display orientation of contrast matrix')
+    orientation = traits.Enum(
+        'vertical', 'horizontal', usedefault=True, desc='Display orientation of contrast matrix'
+    )
 
 
 class ContrastMatrixPlot(Visualization):
@@ -120,7 +134,7 @@ class ContrastMatrixPlot(Visualization):
         columns = []
         names = []
         contrast_info = self.inputs.contrast_info
-        
+
         for c in contrast_info:
             columns = list(set(c['conditions']) | set(columns))
             # split f-tests with a 2d weights into 2 rows
@@ -129,35 +143,40 @@ class ContrastMatrixPlot(Visualization):
                     names.append(c['name'] + '_' + cond)
             else:
                 names.append(c['name'])
-        
+
         contrast_matrix = pd.DataFrame(
-                np.zeros((len(names), len(columns))),
-                columns=columns,
-                index=names)
-        
+            np.zeros((len(names), len(columns))), columns=columns, index=names
+        )
+
         for i, c in enumerate(contrast_info):
             if len(np.array(c['weights']).shape) > 1:
                 for cond in c['conditions']:
                     name = c['name'] + '_' + cond
-                    contrast_matrix.loc[name][c['conditions']] = c['weights'][c['conditions'].index(cond)]
+                    contrast_matrix.loc[name][c['conditions']] = c['weights'][
+                        c['conditions'].index(cond)
+                    ]
             else:
                 contrast_matrix.loc[c['name']][c['conditions']] = c['weights']
 
         if 'constant' in contrast_matrix.index:
             contrast_matrix = contrast_matrix.drop(index='constant')
-        plot_and_save(out_name, plot_contrast_matrix, contrast_matrix,
-                      ornt=self.inputs.orientation)
+        plot_and_save(
+            out_name, plot_contrast_matrix, contrast_matrix, ornt=self.inputs.orientation
+        )
+
 
 class GlassBrainPlotInputSpec(VisualizationInputSpec):
     threshold = traits.Enum('auto', None, traits.Float(), usedefault=True)
     vmax = traits.Float()
     colormap = traits.Str('bwr', usedefault=True)
 
+
 class GlassBrainPlot(Visualization):
     input_spec = GlassBrainPlotInputSpec
 
     def _visualize(self, data, out_name):
         import numpy as np
+
         vmax = self.inputs.vmax
         if not isdefined(vmax):
             vmax = None
@@ -166,20 +185,39 @@ class GlassBrainPlot(Visualization):
             if abs_data.max() - pctile99 > 10:
                 vmax = pctile99
         if isinstance(data, nb.Cifti2Image):
-            plot_dscalar(data, vmax=vmax, threshold=self.inputs.threshold,
-                         cmap=self.inputs.colormap, output_file=out_name)
+            plot_dscalar(
+                data,
+                vmax=vmax,
+                threshold=self.inputs.threshold,
+                cmap=self.inputs.colormap,
+                output_file=out_name,
+            )
         else:
-            nlp.plot_glass_brain(data, colorbar=True, plot_abs=False,
-                                 display_mode='lyrz', axes=None,
-                                 vmax=vmax, threshold=self.inputs.threshold,
-                                 cmap=self.inputs.colormap,
-                                 output_file=out_name)
+            nlp.plot_glass_brain(
+                data,
+                colorbar=True,
+                plot_abs=False,
+                display_mode='lyrz',
+                axes=None,
+                vmax=vmax,
+                threshold=self.inputs.threshold,
+                cmap=self.inputs.colormap,
+                output_file=out_name,
+            )
 
 
-def plot_dscalar(img, colorbar=True, plot_abs=False,
-                 vmax=None, threshold=None, cmap='cold_hot', output_file=None):
+def plot_dscalar(
+    img,
+    colorbar=True,
+    plot_abs=False,
+    vmax=None,
+    threshold=None,
+    cmap='cold_hot',
+    output_file=None,
+):
     import matplotlib as mpl
     from matplotlib import pyplot as plt
+
     subcort, ltexture, rtexture = decompose_dscalar(img)
     fig = plt.figure(figsize=(11, 9))
     ax1 = plt.subplot2grid((3, 2), (0, 0), projection='3d')
@@ -190,8 +228,13 @@ def plot_dscalar(img, colorbar=True, plot_abs=False,
     surf_fmt = 'data/conte69/tpl-conte69_hemi-{hemi}_space-fsLR_den-32k_inflated.surf.gii'.format
     lsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='L'))).agg_data()
     rsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='R'))).agg_data()
-    kwargs = {'threshold': None if threshold == 'auto' else threshold,
-              'colorbar': False, 'plot_abs': plot_abs, 'cmap': cmap, 'vmax': vmax}
+    kwargs = {
+        'threshold': None if threshold == 'auto' else threshold,
+        'colorbar': False,
+        'plot_abs': plot_abs,
+        'cmap': cmap,
+        'vmax': vmax,
+    }
     nlp.plot_surf_stat_map(lsurf, ltexture, view='lateral', axes=ax1, **kwargs)
     nlp.plot_surf_stat_map(rsurf, rtexture, view='medial', axes=ax2, **kwargs)
     nlp.plot_surf_stat_map(lsurf, ltexture, view='medial', axes=ax3, **kwargs)

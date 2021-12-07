@@ -17,7 +17,7 @@ def write_metadata(filepath, metadata):
         json.dump(metadata, meta_file)
 
 
-class RegressorFileCreator():
+class RegressorFileCreator:
     """Generator for _regressors files in bids derivatives dataset"""
 
     # pattern for file
@@ -43,9 +43,7 @@ class RegressorFileCreator():
 
     def init_data(self, regr_names, n_tp):
         """create the regressor data"""
-        self.noise_df = pd.DataFrame(
-            {name: np.random.random(n_tp) for name in regr_names}
-        )
+        self.noise_df = pd.DataFrame({name: np.random.random(n_tp) for name in regr_names})
 
     def create_fname(self, fname_params, meta_params):
         """create the bids derivatives regressor file path and path names"""
@@ -62,7 +60,7 @@ class RegressorFileCreator():
         return self.fname
 
 
-class DerivFuncFileCreator():
+class DerivFuncFileCreator:
     PATTERN = (
         "sub-{subject}[/ses-{session}]/{datatype<func>|func}/"
         "sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}]"
@@ -88,12 +86,13 @@ class DerivFuncFileCreator():
         signal = np.zeros(frame_times.shape)
         trial_types = events_df['trial_type'].unique()
         for condition, weight in zip(trial_types, trial_type_weights):
-            exp_condition = events_df.query(
-                f"trial_type == '{condition}'"
-            )[['onset', 'duration']].values.T
+            exp_condition = events_df.query(f"trial_type == '{condition}'")[
+                ['onset', 'duration']
+            ].values.T
             exp_condition = np.vstack([exp_condition, np.repeat(weight, exp_condition.shape[1])])
-            signal += compute_regressor(
-                exp_condition, "glover", frame_times, con_id=condition)[0].squeeze()
+            signal += compute_regressor(exp_condition, "glover", frame_times, con_id=condition)[
+                0
+            ].squeeze()
 
         return signal
 
@@ -128,7 +127,7 @@ class DerivFuncFileCreator():
         return self.fname
 
 
-class DerivMaskFileCreator():
+class DerivMaskFileCreator:
 
     PATTERN = (
         "sub-{subject}[/ses-{session}]/{datatype<func>|func}/"
@@ -139,9 +138,7 @@ class DerivMaskFileCreator():
     )
     FILE_PARAMS = {"suffix": "mask", "desc": "brain", "space": "T1w"}
 
-    def __init__(
-        self, base_dir, fname_params, func_img, metadata=None
-    ):
+    def __init__(self, base_dir, fname_params, func_img, metadata=None):
         self.base_dir = base_dir
         self.metadata = metadata
         fname_params = {**fname_params, **self.FILE_PARAMS, "extension": ".nii.gz"}
@@ -166,7 +163,7 @@ class DerivMaskFileCreator():
         return self.fname
 
 
-class FuncFileCreator():
+class FuncFileCreator:
     PATTERN = (
         "sub-{subject}[/ses-{session}]/{datatype<func>|func}/"
         "sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}]"
@@ -190,12 +187,13 @@ class FuncFileCreator():
         signal = np.zeros(frame_times.shape)
         trial_types = events_df['trial_type'].unique()
         for condition, weight in zip(trial_types, trial_type_weights):
-            exp_condition = events_df.query(
-                f"trial_type == '{condition}'"
-            )[['onset', 'duration']].values.T
+            exp_condition = events_df.query(f"trial_type == '{condition}'")[
+                ['onset', 'duration']
+            ].values.T
             exp_condition = np.vstack([exp_condition, np.repeat(weight, exp_condition.shape[1])])
-            signal += compute_regressor(
-                exp_condition, "glover", frame_times, con_id=condition)[0].squeeze()
+            signal += compute_regressor(exp_condition, "glover", frame_times, con_id=condition)[
+                0
+            ].squeeze()
 
         return signal
 
@@ -230,7 +228,7 @@ class FuncFileCreator():
         return self.fname
 
 
-class EventsFileCreator():
+class EventsFileCreator:
     PATTERN = (
         "sub-{subject}[/ses-{session}]/[{datatype<func|meg|beh>|func}/]"
         "sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}]"
@@ -239,8 +237,16 @@ class EventsFileCreator():
     )
     FILE_PARAMS = {"suffix": "events", "datatype": "func"}
 
-    def __init__(self, base_dir, fname_params, n_events, trial_types, event_duration,
-                 inter_trial_interval, metadata=None):
+    def __init__(
+        self,
+        base_dir,
+        fname_params,
+        n_events,
+        trial_types,
+        event_duration,
+        inter_trial_interval,
+        metadata=None,
+    ):
         self.base_dir = base_dir
         self.metadata = metadata
         fname_params = {**fname_params, **self.FILE_PARAMS, "extension": ".tsv"}
@@ -272,7 +278,7 @@ class EventsFileCreator():
         return self.fname
 
 
-class DummyDerivatives():
+class DummyDerivatives:
     """Create a minimal BIDS+Derivatives dataset for testing"""
 
     DERIVATIVES_DICT = {
@@ -281,14 +287,12 @@ class DummyDerivatives():
         "PipelineDescription": {
             "Name": "fMRIPrep",
             "Version": "1.5.0rc2+14.gf673eaf5",
-            "CodeURL": "https://github.com/nipreps/fmriprep/archive/1.5.0.tar.gz"
+            "CodeURL": "https://github.com/nipreps/fmriprep/archive/1.5.0.tar.gz",
         },
         "CodeURL": "https://github.com/nipreps/fmriprep",
         "HowToAcknowledge": "Please cite our paper (https://doi.org/10.1038/s41592-018-0235-4)",
-        "SourceDatasetsURLs": [
-            "https://doi.org/"
-        ],
-        "License": ""
+        "SourceDatasetsURLs": ["https://doi.org/"],
+        "License": "",
     }
 
     BIDS_DICT = {
@@ -358,8 +362,12 @@ class DummyDerivatives():
             file_params = {k: v for k, v in zip(param_order, scan_params)}
             # create events file
             events = EventsFileCreator(
-                self.base_dir, file_params, self.n_events, self.trial_types,
-                self.event_duration, self.inter_trial_interval
+                self.base_dir,
+                file_params,
+                self.n_events,
+                self.trial_types,
+                self.event_duration,
+                self.inter_trial_interval,
             )
             events.write_file()
 
@@ -370,15 +378,25 @@ class DummyDerivatives():
             noise.write_file()
             # create bids func file
             FuncFileCreator(
-                self.base_dir, file_params, events.events_df,
-                self.trial_type_weights, noise.noise_df, n_tp,
-                self.cnr, self.func_metadata,
+                self.base_dir,
+                file_params,
+                events.events_df,
+                self.trial_type_weights,
+                noise.noise_df,
+                n_tp,
+                self.cnr,
+                self.func_metadata,
             ).write_file()
             # create deriv func file
             deriv_func = DerivFuncFileCreator(
-                self.deriv_dir, file_params, events.events_df,
-                self.trial_type_weights, noise.noise_df, n_tp,
-                self.cnr, self.func_metadata,
+                self.deriv_dir,
+                file_params,
+                events.events_df,
+                self.trial_type_weights,
+                noise.noise_df,
+                n_tp,
+                self.cnr,
+                self.func_metadata,
             )
             deriv_func.write_file()
             # create mask for deriv_func
@@ -387,5 +405,5 @@ class DummyDerivatives():
     def create_layout(self):
         # create bids layout
         self.layout = bids.BIDSLayout(
-            self.base_dir, derivatives=True, database_path=self.database_path,
-            reset_database=True)
+            self.base_dir, derivatives=True, database_path=self.database_path, reset_database=True
+        )

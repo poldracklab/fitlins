@@ -31,8 +31,7 @@ def test_get_nan_diff():
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_abs=0.01)[0]
     expected_dif = (
-        'Absolute difference (max of 0.09999999999999998)'
-        ' greater than 0.01 for ref and out.'
+        'Absolute difference (max of 0.09999999999999998)' ' greater than 0.01 for ref and out.'
     )
     assert dif == expected_dif
 
@@ -68,10 +67,17 @@ def test_get_nan_diff():
     assert len(dif) == 0
 
 
-def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
-                 model, work_dir,
-                 database_path,
-                 test_name, reference_dir):
+def test_outputs(
+    fitlins_path,
+    bids_dir,
+    output_dir,
+    derivatives,
+    model,
+    work_dir,
+    database_path,
+    test_name,
+    reference_dir,
+):
     if test_name == "afni_smooth":
         estimator = "afni"
         smoothing = "10.0:l1:iso"
@@ -90,16 +96,28 @@ def test_outputs(fitlins_path, bids_dir, output_dir, derivatives,
         bids_dir,
         output_dir,
         "dataset",
-        "-d", derivatives,
-        "-m", model,
-        "-w", work_dir,
-        "--participant-label", "01", "02", "03",
-        "--space", "MNI152NLin2009cAsym",
-        "--estimator", estimator,
-        "--smoothing", smoothing,
-        "--n-cpus", '2',
-        "--mem-gb", '4',
-        "--drift-model", "cosine"
+        "-d",
+        derivatives,
+        "-m",
+        model,
+        "-w",
+        work_dir,
+        "--participant-label",
+        "01",
+        "02",
+        "03",
+        "--space",
+        "MNI152NLin2009cAsym",
+        "--estimator",
+        estimator,
+        "--smoothing",
+        smoothing,
+        "--n-cpus",
+        '2',
+        "--mem-gb",
+        '4',
+        "--drift-model",
+        "cosine",
     ]
 
     if database_path is not None:
@@ -145,27 +163,34 @@ def get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=0, max_rel=0):
             diff = np.abs(ref_nonan - out_nonan)
             rel_diff = (diff) / ((np.abs(ref_nonan) + np.abs(out_nonan)) / 2)
             if max_abs and max_rel:
-                over = (diff > max_abs)
+                over = diff > max_abs
                 diff = diff[over]
                 rel_diff = rel_diff[over]
                 if (rel_diff > max_rel).any():
-                    res.append(f"Relative difference (max of {rel_diff.max()})"
-                               f" greater than {max_rel} for {ref_nii} and {out_nii}.")
+                    res.append(
+                        f"Relative difference (max of {rel_diff.max()})"
+                        f" greater than {max_rel} for {ref_nii} and {out_nii}."
+                    )
             elif max_rel:
                 if (rel_diff > max_rel).any():
-                    res.append(f"Relative difference (max of {rel_diff.max()})"
-                               f" greater than {max_rel} for {ref_nii} and {out_nii}.")
+                    res.append(
+                        f"Relative difference (max of {rel_diff.max()})"
+                        f" greater than {max_rel} for {ref_nii} and {out_nii}."
+                    )
             else:
-                if ((diff > max_abs).any()):
-                    res.append(f"Absolute difference (max of {diff.max()})"
-                               f" greater than {max_abs} for {ref_nii} and {out_nii}.")
+                if (diff > max_abs).any():
+                    res.append(
+                        f"Absolute difference (max of {diff.max()})"
+                        f" greater than {max_abs} for {ref_nii} and {out_nii}."
+                    )
 
         else:
             res.append(f"{ref_nii} nans don't match {out_nii} nans.")
 
     else:
-        res.append(f"{ref_nii} shape {ref_nii.shape} does not match {out_nii}"
-                   f" shape {out_nii.shape}.")
+        res.append(
+            f"{ref_nii} shape {ref_nii.shape} does not match {out_nii}" f" shape {out_nii.shape}."
+        )
     return res
 
 

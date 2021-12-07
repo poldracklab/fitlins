@@ -21,8 +21,8 @@ from fitlins.interfaces.afni import (
     get_afni_intent_info_for_subvol,
 )
 
-ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights',
-                                           'test', 'entities'))
+ContrastInfo = namedtuple('ContrastInfo', ('name', 'conditions', 'weights', 'test', 'entities'))
+
 
 def get_reml_bucket_test_data():
     afni_test_dir = "/tmp/afni_reml_test_data"
@@ -42,9 +42,9 @@ def get_reml_bucket_test_data():
 
 def test_get_afni_design_matrix():
     entities = {
-            "space": "MNI152NLin2009cAsym",
-            "subject": "01",
-            "task": "rhymejudgment",
+        "space": "MNI152NLin2009cAsym",
+        "subject": "01",
+        "task": "rhymejudgment",
     }
 
     contrast_info = [
@@ -101,9 +101,9 @@ def test_get_afni_design_matrix():
 def test_create_glt_test_info():
 
     entities = {
-            "space": "MNI152NLin2009cAsym",
-            "subject": "01",
-            "task": "rhymejudgment",
+        "space": "MNI152NLin2009cAsym",
+        "subject": "01",
+        "task": "rhymejudgment",
     }
 
     contrast_info = [

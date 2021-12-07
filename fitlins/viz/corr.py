@@ -8,7 +8,7 @@ plt.rcParams['svg.fonttype'] = 'none'
 
 
 def plot_corr_matrix(mat, n_evs, partial='upper', ax=None):
-    """ Plot correlation matrix
+    """Plot correlation matrix
 
     Parameters
     ----------
@@ -41,8 +41,17 @@ def plot_corr_matrix(mat, n_evs, partial='upper', ax=None):
     # Use a red/blue (+1/-1) diverging colormap
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
-    sns.heatmap(mat, vmin=-1, vmax=1, mask=mask, square=True,
-                linewidths=0.5, cmap=cmap, cbar_kws={'shrink': 0.5}, ax=ax)
+    sns.heatmap(
+        mat,
+        vmin=-1,
+        vmax=1,
+        mask=mask,
+        square=True,
+        linewidths=0.5,
+        cmap=cmap,
+        cbar_kws={'shrink': 0.5},
+        ax=ax,
+    )
 
     # Separate EV-EV, EV-Confound, Confound-Confound correlation sections with
     # black line
