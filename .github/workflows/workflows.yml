@@ -118,10 +118,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v1-${{ runner.os }}-${{ github.job }}
+          key: ds003-v2-${{ runner.os }}-${{ github.job }}
           restore-keys: |
-            ds003-v1-${{ runner.os }}-
-            ds003-v1-
+            ds003-v2-${{ runner.os }}-
+            ds003-v2-
             ds003-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
@@ -255,10 +255,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v1-${{ runner.os }}
+          key: ds003-v2-${{ runner.os }}
           restore-keys: |
-            ds003-v1-${{ runner.os }}
-            ds003-v1-
+            ds003-v2-${{ runner.os }}
+            ds003-v2-
             ds003-
 
       - name: Run fitlins

@@ -5,7 +5,7 @@
 # Thank you for using Neurodocker. If you discover any issues
 # or ways to improve this software, please submit an issue or
 # pull request on our GitHub repository:
-# 
+#
 #     https://github.com/ReproNim/neurodocker
 
 FROM neurodebian:stretch
@@ -90,7 +90,7 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
            "pytest" \
            "traits" \
            "pandas" \
-           "matplotlib" \
+           "matplotlib>=1.5.1" \
            "scikit-learn" \
            "scikit-image" \
            "seaborn" \
