@@ -1,25 +1,24 @@
 # coding: utf-8
-from pathlib import Path
+import io
 import os
 import os.path as op
-import numpy as np
-import pandas as pd
-import io
 import sys
 import xml.etree.ElementTree as ET
-import nibabel as nb
+from pathlib import Path
 
+import nibabel as nb
+import numpy as np
+import pandas as pd
 from nipype.interfaces.afni.base import (
     AFNICommand,
     AFNICommandInputSpec,
     AFNICommandOutputSpec,
     Info,
 )
-from nipype.interfaces.base import traits, isdefined, File
+from nipype.interfaces.base import File, isdefined, traits
 from nipype.utils.filemanip import fname_presuffix
 
-from .nistats import FirstLevelModel, prepare_contrasts, _flatten
-
+from .nistats import FirstLevelModel, _flatten, prepare_contrasts
 
 STAT_CODES = nb.volumeutils.Recoder(
     (
@@ -62,11 +61,10 @@ class FirstLevelModel(FirstLevelModel):
         """
         Fit a GLM using AFNI's 3dREMLfit
         """
-        from nipype import logging
         import nibabel as nb
-        from nipype.interfaces import afni
-
         import pandas as pd
+        from nipype import logging
+        from nipype.interfaces import afni
 
         logger = logging.getLogger("nipype.interface")
 
@@ -311,7 +309,7 @@ class FirstLevelModel(FirstLevelModel):
             effect = effect_img.get_fdata()
             stat_img = nb.load(stat_fname)
             stat = stat_img.get_fdata()
-            variance = ((effect / stat)) ** 2
+            variance = (effect / stat) ** 2
             variance_img = nb.Nifti1Image(variance, effect_img.affine, effect_img.header)
             variance_img.header['descrip'] = f"{map_type} of contrast {name}"
 
@@ -338,7 +336,7 @@ class FirstLevelModel(FirstLevelModel):
         vol_labels = parse_afni_ext(rbetas)["BRICK_LABS"].split("~")
         mat = pd.read_csv(self.inputs.design_matrix, delimiter="\t", index_col=0)
         # find the name of the constant column
-        if 'constant' in mat.columnns:
+        if 'constant' in mat.columns:
             const_name = 'constant'
         else:
             const_name = mat.columns[np.isclose(mat, 1).all(0)].values[0]
@@ -388,7 +386,7 @@ def get_afni_design_matrix(design, contrasts, stim_labels, t_r):
     """
 
     cols = list(design.columns)
-    stim_col_nums = sorted([cols.index(x) for x in stim_labels])
+    stim_col_nums = sorted(cols.index(x) for x in stim_labels)
 
     # Currently multi-column stimuli not supported. If they were stim_tops
     # would need to be computed
@@ -520,7 +518,7 @@ def get_afni_intent_info(img):
             intent_info.append(tuple(val))
         else:
             params = [x for x in val[1].split(",")]
-            intent_info.append((STAT_CODES.label[val[0]], tuple([float(x) for x in params if x])))
+            intent_info.append((STAT_CODES.label[val[0]], tuple(float(x) for x in params if x)))
 
     return intent_info
 
