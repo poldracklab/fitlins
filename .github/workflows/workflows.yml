@@ -118,10 +118,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v1-${{ runner.os }}-${{ github.job }}
+          key: ds003-v3-${{ runner.os }}-${{ github.job }}
           restore-keys: |
-            ds003-v1-${{ runner.os }}-
-            ds003-v1-
+            ds003-v3-${{ runner.os }}-
+            ds003-v3-
             ds003-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
@@ -141,7 +141,7 @@ jobs:
       - name: "Check installed derivatives data"
         run: |
           cd /tmp/.cache/data/fitlins_tests/ds003
-          git log --online --graph
+          git log --oneline --graph
           du -sh .
 
   build_docs:
@@ -262,10 +262,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v1-${{ runner.os }}
+          key: ds003-v3-${{ runner.os }}
           restore-keys: |
-            ds003-v1-${{ runner.os }}
-            ds003-v1-
+            ds003-v3-${{ runner.os }}
+            ds003-v3-
             ds003-
 
       - name: Run fitlins
