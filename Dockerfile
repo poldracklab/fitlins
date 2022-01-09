@@ -45,7 +45,7 @@ ENTRYPOINT ["/neurodocker/startup.sh"]
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
-LABEL maintainer="Shashank Bansal"
+LABEL maintainer="Fitlins Team"
 
 ENV MKL_NUM_THREADS="1" \
     OMP_NUM_THREADS="1"
