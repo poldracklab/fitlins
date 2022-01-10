@@ -1,6 +1,11 @@
 name: Packaging
 
 on:
+  pull_request:
+    branches-ignore:
+      - /doc\/.*/
+    tags:
+      - /.*/
   push:
     branches:
       - master

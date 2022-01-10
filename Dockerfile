@@ -110,7 +110,7 @@ USER neuro
 
 ARG VERSION
 
-# RUN echo "$VERSION" > /src/fitlins/VERSION
+RUN echo "$VERSION" > /src/fitlins/VERSION
 
 RUN sed -i -e 's/crashfile_format = pklz/crashfile_format = txt/' /src/fitlins/fitlins/data/nipype.cfg
 
