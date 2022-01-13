@@ -133,14 +133,14 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v3-${{ runner.os }}-${{ github.job }}
+          key: ds003-v4-${{ runner.os }}-${{ github.job }}
           restore-keys: |
-            ds003-v3-${{ runner.os }}-
-            ds003-v3-
+            ds003-v4-${{ runner.os }}-
+            ds003-v4-
             ds003-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
-        if: steps.cache.outputs.cache-hit != 'true'
+        # if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd /tmp/.cache/data
           datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
@@ -278,10 +278,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v3-${{ runner.os }}
+          key: ds003-v4-${{ runner.os }}
           restore-keys: |
-            ds003-v3-${{ runner.os }}
-            ds003-v3-
+            ds003-v4-${{ runner.os }}
+            ds003-v4-
             ds003-
 
       - name: Run fitlins
@@ -403,7 +403,7 @@ jobs:
           ls -l /tmp/docker.tar
           docker load < /tmp/docker.tar
           docker images
-      
+
       - name: Login to Github Container Registry
         uses: docker/login-action@v1
         with:
