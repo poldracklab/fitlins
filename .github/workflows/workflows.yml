@@ -5,13 +5,12 @@ on:
   pull_request:
     branches-ignore:
       - /doc\/.*/
-    tags:
-      - /.*/
   push:
-    branches-ignore:
-      - /doc\/.*/
+    branches:
+      - master
+      - maint/*
     tags:
-      - /.*/
+      - '*'
 
 env:
   REGISTRY: ghcr.io
