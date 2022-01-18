@@ -143,42 +143,6 @@ jobs:
           git log --oneline --graph
           du -sh .
 
-  build_docs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Check python version and upgrade pip
-        run: |
-          python --version
-          python -m pip install -U pip setuptools
-
-      - name: Install pandoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-
-      - uses: actions/checkout@v2
-      - name: Install fitlins
-        run: |
-          cd $GITHUB_WORKSPACE
-          pip install ".[docs]"
-
-      - name: Build docs
-        run: |
-          cd $GITHUB_WORKSPACE
-          make html
-          ls
-          pwd
-
-      - name: Store artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs
-          path: docs/_build/html
 
   run_pytest:
     needs: build
@@ -307,7 +271,7 @@ jobs:
           verbose: true
 
   deploy_version:
-    needs: [build_docs, test_ds003]
+    needs: [test_ds003]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
