@@ -1,0 +1,379 @@
+---
+name: "CI build and test jobs"
+
+on:
+  pull_request:
+    branches-ignore:
+      - /doc\/.*/
+  push:
+    branches:
+      - master
+      - maint/*
+    tags:
+      - '*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Create version variable
+        run: |
+          echo "THISVERSION=$(python -c 'import fitlins; print(fitlins.__version__)')" >> $GITHUB_ENV
+
+      - name: Test version variable
+        run: |
+          echo "Building version ${{ env.THISVERSION }}"
+
+      - name: Build image and export
+        timeout-minutes: 30
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          build-args: |
+            BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            VCS_REF="$(git rev-parse --short HEAD)"
+            VERSION=${{ env.THISVERSION }}
+          push: false
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          load: true
+
+      - name: Verify executable can be run
+        run: |
+          docker images
+          docker run --rm ${{ env.IMAGE_NAME }}:latest --help
+
+      - name: Check version
+        run: |
+          THISVERSION=$( python -c 'import fitlins; print(fitlins.__version__)' )
+          DOCKERVERSION=$(docker run --rm ${{ env.IMAGE_NAME }}:latest --version \
+                           | tail -n 1 | sed -e 's/.*fit/fit/' -e 's/[\r\n]//g')
+          echo "$THISVERSION"
+          echo "$DOCKERVERSION"
+          test "$DOCKERVERSION" = "fitlins v$THISVERSION"
+
+      - name: Export docker image to a tar file
+        run: |
+          docker save ${{ github.repository }} > /tmp/docker.tar
+          ls -l /tmp/
+
+      - name: Upload docker.tar as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker
+          path: /tmp/docker.tar
+
+  cache_test_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Make cachedir"
+        run: |
+          mkdir -p /tmp/.cache/data && \
+          chmod 777 /tmp/.cache/data
+
+      - name: Set git ID
+        run: |
+          git config --global user.name 'Fitlins GH-Action User' && \
+          git config --global user.email 'shashankbansal56@gmail.com'
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        shell: bash -l {0}
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y git-annex
+          python -m pip install --upgrade pip
+          pip install datalad==0.14.7
+
+      - name: WTF!?
+        run: |
+         datalad wtf
+
+      - name: "cached data"
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.cache/data
+          key: ds003-v4-${{ runner.os }}-${{ github.job }}
+          restore-keys: |
+            ds003-v4-${{ runner.os }}-
+            ds003-v4-
+            ds003-
+
+      - name: "Install fMRIPrep derivatives of ds000003 and reference data"
+        # if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd /tmp/.cache/data
+          datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
+          datalad update --merge -d fitlins_tests
+          cd fitlins_tests
+          datalad get ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                                    ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                                    ds003/fmriprep/dataset_description.json \
+                                    ds003/fmriprep/sub-*/*/*.json
+          datalad get -r ds003/nistats_smooth/ ds003/afni_smooth/ ds003/afni_blurto/ ds003/nistats_blurto/
+          datalad status
+
+      - name: "Check installed derivatives data"
+        run: |
+          cd /tmp/.cache/data/fitlins_tests/ds003
+          git log --oneline --graph
+          du -sh .
+
+
+  run_pytest:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker
+          path: /tmp
+
+      - name: Load docker image
+        run: |
+          docker info
+          set +o pipefail
+          ls -l /tmp/docker.tar
+          docker load --input /tmp/docker.tar
+          docker images
+
+      - name: Run pytest
+        timeout-minutes: 120
+        run: |
+          mkdir -p /tmp/pytestcov
+          chmod 777 /tmp/pytestcov
+          docker run --rm \
+              -v /tmp/pytestcov:/scratch \
+              -e COVERAGE_FILE=/scratch/.coverage.pytest \
+              --entrypoint="/neurodocker/startup.sh" \
+              ${{ github.repository_owner }}/fitlins:latest \
+              pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml \
+               --cov-config /src/fitlins/docker/multiproc.coveragerc \
+               --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
+
+      - name: Submit pytest coverage
+        uses: codecov/codecov-action@v2
+        with:
+          directory: /tmp/pytestcov
+          env_vars: OS,PYTHON
+          files: /tmp/pytestcov/cov_pytest.xml
+          flags: pytest
+          verbose: true
+
+  test_ds003:
+    needs: [build, cache_test_data]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: ["afni_smooth", "nistats_smooth", "afni_blurto", "nistats_blurto"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker
+          path: /tmp
+
+      - name: Load docker image
+        run: |
+          docker info
+          set +o pipefail
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
+          docker images
+
+      - name: Restore cached test data
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.cache/data
+          key: ds003-v4-${{ runner.os }}
+          restore-keys: |
+            ds003-v4-${{ runner.os }}
+            ds003-v4-
+            ds003-
+
+      - name: Run fitlins
+        timeout-minutes: 240
+        env:
+          CONDA_PREFIX: /opt/miniconda-latest/envs/neuro
+        run: |
+          mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
+          chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
+          export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
+          echo $CONDA_PREFIX
+          docker run --rm -v /tmp/.cache/data/fitlins_tests:/data:ro \
+                -v /tmp/ds003/derivatives:/out \
+                -v /tmp/ds003/work:/scratch \
+                -v $GITHUB_WORKSPACE:/src/fitlins \
+                -e COVERAGE_FILE=/scratch/.coverage_${{ matrix.test_name }} \
+                --entrypoint="/neurodocker/startup.sh" \
+                ${{ github.repository }}:latest \
+                pytest --cov=fitlins \
+                --cov-config /src/fitlins/docker/multiproc.coveragerc \
+                --cov-report xml:/scratch/.coverage_pytest_${{ matrix.test_name }}.xml \
+                $CONDA_PREFIX/lib/python3.9/site-packages/fitlins/tests \
+                --fitlins-path=$CONDA_PREFIX/bin/fitlins \
+                --bids-dir=/data/ds003/fmriprep/sourcedata \
+                --output-dir=/out \
+                --derivatives=/data/ds003/fmriprep \
+                --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
+                --work-dir=/scratch \
+                --test-name=${{ matrix.test_name }} \
+                --database-path=/out/ds003_database \
+                --reference-dir=/data/ds003
+
+      - name: Combine coverage and submit
+        uses: codecov/codecov-action@v2
+        with:
+          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
+          flags: ${{ matrix.test_name }}
+          env_vars: GITHUB_JOB
+          verbose: true
+
+  deploy_version:
+    needs: [test_ds003]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker
+          path: /tmp
+
+      - name: Load docker image
+        run: |
+          docker info
+          set +o pipefail
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
+          docker images
+
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to GHCR
+        timeout-minutes: 60
+        run: |
+          echo ${{ github.repository }}
+          IMAGE_NAME = ${{ github.repository }}
+          IMAGE_ID = ghcr.io/${{ github.repository }}
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          echo VERSION=$VERSION
+          docker images
+          docker push $IMAGE_ID:$VERSION
+
+       #- name: Login to DockerHub
+       #  uses: docker/login-action@v1
+       #  with:
+       #    username: ${{ secrets.DOCKERHUB_USERNAME }}
+       #    password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+       #- name: Deploy to DockerHub
+       #  timeout-minutes: 60
+       #  run: |
+       #    docker tag shashankbansal56/fitlins shashankbansal56/fitlins:latest
+       #    docker push shashankbansal56/fitlins:latest
+
+  deploy_master:
+    needs: [test_ds003]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker
+          path: /tmp
+
+      - name: Load docker image
+        run: |
+          docker info
+          set +o pipefail
+          ls -l /tmp/docker.tar
+          docker load < /tmp/docker.tar
+          docker images
+
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to GHCR
+        timeout-minutes: 60
+        run: |
+          echo ${{ github.repository }}
+          docker tag $IMAGE_NAME ghcr.io/${{ github.repository }}:master
+          docker images
+          docker push ghcr.io/${{ github.repository }}:master
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Deploy to DockerHub
+        timeout-minutes: 60
+        run: |
+          docker tag ${{ github.repository }} ${{ github.repository }}:master
+          docker push ${{ github.repository }}:master

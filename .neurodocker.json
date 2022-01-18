@@ -3,12 +3,12 @@
   "instructions": [
     [
       "base",
-      "neurodebian@sha256:5fbbad8c68525b588a459092254094436aae9dc1f3920f8d871a03053b10377c"
+      "neurodebian@sha256:775973d79463e19295eab63807968fc577b188b86c26aed94df0d664ca8ae3c4"
     ],
     [
       "label",
       {
-        "maintainer": "Christopher J. Markiewicz"
+        "maintainer": "Fitlins developers"
       }
     ],
     [
@@ -21,8 +21,11 @@
     [
       "install",
       [
+        "graphviz",
         "wget",
-        "git"
+        "git",
+        "git-annex-standalone",
+        "git-annex-remote-rclone"
       ]
     ],
     [
@@ -38,11 +41,9 @@
       {
         "create_env": "neuro",
         "conda_install": [
-          "python=3.6",
-          "icu=64.2",
-          "mkl=2019.4",
-          "mkl-service=2.3.0",
-          "git=2.23.0"
+          "python=3.9",
+          "mkl=2021.4",
+          "mkl-service=2.4"
         ]
       }
     ],
@@ -51,15 +52,18 @@
       {
         "use_env": "neuro",
         "conda_install": [
-          "numpy=1.17.2",
-          "scipy=1.3.1",
-          "scikit-learn=0.21.3",
-          "matplotlib=3.1.3",
-          "seaborn=0.10.0",
-          "pytables=3.5.2",
-          "pandas=0.25.1",
-          "patsy=0.5.1",
-          "traits=5.1.2"
+          "numpy=1.21",
+          "scipy=1.7",
+          "scikit-learn=1.0",
+          "scikit-image",
+          "matplotlib=3.5",
+          "seaborn=0.11",
+          "pytables=3.6",
+          "pandas=1.3",
+          "pytest",
+          "nbformat",
+          "nb_conda",
+          "traits=6.2"
         ]
       }
     ],
@@ -110,8 +114,7 @@
         "pip_opts": "-r",
         "pip_install": [
           "/src/fitlins/requirements.txt"
-        ],
-        "activate": true
+        ]
       }
     ],
     [
