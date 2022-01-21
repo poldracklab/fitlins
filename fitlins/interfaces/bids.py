@@ -258,6 +258,8 @@ class LoadBIDSModel(SimpleInterface):
         specs = node.run(inputs, group_by=node.group_by, **filters)
         outputs = list(chain(*[s.contrasts for s in specs]))
 
+        base_entities = graph.model["input"]
+
         if node.level == 'run':
             self._load_run_level(runtime, graph, specs)
 
@@ -265,7 +267,7 @@ class LoadBIDSModel(SimpleInterface):
             node.name: [
                 {
                     'contrasts': [c._asdict() for c in spec.contrasts],
-                    'entities': spec.entities,
+                    'entities': {**base_entities, **spec.entities},
                     'level': spec.node.level,
                     'X': spec.X,
                     'name': spec.node.name,
