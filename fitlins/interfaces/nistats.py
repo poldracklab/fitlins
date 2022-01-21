@@ -116,6 +116,11 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             dense = None
             column_names = None
 
+        # XXX hack for pybids giving us a bad matrix
+        # Case seems to be when (TR * nvols) rounds up instead of down
+        if len(dense) == vols + 1 and np.isnan(dense[-1:].values).all():
+            dense = dense[:-1]
+
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
             add_regs=dense,
