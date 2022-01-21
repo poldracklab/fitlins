@@ -310,17 +310,18 @@ class LoadBIDSModel(SimpleInterface):
             # These confounds are defined pairwise with the current volume and its
             # predecessor, and thus may be undefined (have value NaN) at the first volume.
             # In these cases, we impute the mean non-zero value, for the expected NaN only.
+            # For derivatives, an initial "derivative" of 0 is reasonable.
             # Any other NaNs must be handled by an explicit transform in the BIDS model.
+            initial_na = spec.data.columns[np.isnan(spec.data.values[0])]
             imputed = []
-            for imputable in ('framewise_displacement', 'std_dvars', 'dvars'):
-                if imputable in spec.data.columns:
-                    vals = spec.data[imputable].values
-                    if not np.isnan(vals[0]):
-                        continue
-
-                    # Impute the mean non-zero, non-NaN value
-                    spec.data[imputable][0] = np.nanmean(vals[vals != 0])
-                    imputed.append(imputable)
+            for col in initial_na:
+                if col in ('framewise_displacement', 'std_dvars', 'dvars'):
+                    imputed.append(col)
+                    vals = spec.data[col].values
+                    spec.data[col][0] = np.nanmean(vals[vals != 0])
+                elif "derivative1" in col:
+                    imputed.append(col)
+                    spec.data[col][0] = 0
 
             info["dense"] = str(step_subdir / '{}_dense.h5'.format(ent_string))
             spec.data.to_hdf(info["dense"], key='dense')
