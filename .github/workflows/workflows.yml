@@ -116,24 +116,23 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v4-${{ runner.os }}-${{ github.job }}
+          key: ds003-v5-${{ runner.os }}-${{ github.job }}
           restore-keys: |
-            ds003-v4-${{ runner.os }}-
-            ds003-v4-
-            ds003-
+            ds003-v5-${{ runner.os }}-
+            ds003-v5-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
         # if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd /tmp/.cache/data
-          datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
-          datalad update --merge -d fitlins_tests
-          cd fitlins_tests
-          datalad get ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
-                                    ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
-                                    ds003/fmriprep/dataset_description.json \
-                                    ds003/fmriprep/sub-*/*/*.json
-          datalad get -r ds003/nistats_smooth/ ds003/afni_smooth/ ds003/afni_blurto/ ds003/nistats_blurto/
+          datalad install -r -s https://gin.g-node.org/markiewicz/fitlins-tests
+          datalad update --merge -d fitlins-tests
+          cd fitlins-tests
+          datalad get inputs/ds000003-fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                      inputs/ds000003-fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                      inputs/ds000003-fmriprep/dataset_description.json \
+                      inputs/ds000003-fmriprep/sub-*/*/*.json \
+                      outputs
           datalad status
 
       - name: "Check installed derivatives data"
@@ -225,11 +224,10 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v4-${{ runner.os }}
+          key: ds003-v5-${{ runner.os }}
           restore-keys: |
-            ds003-v4-${{ runner.os }}
-            ds003-v4-
-            ds003-
+            ds003-v5-${{ runner.os }}
+            ds003-v5-
 
       - name: Run fitlins
         timeout-minutes: 240
