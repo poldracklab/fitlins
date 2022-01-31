@@ -137,7 +137,7 @@ jobs:
 
       - name: "Check installed derivatives data"
         run: |
-          cd /tmp/.cache/data/fitlins_tests/ds003
+          cd /tmp/.cache/data/fitlins-tests/
           git log --oneline --graph
           du -sh .
 
@@ -238,7 +238,7 @@ jobs:
           chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
           export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
           echo $CONDA_PREFIX
-          docker run --rm -v /tmp/.cache/data/fitlins_tests:/data:ro \
+          docker run --rm -v /tmp/.cache/data/fitlins-tests:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -v $GITHUB_WORKSPACE:/src/fitlins \
@@ -250,14 +250,14 @@ jobs:
                 --cov-report xml:/scratch/.coverage_pytest_${{ matrix.test_name }}.xml \
                 $CONDA_PREFIX/lib/python3.9/site-packages/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
-                --bids-dir=/data/ds003/fmriprep/sourcedata \
+                --bids-dir=/data/inputs/ds000003 \
                 --output-dir=/out \
-                --derivatives=/data/ds003/fmriprep \
+                --derivatives=/data/inputs/ds000003-fmriprep \
                 --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
                 --work-dir=/scratch \
                 --test-name=${{ matrix.test_name }} \
                 --database-path=/out/ds003_database \
-                --reference-dir=/data/ds003
+                --reference-dir=/data/outputs/
 
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
