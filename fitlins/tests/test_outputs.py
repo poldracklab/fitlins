@@ -130,7 +130,7 @@ def test_outputs(
 
     # TODO: parameterize this
     reference_root = Path(reference_dir)
-    reference_dir = reference_root / f'{test_name}/out/fitlins'
+    reference_dir = reference_root / f'{test_name}/fitlins'
 
     # check niftis against reference
     ref_niis = sorted(reference_dir.glob('**/*.nii.gz'))
