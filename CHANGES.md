@@ -1,3 +1,20 @@
+0.10.0 (February 01, 2022)
+==========================
+New feature release in the 0.10.x series.
+
+This release implements support for BIDS Stats Models 1.0.0-rc1.
+While we have attempted not to break old-style models, we no longer support them.
+
+* RF: Use the new bids stats model (https://github.com/poldracklab/fitlins/pull/298)
+* FIX: minor typo; missed restyling in afni.py (https://github.com/poldracklab/fitlins/pull/328)
+* FIX: Minor fixes (https://github.com/poldracklab/fitlins/pull/326)
+* FIX: version info & detail activating venv on different OS (https://github.com/poldracklab/fitlins/pull/311)
+* ENH: Migrate CircleCI to github actions  (https://github.com/poldracklab/fitlins/pull/329)
+* STY: Reformat to black, address flake8 issues (https://github.com/poldracklab/fitlins/pull/316)
+* MNT: Temporarily pull pybids from github maintenance branch (https://github.com/poldracklab/fitlins/pull/308)
+* CI: Update ds003 tests (https://github.com/poldracklab/fitlins/pull/331)
+* CI: Check for secrets before deploying, switch to python-build (https://github.com/poldracklab/fitlins/pull/332)
+
 0.9.2 (July 21, 2021)
 ======================
 
