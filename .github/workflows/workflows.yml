@@ -107,38 +107,37 @@ jobs:
           python -m pip install --upgrade pip
           pip install datalad==0.14.7
 
-      - name: WTF!?
+      - name: Datalad WTF
         run: |
          datalad wtf
 
-      - name: "cached data"
+      - name: Install cached data
         uses: actions/cache@v2
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v4-${{ runner.os }}-${{ github.job }}
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ds003-v4-${{ runner.os }}-
-            ds003-v4-
-            ds003-
+            ds003-v5-${{ github.ref_name }}-
+            ds003-v5-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
         # if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd /tmp/.cache/data
-          datalad install -r -s https://gin.g-node.org/shashankbansal56/fitlins_tests
-          datalad update --merge -d fitlins_tests
-          cd fitlins_tests
-          datalad get ds003/fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
-                                    ds003/fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
-                                    ds003/fmriprep/dataset_description.json \
-                                    ds003/fmriprep/sub-*/*/*.json
-          datalad get -r ds003/nistats_smooth/ ds003/afni_smooth/ ds003/afni_blurto/ ds003/nistats_blurto/
+          datalad install -r -s https://gin.g-node.org/markiewicz/fitlins-tests
+          datalad update --merge -d fitlins-tests
+          cd fitlins-tests
+          datalad get inputs/ds000003-fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
+                      inputs/ds000003-fmriprep/sub-0{1,2,3}/func/*_desc-confounds_*.tsv \
+                      inputs/ds000003-fmriprep/dataset_description.json \
+                      inputs/ds000003-fmriprep/sub-*/*/*.json \
+                      outputs
           datalad status
 
       - name: "Check installed derivatives data"
         run: |
-          cd /tmp/.cache/data/fitlins_tests/ds003
+          cd /tmp/.cache/data/fitlins-tests/
           git log --oneline --graph
           du -sh .
 
@@ -225,11 +224,7 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v4-${{ runner.os }}
-          restore-keys: |
-            ds003-v4-${{ runner.os }}
-            ds003-v4-
-            ds003-
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Run fitlins
         timeout-minutes: 240
@@ -240,7 +235,7 @@ jobs:
           chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
           export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
           echo $CONDA_PREFIX
-          docker run --rm -v /tmp/.cache/data/fitlins_tests:/data:ro \
+          docker run --rm -v /tmp/.cache/data/fitlins-tests:/data:ro \
                 -v /tmp/ds003/derivatives:/out \
                 -v /tmp/ds003/work:/scratch \
                 -v $GITHUB_WORKSPACE:/src/fitlins \
@@ -252,14 +247,14 @@ jobs:
                 --cov-report xml:/scratch/.coverage_pytest_${{ matrix.test_name }}.xml \
                 $CONDA_PREFIX/lib/python3.9/site-packages/fitlins/tests \
                 --fitlins-path=$CONDA_PREFIX/bin/fitlins \
-                --bids-dir=/data/ds003/fmriprep/sourcedata \
+                --bids-dir=/data/inputs/ds000003 \
                 --output-dir=/out \
-                --derivatives=/data/ds003/fmriprep \
+                --derivatives=/data/inputs/ds000003-fmriprep \
                 --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
                 --work-dir=/scratch \
                 --test-name=${{ matrix.test_name }} \
                 --database-path=/out/ds003_database \
-                --reference-dir=/data/ds003
+                --reference-dir=/data/outputs/
 
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
