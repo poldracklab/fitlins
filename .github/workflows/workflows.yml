@@ -107,18 +107,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install datalad==0.14.7
 
-      - name: WTF!?
+      - name: Datalad WTF
         run: |
          datalad wtf
 
-      - name: "cached data"
+      - name: Install cached data
         uses: actions/cache@v2
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v5-${{ runner.os }}-${{ github.job }}
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ds003-v5-${{ runner.os }}-
+            ds003-v5-${{ github.ref_name }}-
             ds003-v5-
 
       - name: "Install fMRIPrep derivatives of ds000003 and reference data"
@@ -224,10 +224,7 @@ jobs:
         id: cache
         with:
           path: /tmp/.cache/data
-          key: ds003-v5-${{ runner.os }}
-          restore-keys: |
-            ds003-v5-${{ runner.os }}
-            ds003-v5-
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Run fitlins
         timeout-minutes: 240
