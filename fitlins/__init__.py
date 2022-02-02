@@ -18,11 +18,3 @@ else:
     del matplotlib
 
 from .__about__ import __version__
-
-try:
-    import bids
-except ImportError:
-    pass
-else:
-    bids.config.set_option('extension_initial_dot', True)
-    del bids
