@@ -1,6 +1,6 @@
 ---
 name: 🐛 Bug Report
-about: Report a reproducible bug in the current release of nautobot-ssot
+about: Report a reproducible bug in the current release of fitlins
 ---
 
 ### Environment
