@@ -1,0 +1,7 @@
+name: fitlins-pytest
+channels:
+  - conda-forge
+  - leej3
+dependencies:
+  - anaconda-client
+  - pip
