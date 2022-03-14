@@ -18,7 +18,7 @@ fi
 set -x
 
 if [ "$CHECK_TYPE" == "test" ]; then
-  pytest --cov fitlins --ignore-glob=fitlins/tests/* fitlins
+  pytest --cov fitlins --ignore-glob=fitlins/tests/* fitlins $@
 elif [ "$CHECK_TYPE" == "workflow" ]; then
   pytest -sv -r s --cov fitlins fitlins/tests \
     --bids-dir $DATA/inputs/ds000003 \
@@ -28,7 +28,7 @@ elif [ "$CHECK_TYPE" == "workflow" ]; then
     --output-dir $OUTPUT_DIR \
     --database-path $OUTPUT_DIR/bidsdb \
     --work-dir $WORK_DIR \
-    --test-name $TEST_NAME
+    --test-name $TEST_NAME $@
 fi
 
 set +eux
