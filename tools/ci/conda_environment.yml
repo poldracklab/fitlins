@@ -1,4 +1,4 @@
-name: fitlins-pytest
+name: fitlins-ci
 channels:
   - conda-forge
   - leej3
