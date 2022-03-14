@@ -406,8 +406,9 @@ def run_fitlins(argv=None):
     if not opts.reports_only:
         try:
             fitlins_wf.run(**plugin_settings)
-        except Exception:
-            retcode = 1
+        except Exception as e:
+            logger.critical(f"FitLins failed: {e}")
+            raise
 
     run_context = {
         'version': __version__,
