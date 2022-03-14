@@ -15,6 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  INSTALL_TYPE: pip
 
 jobs:
   build:
@@ -146,11 +147,9 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         python-version: ["3.7", "3.8", "3.9", "3.10"]
-        install: ['pip']
         pip-flags: ['']
         check: ['test']
     env:
-      INSTALL_TYPE: ${{ matrix.install }}
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
@@ -187,20 +186,13 @@ jobs:
           which python
           which pip
           python -c "import sys; print(sys.version)"
-      - name: Build archive
-        run: echo "ARCHIVE=." >> $GITHUB_ENV
       - name: Install fitlins
         run: tools/ci/install.sh
       - name: Run tests
-        run: |
-          pytest --cov=fitlins --cov-report xml:cov_pytest.xml \
-               --ignore-glob=fitlins/tests/* .
+        run: tools/ci/check.sh
         if: ${{ matrix.check != 'skiptests' }}
       - uses: codecov/codecov-action@v2
         with:
-          env_vars: OS,PYTHON
-          files: cov_pytest.xml
-          flags: pytest
           verbose: true
         if: ${{ always() }}
 
@@ -212,11 +204,9 @@ jobs:
       matrix:
         python-version: [3.9]
         test_name: ["nistats_smooth"]
-        install: ['pip']
         pip-flags: ['']
-        check: ['test']
+        check: ['workflow']
     env:
-      INSTALL_TYPE: ${{ matrix.install }}
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
@@ -232,8 +222,6 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Build archive
-        run: echo "ARCHIVE=." >> $GITHUB_ENV
       - name: Install fitlins
         run: tools/ci/install.sh
 
@@ -247,25 +235,17 @@ jobs:
       - name: Run fitlins tests
         timeout-minutes: 240
         run: |
-          mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
-          chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
-          pytest fitlins/tests \
-                --cov=fitlins \
-                --cov-report xml:/tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml \
-                --bids-dir=/tmp/.cache/data/fitlins-tests/inputs/ds000003 \
-                --output-dir=/tmp/ds003/derivatives \
-                --derivatives=/tmp/.cache/data/fitlins-tests/inputs/ds000003-fmriprep \
-                --model=$GITHUB_WORKSPACE/examples/models/ds000003/models/model-001_smdl.json \
-                --work-dir=/tmp/ds003/work \
-                --test-name=${{ matrix.test_name }} \
-                --database-path=/tmp/ds003/derivatives/ds003_database \
-                --reference-dir=/tmp/.cache/data/fitlins-tests/outputs/
-
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          tools/ci/check.sh
+        env:
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
-          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
-          env_vars: GITHUB_JOB
           verbose: true
 
   test_ds003_afni:
@@ -276,11 +256,9 @@ jobs:
       matrix:
         python-version: [3.9]
         test_name: ["afni_smooth", "afni_blurto"]
-        install: ['pip']
         pip-flags: ['']
-        check: ['test']
+        check: ['workflow']
     env:
-      INSTALL_TYPE: ${{ matrix.install }}
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
@@ -310,8 +288,6 @@ jobs:
         run: |
           conda install -y --channel leej3 "afni-minimal"
           conda list | grep afni
-      - name: Build archive
-        run: echo "ARCHIVE=." >> $GITHUB_ENV
       - name: Install fitlins
         run: tools/ci/install.sh
 
@@ -325,20 +301,14 @@ jobs:
       - name: Run fitlins tests
         timeout-minutes: 240
         run: |
-          mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
-          chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
-          pytest fitlins/tests \
-                --cov=fitlins \
-                --cov-report xml:/tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml \
-                --bids-dir=/tmp/.cache/data/fitlins-tests/inputs/ds000003 \
-                --output-dir=/tmp/ds003/derivatives \
-                --derivatives=/tmp/.cache/data/fitlins-tests/inputs/ds000003-fmriprep \
-                --model=$GITHUB_WORKSPACE/examples/models/ds000003/models/model-001_smdl.json \
-                --work-dir=/tmp/ds003/work \
-                --test-name=${{ matrix.test_name }} \
-                --database-path=/tmp/ds003/derivatives/ds003_database \
-                --reference-dir=/tmp/.cache/data/fitlins-tests/outputs/
-
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          tools/ci/check.sh
+        env:
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
@@ -380,42 +350,31 @@ jobs:
           path: /tmp/.cache/data
           key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
 
-      - name: Run fitlins
+      - name: Run fitlins tests
         timeout-minutes: 240
-        env:
-          CONDA_PREFIX: /opt/miniconda-latest/envs/neuro
         run: |
-          mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
-          chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
-          export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-          echo $CONDA_PREFIX
-          docker run --rm -v /tmp/.cache/data/fitlins-tests:/data:ro \
-                -v /tmp/ds003/derivatives:/out \
-                -v /tmp/ds003/work:/scratch \
-                -v $GITHUB_WORKSPACE:/src/fitlins \
-                -e COVERAGE_FILE=/scratch/.coverage_${{ matrix.test_name }} \
-                --entrypoint="/neurodocker/startup.sh" \
-                ${{ github.repository }}:latest \
-                pytest --cov=fitlins \
-                --cov-config /src/fitlins/docker/multiproc.coveragerc \
-                --cov-report xml:/scratch/.coverage_pytest_${{ matrix.test_name }}.xml \
-                $CONDA_PREFIX/lib/python3.9/site-packages/fitlins/tests \
-                --fitlins-path=$CONDA_PREFIX/bin/fitlins \
-                --bids-dir=/data/inputs/ds000003 \
-                --output-dir=/out \
-                --derivatives=/data/inputs/ds000003-fmriprep \
-                --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
-                --work-dir=/scratch \
-                --test-name=${{ matrix.test_name }} \
-                --database-path=/out/ds003_database \
-                --reference-dir=/data/outputs/
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          docker run --rm \
+              -v $DATA:$DATA \
+              -v $WORK_DIR:$WORK_DIR \
+              -v $OUTPUT_DIR:$OUTPUT_DIR \
+              -v $PWD:/work \
+              -e CHECK_TYPE -e TEST_NAME \
+              -e DATA -e WORK_DIR -e OUTPUT_DIR \
+              --entrypoint=/neurodocker/startup.sh \
+              $IMAGE tools/ci/check.sh
+        env:
+          IMAGE: ${{ github.repository }}:latest
+          CHECK_TYPE: workflow
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
-          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
-          flags: ${{ matrix.test_name }}
-          env_vars: GITHUB_JOB
           verbose: true
 
   deploy_docker:
