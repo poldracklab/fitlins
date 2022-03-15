@@ -53,7 +53,8 @@
         "use_env": "neuro",
         "conda_install": [
           "numpy=1.21",
-          "scipy=1.7",
+          "scipy=1.8",
+          "networkx=2.7",
           "scikit-learn=1.0",
           "scikit-image",
           "matplotlib=3.5",

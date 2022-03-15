@@ -1,0 +1,6 @@
+name: fitlins-ci
+channels:
+  - conda-forge
+  - leej3
+dependencies:
+  - pip

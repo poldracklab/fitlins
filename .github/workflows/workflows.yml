@@ -15,6 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  INSTALL_TYPE: pip
 
 jobs:
   build:
@@ -101,7 +102,7 @@ jobs:
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get update -y
           sudo apt-get install -y git-annex
           python -m pip install --upgrade pip
           pip install datalad==0.14.7
@@ -140,64 +141,188 @@ jobs:
           git log --oneline --graph
           du -sh .
 
-
   run_pytest:
-    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: [3.9]
+        os: ['ubuntu-latest']
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        pip-flags: ['']
+        check: ['test']
+    env:
+      CHECK_TYPE: ${{ matrix.check }}
+      EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
+      OS_TYPE: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v2
-
-      - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Download artifact
-        uses: actions/download-artifact@v2
         with:
-          name: docker
-          path: /tmp
-
-      - name: Load docker image
+          submodules: recursive
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          activate-environment: fitlins-ci
+          environment-file: tools/ci/conda_environment.yml
+          python-version: ${{ matrix.python-version }}
+          show-channel-urls: true
+          auto-activate-base: false
+      - name: Test conda installation
         run: |
-          docker info
-          set +o pipefail
-          ls -l /tmp/docker.tar
-          docker load --input /tmp/docker.tar
-          docker images
-
-      - name: Run pytest
-        timeout-minutes: 120
+          conda info
+          conda list
+          conda env list
+          conda config --show-sources
+          conda config --show
+      - name: Install dependencies
         run: |
-          mkdir -p /tmp/pytestcov
-          chmod 777 /tmp/pytestcov
-          docker run --rm \
-              -v /tmp/pytestcov:/scratch \
-              -e COVERAGE_FILE=/scratch/.coverage.pytest \
-              --entrypoint="/neurodocker/startup.sh" \
-              ${{ github.repository_owner }}/fitlins:latest \
-              pytest --cov=fitlins --cov-report xml:/scratch/cov_pytest.xml \
-               --cov-config /src/fitlins/docker/multiproc.coveragerc \
-               --ignore-glob=/src/fitlins/fitlins/tests/* /src/fitlins
+          conda install -y --channel leej3 "afni-minimal"
+          conda list | grep afni
+      - name: Display Python version
+        run: |
+          which python
+          which pip
+          python -c "import sys; print(sys.version)"
+      - name: Install fitlins
+        run: tools/ci/install.sh
+      - name: Run tests
+        run: tools/ci/check.sh
+        if: ${{ matrix.check != 'skiptests' }}
+      - uses: codecov/codecov-action@v2
+        with:
+          verbose: true
+        if: ${{ always() }}
 
-      - name: Submit pytest coverage
+  test_ds003_nistats_smooth:
+    needs: [cache_test_data]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9]
+        test_name: ["nistats_smooth"]
+        pip-flags: ['']
+        check: ['workflow']
+    env:
+      CHECK_TYPE: ${{ matrix.check }}
+      EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
+      OS_TYPE: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install fitlins
+        run: tools/ci/install.sh
+
+      - name: Restore cached test data
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.cache/data
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
+          
+      - name: Run fitlins tests
+        timeout-minutes: 240
+        run: |
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          tools/ci/check.sh
+        env:
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
+      - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
-          directory: /tmp/pytestcov
-          env_vars: OS,PYTHON
-          files: /tmp/pytestcov/cov_pytest.xml
-          flags: pytest
           verbose: true
 
-  test_ds003:
+  test_ds003_afni:
+    needs: [cache_test_data]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9]
+        test_name: ["afni_smooth", "afni_blurto"]
+        pip-flags: ['']
+        check: ['workflow']
+    env:
+      CHECK_TYPE: ${{ matrix.check }}
+      EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
+      OS_TYPE: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          activate-environment: fitlins-ci
+          environment-file: tools/ci/conda_environment.yml
+          python-version: ${{ matrix.python-version }}
+          show-channel-urls: true
+          auto-activate-base: false
+      - name: Test conda installation
+        run: |
+          conda info
+          conda list
+          conda env list
+      - name: Install dependencies
+        run: |
+          conda install -y --channel leej3 "afni-minimal"
+          conda list | grep afni
+      - name: Install fitlins
+        run: tools/ci/install.sh
+
+      - name: Restore cached test data
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.cache/data
+          key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
+          
+      - name: Run fitlins tests
+        timeout-minutes: 240
+        run: |
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          tools/ci/check.sh
+        env:
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
+      - name: Combine coverage and submit
+        uses: codecov/codecov-action@v2
+        with:
+          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
+          env_vars: GITHUB_JOB
+          verbose: true
+
+  test_ds003_nistats_blurto:
     needs: [build, cache_test_data]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        test_name: ["afni_smooth", "nistats_smooth", "afni_blurto", "nistats_blurto"]
+        test_name: ["nistats_blurto"]
     steps:
       - uses: actions/checkout@v2
 
@@ -225,46 +350,36 @@ jobs:
           path: /tmp/.cache/data
           key: ds003-v5-${{ github.ref_name }}-${{ github.sha }}
 
-      - name: Run fitlins
+      - name: Run fitlins tests
         timeout-minutes: 240
-        env:
-          CONDA_PREFIX: /opt/miniconda-latest/envs/neuro
         run: |
-          mkdir -p /tmp/ds003/work /tmp/ds003/derivatives
-          chmod 777 /tmp/ds003/work /tmp/ds003/derivatives
-          export CONDA_PREFIX=/opt/miniconda-latest/envs/neuro
-          echo $CONDA_PREFIX
-          docker run --rm -v /tmp/.cache/data/fitlins-tests:/data:ro \
-                -v /tmp/ds003/derivatives:/out \
-                -v /tmp/ds003/work:/scratch \
-                -v $GITHUB_WORKSPACE:/src/fitlins \
-                -e COVERAGE_FILE=/scratch/.coverage_${{ matrix.test_name }} \
-                --entrypoint="/neurodocker/startup.sh" \
-                ${{ github.repository }}:latest \
-                pytest --cov=fitlins \
-                --cov-config /src/fitlins/docker/multiproc.coveragerc \
-                --cov-report xml:/scratch/.coverage_pytest_${{ matrix.test_name }}.xml \
-                $CONDA_PREFIX/lib/python3.9/site-packages/fitlins/tests \
-                --fitlins-path=$CONDA_PREFIX/bin/fitlins \
-                --bids-dir=/data/inputs/ds000003 \
-                --output-dir=/out \
-                --derivatives=/data/inputs/ds000003-fmriprep \
-                --model=/src/fitlins/examples/models/ds000003/models/model-001_smdl.json \
-                --work-dir=/scratch \
-                --test-name=${{ matrix.test_name }} \
-                --database-path=/out/ds003_database \
-                --reference-dir=/data/outputs/
+          mkdir -p $WORK_DIR $OUTPUT_DIR
+          chmod 777 $WORK_DIR $OUTPUT_DIR
+          docker run --rm \
+              -v $DATA:$DATA \
+              -v $WORK_DIR:$WORK_DIR \
+              -v $OUTPUT_DIR:$OUTPUT_DIR \
+              -v $PWD:/work \
+              -e CHECK_TYPE -e TEST_NAME \
+              -e DATA -e WORK_DIR -e OUTPUT_DIR \
+              -u $UID \
+              --entrypoint=/neurodocker/startup.sh \
+              $IMAGE tools/ci/check.sh
+        env:
+          IMAGE: ${{ github.repository }}:latest
+          CHECK_TYPE: workflow
+          DATA: /tmp/.cache/data/fitlins-tests
+          TEST_NAME: ${{ matrix.test_name }}
+          OUTPUT_DIR: /tmp/ds003/derivatives
+          WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
-          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
-          flags: ${{ matrix.test_name }}
-          env_vars: GITHUB_JOB
           verbose: true
 
   deploy_docker:
-    needs: [test_ds003]
+    needs: [test_ds003_afni, test_ds003_nistats_smooth, test_ds003_nistats_blurto]
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
