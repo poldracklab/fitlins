@@ -18,6 +18,7 @@ class DesignMatrixInputSpec(TraitedSpec):
     drift_model = traits.Either(
         traits.String(), None, desc='Optional drift model to apply to design matrix'
     )
+    cosine_high_pass = traits.Float()
 
 
 class DesignMatrixOutputSpec(TraitedSpec):

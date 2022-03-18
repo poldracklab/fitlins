@@ -18,6 +18,7 @@ def init_fitlins_wf(
     estimator=None,
     errorts=False,
     drift_model=None,
+    cosine_high_pass=None,
     base_dir=None,
     name='fitlins_wf',
 ):
@@ -58,7 +59,8 @@ def init_fitlins_wf(
     #
     loader = pe.Node(
         LoadBIDSModel(
-            database_path=database_path, model=model_dict, selectors={'desc': desc, 'space': space}
+            database_path=database_path, model=model_dict,
+            selectors={'desc': desc, 'space': space}
         ),
         name='loader',
     )
@@ -112,7 +114,7 @@ def init_fitlins_wf(
                 smoothing_level = levels[int(smoothing_level[1:]) - 1]
 
     design_matrix = pe.MapNode(
-        DesignMatrix(drop_missing=drop_missing),
+        DesignMatrix(drop_missing=drop_missing, cosine_high_pass=cosine_high_pass),
         iterfield=['design_info', 'bold_file'],
         name='design_matrix',
     )

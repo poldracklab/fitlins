@@ -237,7 +237,23 @@ def get_parser():
         choices=["nistats", "afni"],
     )
     g_other.add_argument(
+        "--noise-model",
+        action="store",
+        type=str,
+        help="estimator to use to fit the model",
+        default="nistats",
+        choices=["nistats", "afni"],
+    )
+    g_other.add_argument(
         "--drift-model",
+        action="store",
+        type=str,
+        help="specifies the desired drift model",
+        default=None,
+        choices=["polynomial", "cosine", None],
+    )
+    g_other.add_argument(
+        "--cosine-high-pass",
         action="store",
         type=str,
         help="specifies the desired drift model",
@@ -394,6 +410,7 @@ def run_fitlins(argv=None):
         smoothing=opts.smoothing,
         drop_missing=opts.drop_missing,
         drift_model=opts.drift_model,
+        cosine_high_pass=opts.cosine_high_pass,
         estimator=opts.estimator,
         errorts=opts.error_ts,
     )

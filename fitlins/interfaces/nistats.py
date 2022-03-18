@@ -121,12 +121,14 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
         if len(dense) == vols + 1 and np.isnan(dense[-1:].values).all():
             dense = dense[:-1]
 
+        high_pass = self.inputs.cosine_high_pass
         mat = dm.make_first_level_design_matrix(
             frame_times=np.arange(vols) * info['repetition_time'],
             add_regs=dense,
             hrf_model=None,  # XXX: Consider making an input spec parameter
             add_reg_names=column_names,
             drift_model=drift_model,
+            high_pass=high_pass,
         )
 
         mat.to_csv('design.tsv', sep='\t')
@@ -213,7 +215,8 @@ class FirstLevelModel(NistatsBaseInterface, FirstLevelEstimatorInterface, Simple
         else:
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
             flm = level1.FirstLevelModel(
-                minimize_memory=False, mask_img=mask_file, smoothing_fwhm=smoothing_fwhm
+                minimize_memory=False, mask_img=mask_file,
+                smoothing_fwhm=smoothing_fwhm
             )
             flm.fit(img, design_matrices=mat)
             model_attr = {
