@@ -67,6 +67,7 @@ def get_parser():
     verstr = 'fitlins v{}'.format(__version__)
 
     parser = ArgumentParser(
+        prog='fitlins',
         description='FitLins: Workflows for Fitting Linear models to fMRI',
         formatter_class=RawTextHelpFormatter,
     )
