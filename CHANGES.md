@@ -1,3 +1,13 @@
+0.10.1 (March 29, 2022)
+=======================
+
+* Build(deps): Bump actions/cache from 2 to 3 (https://github.com/poldracklab/fitlins/pull/347)
+* Build(deps): Bump actions/checkout from 2 to 3 (https://github.com/poldracklab/fitlins/pull/343)
+* CI: Comprehensive testing (https://github.com/poldracklab/fitlins/pull/344)
+* Build(deps): Bump actions/setup-python from 2 to 3 (https://github.com/poldracklab/fitlins/pull/340)
+* Update bug_report.md (https://github.com/poldracklab/fitlins/pull/337)
+* CI: Unify Docker deployment steps (https://github.com/poldracklab/fitlins/pull/334)
+
 0.10.0 (February 01, 2022)
 ==========================
 New feature release in the 0.10.x series.
