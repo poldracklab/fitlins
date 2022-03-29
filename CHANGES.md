@@ -1,3 +1,18 @@
+0.10.1 (March 29, 2022)
+=======================
+Bug-fix release in the 0.10.x series.
+
+Most of the fixes come in the upstream fixes of PyBIDS, which will get bundled in
+the Docker image.
+
+* ENH: Set prog name to fitlins, regardless of which CLI program was called (https://github.com/poldracklab/fitlins/pull/350)
+* MNT: Update `bug_report.md` (https://github.com/poldracklab/fitlins/pull/337)
+* CI: Comprehensive testing (https://github.com/poldracklab/fitlins/pull/344)
+* CI: Unify Docker deployment steps (https://github.com/poldracklab/fitlins/pull/334)
+* Build(deps): Bump actions/cache from 2 to 3 (https://github.com/poldracklab/fitlins/pull/347)
+* Build(deps): Bump actions/checkout from 2 to 3 (https://github.com/poldracklab/fitlins/pull/343)
+* Build(deps): Bump actions/setup-python from 2 to 3 (https://github.com/poldracklab/fitlins/pull/340)
+
 0.10.0 (February 01, 2022)
 ==========================
 New feature release in the 0.10.x series.
