@@ -38,8 +38,8 @@ extensions = [
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
-    'm2r',
-    'sphinx_nbexamples',
+    'nbsphinx',
+    'myst_parser',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
