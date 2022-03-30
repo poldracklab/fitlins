@@ -31,6 +31,8 @@ elif [ "$CHECK_TYPE" == "workflow" ]; then
     --test-name $TEST_NAME $@
 fi
 
+coverage xml
+
 set +eux
 
 echo Done running checks
