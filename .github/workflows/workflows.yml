@@ -312,8 +312,6 @@ jobs:
       - name: Combine coverage and submit
         uses: codecov/codecov-action@v2
         with:
-          files: /tmp/ds003/work/.coverage_pytest_${{ matrix.test_name }}.xml
-          env_vars: GITHUB_JOB
           verbose: true
 
   test_ds003_nistats_blurto:
