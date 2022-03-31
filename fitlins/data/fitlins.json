@@ -13,6 +13,10 @@
 
             "name": "name",
             "pattern": "[_/\\\\]name-([a-zA-Z0-9]+)"
+        },
+	{
+            "name": "node",
+            "pattern": "[_/\\\\]node-([a-zA-Z0-9]+)"
         }
     ]
 }
