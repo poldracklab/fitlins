@@ -70,7 +70,7 @@ def sample_model_dict():
             {
                 "Level": "dataset",
                 "Name": "all_food_good_food",
-                "GroupBy": ["contrast", "group"],
+                "GroupBy": ["contrast"],
                 "Model": {"X": [1]},
                 "DummyContrasts": {
                     "Conditions": ["icecream_gt_cake", "eating_vs_baseline"],
