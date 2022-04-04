@@ -139,34 +139,34 @@ def init_fitlins_wf(
 
     # Set up common patterns
     image_pattern = (
-        "reports/[node-{node}/][sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
         "{suffix<design|corr|contrasts>}{extension<.svg>|.svg}"
     )
 
     contrast_plot_pattern = (
-        "reports/[node-{node}/][sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_ortho{extension<.png>|.png}"
     )
     design_matrix_pattern = (
-        "[node-{node}/][sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
         "{suffix<design>}{extension<.tsv>|.tsv}"
     )
     contrast_pattern = (
-        "[node-{node}/][sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_"
         "statmap{extension<.nii.gz|.dscalar.nii>}"
     )
     model_map_pattern = (
-        "[node-{node}/][sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|"
         "residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}"
@@ -185,7 +185,7 @@ def init_fitlins_wf(
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
     snippet_pattern = (
-        '[node-{node}/][sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_]'
+        'node-{node}/[sub-{subject}/][ses-{session}/][sub-{subject}_]'
         '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
     )
     ds_model_warnings = pe.MapNode(
