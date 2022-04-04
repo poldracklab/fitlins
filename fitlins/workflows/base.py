@@ -189,8 +189,7 @@ def init_fitlins_wf(
         '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
     )
     ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(reportlet_dir), path_patterns=snippet_pattern),
-        fixed_entities={'node': n_run},
+        BIDSDataSink(base_directory=str(reportlet_dir), path_patterns=snippet_pattern, fixed_entities={'node': n_run}),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_model_warning',
