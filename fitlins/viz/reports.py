@@ -144,7 +144,7 @@ def write_full_report(report_dict, run_context, deriv_dir):
 
     model_name = snake_to_camel(report_dict['model']['name'])
     if model_name == "":
-        model_name = "unknown"
+        model_name = "Untitled"
     target_file = op.join(
         deriv_dir, fl_layout.build_path({'model': model_name}, PATH_PATTERNS, validate=False)
     )
