@@ -142,9 +142,11 @@ def write_full_report(report_dict, run_context, deriv_dir):
 
     tpl = env.get_template('data/full_report.tpl')
 
-    model = snake_to_camel(report_dict['model']['name'])
+    model_name = snake_to_camel(report_dict['model']['name'])
+    if model_name == "":
+        model_name = "unknown"
     target_file = op.join(
-        deriv_dir, fl_layout.build_path({'model': model}, PATH_PATTERNS, validate=False)
+        deriv_dir, fl_layout.build_path({'model': model_name}, PATH_PATTERNS, validate=False)
     )
     html = tpl.render(deroot({**report_dict, **run_context}, op.dirname(target_file)))
     Path(target_file).parent.mkdir(parents=True, exist_ok=True)
