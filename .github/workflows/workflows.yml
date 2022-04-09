@@ -7,7 +7,7 @@ on:
       - /doc\/.*/
   push:
     branches:
-      - master
+      - dev
       - maint/*
     tags:
       - '*'
@@ -378,7 +378,7 @@ jobs:
 
   deploy_docker:
     needs: [test_ds003_afni, test_ds003_nistats_smooth, test_ds003_nistats_blurto]
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Set up docker buildx
@@ -398,7 +398,7 @@ jobs:
           docker load < /tmp/docker.tar
           docker images
 
-      - name: Set version/master tags
+      - name: Set version/dev tags
         run: |
           # GHCR
           docker tag $IMAGE_NAME $REGISTRY/$IMAGE_NAME:${{ github.ref_name }}
