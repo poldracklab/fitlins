@@ -21,11 +21,7 @@
     [
       "install",
       [
-        "graphviz",
-        "wget",
-        "git",
-        "git-annex-standalone",
-        "git-annex-remote-rclone"
+        "graphviz"
       ]
     ],
     [
