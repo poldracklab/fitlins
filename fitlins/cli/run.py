@@ -86,7 +86,7 @@ def get_parser():
         'output_dir',
         action='store',
         type=op.abspath,
-        help='the output path for the outcomes of preprocessing and visual ' 'reports',
+        help='the output path for the outcomes of preprocessing and visual reports',
     )
     parser.add_argument(
         'analysis_level',
@@ -117,7 +117,7 @@ def get_parser():
         action='store',
         nargs='+',
         default=None,
-        help='one or more participant identifiers (the sub- prefix can be ' 'removed)',
+        help='one or more participant identifiers (the sub- prefix can be removed)',
     )
     g_bids.add_argument('-m', '--model', action='store', help='location of BIDS model description')
     g_bids.add_argument(
@@ -138,7 +138,7 @@ def get_parser():
         '--space',
         action='store',
         default='MNI152NLin2009cAsym',
-        help='registered space of input datasets. ' 'Empty value for no explicit space.',
+        help='registered space of input datasets. Empty value for no explicit space.',
     )
     g_bids.add_argument(
         '--force-index',

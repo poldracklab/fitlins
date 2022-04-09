@@ -183,7 +183,7 @@ class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
 class LoadBIDSModelOutputSpec(TraitedSpec):
     design_info = traits.List(
         traits.Dict,
-        desc='Descriptions of design matrices with sparse events, ' 'dense regressors and TR',
+        desc='Descriptions of design matrices with sparse events, dense regressors and TR',
     )
     warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
     all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel')
