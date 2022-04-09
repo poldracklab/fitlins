@@ -191,7 +191,7 @@ jobs:
       - name: Run tests
         run: tools/ci/check.sh
         if: ${{ matrix.check != 'skiptests' }}
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           verbose: true
         if: ${{ always() }}
@@ -244,7 +244,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
@@ -310,7 +310,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
@@ -372,7 +372,7 @@ jobs:
           WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
