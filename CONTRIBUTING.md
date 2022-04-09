@@ -111,14 +111,40 @@ is so useful to everyone involved.
 This is now your own unique copy of FitLins.
 Changes here won't effect anyone else's work, so it's a safe space to explore edits to the code!
 
-Make sure to [keep your fork up to date][link_updateupstreamwiki] with the master repository.
+Make sure to [keep your fork up to date][link_updateupstreamwiki] with the upstream repository.
 
-**3. Make the changes you've discussed, following the [FitLins coding style guide](#FitLins-coding-style-guide).**
+**3. Select a target branch.**
+
+FitLins has *development* and *maintenance* branches.
+New features and significant changes should target the `dev` branch.
+This is the equivalent of `master` or `main` in other repositories, and is where most effort
+is targeted.
+Maintenance branches are named `maint/X.Y.x`, and accept bug fixes in the corresponding versions
+X.Y.\* (e.g., for a bug in 0.10.1, target `maint/0.10.x`).
+
+If you are submitting a bug-fix, please target the maintenance branch that corresponds to the
+version of FitLins that the bug has been found in.
+Fixes for unreleased bugs should target `dev`.
+
+To target a branch use the following process:
+
+```Shell
+$ git fetch upstream
+$ git checkout upstream/<branch> -b my-branch
+```
+
+For example, a fix against `maint/0.10.x` might look like:
+
+```Shell
+$ git checkout upstream/maint/0.10.x -b fix/mybug
+```
+
+**4. Make the changes you've discussed, following the [FitLins coding style guide](#FitLins-coding-style-guide).**
 
 Try to keep the changes focused.
 If you feel tempted to "branch out" then please make a [new branch][link_branches].
 
-**4. Submit a [pull request][link_pullrequest].**
+**5. Submit a [pull request][link_pullrequest].**
 
 A member of the development team will review your changes to confirm
 that they can be merged into the main code base.
@@ -138,6 +164,8 @@ For example: `[ENH] Support for naive thresholding`
 
 For works-in-progress, add the ``WIP`` tag in addition to the descriptive prefix.
 Pull-requests tagged with ``[WIP]`` will not be merged until the tag is removed.
+
+Be sure to target the correct branch!
 
 ## FitLins coding style guide
 
@@ -233,5 +261,5 @@ You're awesome. :wave::smiley:
 [link_branches]: https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/
 [link_updateupstreamwiki]: https://help.github.com/articles/syncing-a-fork/
 [link_stemmrolemodels]: https://github.com/KirstieJane/STEMMRoleModels
-[link_zenodo]: https://github.com/poldracklab/fitlins/blob/master/.zenodo.json
-[link_license]: https://github.com/poldracklab/fitlins/blob/master/LICENSE
+[link_zenodo]: https://github.com/poldracklab/fitlins/blob/dev/.zenodo.json
+[link_license]: https://github.com/poldracklab/fitlins/blob/dev/LICENSE
