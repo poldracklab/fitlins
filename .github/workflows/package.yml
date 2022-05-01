@@ -6,7 +6,7 @@ on:
       - /doc\/.*/
   push:
     branches:
-      - master
+      - dev
       - maint/*
     tags:
       - '*'

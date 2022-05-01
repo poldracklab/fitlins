@@ -31,7 +31,7 @@ def test_get_nan_diff():
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_abs=0.01)[0]
     expected_dif = (
-        'Absolute difference (max of 0.09999999999999998)' ' greater than 0.01 for ref and out.'
+        'Absolute difference (max of 0.09999999999999998) greater than 0.01 for ref and out.'
     )
     assert dif == expected_dif
 
