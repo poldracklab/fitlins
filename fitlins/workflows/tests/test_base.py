@@ -11,7 +11,7 @@ from ..base import init_fitlins_wf
 from ...utils import config
 
 
-@pytest.mark.parametrize("estimator", ["nistats", "afni"])
+@pytest.mark.parametrize("estimator", ["nistats", "afni", "fsl"])
 def test_init_fitlins_wf(estimator, tmp_path, bids_dir, bids_dset, sample_model):
     layout, database_path = bids_dset
     out_dir = bids_dir / 'derivatives' / 'fitlins'
