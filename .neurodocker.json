@@ -21,8 +21,18 @@
     [
       "install",
       [
-        "graphviz"
+        "graphviz",
+        "git"
       ]
+    ],
+    [
+      "fsl",
+      {
+        "version": "6.0.4",
+        "exclude_paths": [
+          "data"
+        ]
+      }
     ],
     [
       "user",
