@@ -7,7 +7,7 @@ on:
       - /doc\/.*/
   push:
     branches:
-      - master
+      - dev
       - maint/*
     tags:
       - '*'
@@ -76,7 +76,7 @@ jobs:
           ls -l /tmp/
 
       - name: Upload docker.tar as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: docker
           path: /tmp/docker.tar
@@ -191,7 +191,7 @@ jobs:
       - name: Run tests
         run: tools/ci/check.sh
         if: ${{ matrix.check != 'skiptests' }}
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           verbose: true
         if: ${{ always() }}
@@ -244,7 +244,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
@@ -310,7 +310,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
@@ -328,7 +328,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: docker
           path: /tmp
@@ -372,20 +372,20 @@ jobs:
           WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           verbose: true
 
   deploy_docker:
     needs: [test_ds003_afni, test_ds003_nistats_smooth, test_ds003_nistats_blurto]
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Set up docker buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: docker
           path: /tmp
@@ -398,7 +398,7 @@ jobs:
           docker load < /tmp/docker.tar
           docker images
 
-      - name: Set version/master tags
+      - name: Set version/dev tags
         run: |
           # GHCR
           docker tag $IMAGE_NAME $REGISTRY/$IMAGE_NAME:${{ github.ref_name }}

@@ -31,7 +31,7 @@ def test_get_nan_diff():
     out_data = np.array([[np.nan, 0.9]])
     dif = get_nan_diff('ref', 'out', ref_data, out_data, max_abs=0.01)[0]
     expected_dif = (
-        'Absolute difference (max of 0.09999999999999998)' ' greater than 0.01 for ref and out.'
+        'Absolute difference (max of 0.09999999999999998) greater than 0.01 for ref and out.'
     )
     assert dif == expected_dif
 
@@ -130,12 +130,12 @@ def test_outputs(
 
     # TODO: parameterize this
     reference_root = Path(reference_dir)
-    reference_dir = reference_root / f'{test_name}/fitlins'
+    reference_dir = reference_root / test_name
 
     # check niftis against reference
     ref_niis = sorted(reference_dir.glob('**/*.nii.gz'))
     for ref_nii in ref_niis:
-        out_nii = Path(output_dir) / "fitlins" / ref_nii.relative_to(reference_dir)
+        out_nii = Path(output_dir) / ref_nii.relative_to(reference_dir)
         ref_data = nib.load(ref_nii).get_fdata(dtype=np.float64)
         out_data = nib.load(out_nii).get_fdata(dtype=np.float64)
         difs = get_nan_diff(ref_nii, out_nii, ref_data, out_data, max_abs=1e-06, max_rel=1e-04)
@@ -143,7 +143,7 @@ def test_outputs(
 
     # check dataset description json
     ref_json = reference_dir / 'dataset_description.json'
-    out_json = Path(output_dir) / "fitlins" / ref_json.relative_to(reference_dir)
+    out_json = Path(output_dir) / ref_json.relative_to(reference_dir)
 
     get_json_diff(ref_json, out_json)
 
