@@ -2,28 +2,26 @@ import json
 import os
 import re
 import shutil
-
-import numpy as np
-import nibabel as nb
-
+from gzip import GzipFile
 from itertools import chain
 from pathlib import Path
-from gzip import GzipFile
 
+import nibabel as nb
+import numpy as np
 from nipype import logging
-from nipype.utils.filemanip import copyfile
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
-    TraitedSpec,
-    SimpleInterface,
+    Directory,
+    File,
     InputMultiPath,
     OutputMultiPath,
-    File,
-    Directory,
-    traits,
+    SimpleInterface,
+    TraitedSpec,
     isdefined,
+    traits,
 )
 from nipype.interfaces.io import IOBase
+from nipype.utils.filemanip import copyfile
 
 from ..utils import snake_to_camel, to_alphanum
 
@@ -238,8 +236,8 @@ class LoadBIDSModel(SimpleInterface):
     output_spec = LoadBIDSModelOutputSpec
 
     def _run_interface(self, runtime):
-        from bids.modeling import BIDSStatsModelsGraph
         from bids.layout import BIDSLayout
+        from bids.modeling import BIDSStatsModelsGraph
 
         layout = BIDSLayout.load(database_path=self.inputs.database_path)
         selectors = self.inputs.selectors
@@ -480,7 +478,7 @@ class BIDSDataSink(IOBase):
             # format (eg: gain.Range, gain.EqualIndifference).
             # This prevents issues when creating/searching files for the report
             for k, v in ents.items():
-                if k in ("name", "contrast", "stat"):
+                if k in ("node", "name", "contrast", "stat"):
                     ents.update({k: to_alphanum(str(v))})
 
             out_fname = os.path.join(

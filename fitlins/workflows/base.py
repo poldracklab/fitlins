@@ -1,5 +1,4 @@
 import warnings
-
 from collections import OrderedDict
 from pathlib import Path
 
@@ -21,17 +20,23 @@ def init_fitlins_wf(
     base_dir=None,
     name='fitlins_wf',
 ):
-    from nipype.pipeline import engine as pe
     from nipype.interfaces import utility as niu
-    from ..interfaces.bids import ModelSpecLoader, LoadBIDSModel, BIDSSelect, BIDSDataSink
+    from nipype.pipeline import engine as pe
+
+    from ..interfaces.bids import (
+        BIDSDataSink,
+        BIDSSelect,
+        LoadBIDSModel,
+        ModelSpecLoader,
+    )
     from ..interfaces.nistats import DesignMatrix, SecondLevelModel
+    from ..interfaces.utils import CollateWithMetadata, MergeAll
     from ..interfaces.visualizations import (
-        DesignPlot,
-        DesignCorrelationPlot,
         ContrastMatrixPlot,
+        DesignCorrelationPlot,
+        DesignPlot,
         GlassBrainPlot,
     )
-    from ..interfaces.utils import MergeAll, CollateWithMetadata
     from ..utils import snake_to_camel
 
     if estimator == 'afni':
@@ -121,6 +126,7 @@ def init_fitlins_wf(
 
     def _deindex(tsv):
         from pathlib import Path
+
         import pandas as pd
 
         out_tsv = str(Path.cwd() / Path(tsv).name)
@@ -133,34 +139,34 @@ def init_fitlins_wf(
 
     # Set up common patterns
     image_pattern = (
-        "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
         "{suffix<design|corr|contrasts>}{extension<.svg>|.svg}"
     )
 
     contrast_plot_pattern = (
-        "reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/reports/[sub-{subject}/][ses-{session}/]figures/[run-{run}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_ortho{extension<.png>|.png}"
     )
     design_matrix_pattern = (
-        "[sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_]"
         "{suffix<design>}{extension<.tsv>|.tsv}"
     )
     contrast_pattern = (
-        "[sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "contrast-{contrast}_stat-{stat<effect|variance|z|p|t|F|Meta>}_"
         "statmap{extension<.nii.gz|.dscalar.nii>}"
     )
     model_map_pattern = (
-        "[sub-{subject}/][ses-{session}/]"
-        "[level-{level}_][name-{name}_][sub-{subject}_][ses-{session}_][task-{task}_]"
+        "node-{node}/[sub-{subject}/][ses-{session}/]"
+        "[sub-{subject}_][ses-{session}_][task-{task}_]"
         "[acq-{acquisition}_][rec-{reconstruction}_][run-{run}_][echo-{echo}_][space-{space}_]"
         "stat-{stat<rSquare|logLikelihood|tsnr|errorts|a|b|lam|LjungBox|residtsnr|"
         "residsmoothness|residwhstd>}_statmap{extension<.nii.gz|.dscalar.nii|.tsv>}"
@@ -171,14 +177,19 @@ def init_fitlins_wf(
     # saved as individual derivative files
     #
 
+    n_run = [
+        snake_to_camel(node.name.replace('-', '_'))
+        for node in graph.nodes.values()
+        if node.level == 'run'
+    ][0]
     reportlet_dir = Path(base_dir) / 'reportlets' / 'fitlins'
     reportlet_dir.mkdir(parents=True, exist_ok=True)
     snippet_pattern = (
-        '[sub-{subject}/][ses-{session}/][level-{level}_][sub-{subject}_]'
+        'node-{node}/[sub-{subject}/][ses-{session}/][sub-{subject}_]'
         '[ses-{session}_][task-{task}_][run-{run}_]snippet.html'
     )
     ds_model_warnings = pe.MapNode(
-        BIDSDataSink(base_directory=str(reportlet_dir), path_patterns=snippet_pattern),
+        BIDSDataSink(base_directory=str(reportlet_dir), path_patterns=snippet_pattern, fixed_entities={'node': n_run}),
         iterfield=['entities', 'in_file'],
         run_without_submitting=True,
         name='ds_model_warning',
@@ -201,7 +212,7 @@ def init_fitlins_wf(
     ds_design = pe.MapNode(
         BIDSDataSink(
             base_directory=out_dir,
-            fixed_entities={"level": "run", 'suffix': 'design'},
+            fixed_entities={"level": "run", 'suffix': 'design', 'node': n_run},
             path_patterns=image_pattern,
         ),
         iterfield=['entities', 'in_file'],
@@ -212,7 +223,7 @@ def init_fitlins_wf(
     ds_design_matrix = pe.MapNode(
         BIDSDataSink(
             base_directory=out_dir,
-            fixed_entities={"level": "run", 'suffix': 'design'},
+            fixed_entities={"level": "run", 'suffix': 'design', 'node': n_run},
             path_patterns=design_matrix_pattern,
         ),
         iterfield=['entities', 'in_file'],
@@ -223,7 +234,7 @@ def init_fitlins_wf(
     ds_corr = pe.MapNode(
         BIDSDataSink(
             base_directory=out_dir,
-            fixed_entities={"level": "run", 'suffix': 'corr'},
+            fixed_entities={"level": "run", 'suffix': 'corr', 'node': n_run},
             path_patterns=image_pattern,
         ),
         iterfield=['entities', 'in_file'],
@@ -234,7 +245,7 @@ def init_fitlins_wf(
     ds_run_contrasts = pe.MapNode(
         BIDSDataSink(
             base_directory=out_dir,
-            fixed_entities={"level": "run", 'suffix': 'contrasts'},
+            fixed_entities={"level": "run", 'suffix': 'contrasts', 'node': n_run},
             path_patterns=image_pattern,
         ),
         iterfield=['entities', 'in_file'],
@@ -333,20 +344,32 @@ def init_fitlins_wf(
         )
 
         ds_contrast_maps = pe.Node(
-            BIDSDataSink(base_directory=out_dir, path_patterns=contrast_pattern),
+            BIDSDataSink(
+                base_directory=out_dir,
+                fixed_entities={'node': name},
+                path_patterns=contrast_pattern,
+            ),
             run_without_submitting=True,
             name=f'ds_{name}_contrast_maps',
         )
 
         ds_contrast_plots = pe.Node(
-            BIDSDataSink(base_directory=out_dir, path_patterns=contrast_plot_pattern),
+            BIDSDataSink(
+                base_directory=out_dir,
+                fixed_entities={'node': name},
+                path_patterns=contrast_plot_pattern,
+            ),
             run_without_submitting=True,
             name=f'ds_{name}_contrast_plots',
         )
 
         if level == 'run':
             ds_model_maps = pe.Node(
-                BIDSDataSink(base_directory=out_dir, path_patterns=model_map_pattern),
+                BIDSDataSink(
+                    base_directory=out_dir,
+                    fixed_entities={'node': name},
+                    path_patterns=model_map_pattern,
+                ),
                 run_without_submitting=True,
                 name=f'ds_{name}_model_maps',
             )
@@ -408,9 +431,13 @@ def init_fitlins_wf(
                 model.inputs.smoothing_type = smoothing_type
             else:
                 if smoothing_type == "isoblurto":
-                    from nipype.interfaces.afni.preprocess import BlurToFWHM as smooth_interface
+                    from nipype.interfaces.afni.preprocess import (
+                        BlurToFWHM as smooth_interface,
+                    )
                 elif smoothing_type == "iso":
-                    from nipype.interfaces.afni.preprocess import BlurInMask as smooth_interface
+                    from nipype.interfaces.afni.preprocess import (
+                        BlurInMask as smooth_interface,
+                    )
                 smooth = pe.MapNode(
                     smooth_interface(), iterfield=["in_file", "mask"], name="smooth"
                 )

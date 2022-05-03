@@ -132,7 +132,7 @@ def get_parser():
         '--derivative-label',
         action='store',
         type=str,
-        help='execution label to append to derivative directory name',
+        help='DEPRECATED. Was "execution label to append to derivative directory name"',
     )
     g_bids.add_argument(
         '--space',
@@ -325,12 +325,12 @@ def run_fitlins(argv=None):
                 f" for {opts.estimator} please let us know on github."
             )
 
-    pipeline_name = 'fitlins'
+
     if opts.derivative_label:
-        pipeline_name += '_' + opts.derivative_label
-    deriv_dir = op.join(opts.output_dir, pipeline_name)
-    os.makedirs(deriv_dir, exist_ok=True)
-    fub.write_derivative_description(opts.bids_dir, deriv_dir, vars(opts))
+        logger.warning('--derivative-label no longer has any effect; '
+                       'set output directory name directly')
+    os.makedirs(opts.output_dir, exist_ok=True)
+    fub.write_derivative_description(opts.bids_dir, opts.output_dir, vars(opts))
 
     work_dir = mkdtemp() if opts.work_dir is None else opts.work_dir
 
@@ -384,7 +384,7 @@ def run_fitlins(argv=None):
 
     fitlins_wf = init_fitlins_wf(
         database_path,
-        deriv_dir,
+        opts.output_dir,
         graph=graph,
         analysis_level=opts.analysis_level,
         model=model,
@@ -422,8 +422,8 @@ def run_fitlins(argv=None):
         selectors['subject'] = subject_list
 
     graph.load_collections(**selectors)
-    report_dict = build_report_dict(deriv_dir, work_dir, graph)
-    write_full_report(report_dict, run_context, deriv_dir)
+    report_dict = build_report_dict(opts.output_dir, work_dir, graph)
+    write_full_report(report_dict, run_context, opts.output_dir)
 
     return retcode
 
