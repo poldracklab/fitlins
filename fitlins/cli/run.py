@@ -235,7 +235,7 @@ def get_parser():
         type=str,
         help="estimator to use to fit the model",
         default="nistats",
-        choices=["nistats", "afni"],
+        choices=["nistats", "afni", "fsl"],
     )
     g_other.add_argument(
         "--drift-model",

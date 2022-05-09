@@ -41,6 +41,8 @@ def init_fitlins_wf(
 
     if estimator == 'afni':
         from ..interfaces.afni import FirstLevelModel
+    elif estimator == 'fsl':
+        from ..interfaces.fsl import FirstLevelModel
     else:
         from ..interfaces.nistats import FirstLevelModel
 
