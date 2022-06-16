@@ -235,7 +235,7 @@ def get_parser():
         type=str,
         help="| Estimator to use to fit the (first level) models."
         "| nistats: Default estimator using nilearn glm."
-        "| nilearn: Synonym for nistats"     
+        "| nilearn: Synonym for nistats"
         "| afni: 3dREMLfit",
         default="nistats",
         choices=["nistats", "nilearn", "afni"],
