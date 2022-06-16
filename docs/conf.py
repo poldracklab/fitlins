@@ -57,6 +57,11 @@ apidoc_extra_args = ['-H', 'API']
 
 source_suffix = ['.rst', '.md']
 
+intersphinx_mapping = {
+    'nilearn': ('https://nilearn.github.io/', None),
+    'afni': ('https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/', None)
+}
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

@@ -233,9 +233,12 @@ def get_parser():
         "--estimator",
         action="store",
         type=str,
-        help="estimator to use to fit the model",
+        help="| Estimator to use to fit the (first level) models."
+        "| nistats: Default estimator using nilearn glm."
+        "| nilearn: Synonym for nistats"     
+        "| afni: 3dREMLfit",
         default="nistats",
-        choices=["nistats", "afni"],
+        choices=["nistats", "nilearn", "afni"],
     )
     g_other.add_argument(
         "--drift-model",
