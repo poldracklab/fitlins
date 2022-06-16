@@ -11,8 +11,9 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 # import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import sys
+import fitlins
+# sys.path.insert(0, os.path.abspath('../fitlins'))
 
 
 # -- Project information -----------------------------------------------------
@@ -34,7 +35,6 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
@@ -77,3 +77,77 @@ example_gallery_config = {
     'dont_preprocess': ['../examples/notebooks/ds003_sample_analysis.ipynb'],
     'toctree_depth': 1,
     }
+
+
+# -----------------------------------------------------------------------------
+# Source code links
+# -----------------------------------------------------------------------------
+
+import inspect
+from os.path import relpath, dirname
+
+for name in ['sphinx.ext.linkcode', 'numpydoc.linkcode']:
+    try:
+        __import__(name)
+        extensions.append(name)
+        break
+    except ImportError:
+        pass
+else:
+    print("NOTE: linkcode extension not found -- no links to source generated")
+
+def linkcode_resolve(domain, info):
+    """
+    Determine the URL corresponding to Python object
+    """
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    # strip decorators, which would resolve to the source of the decorator
+    # possibly an upstream bug in getsourcefile, bpo-1764286
+    try:
+        unwrap = inspect.unwrap
+    except AttributeError:
+        pass
+    else:
+        obj = unwrap(obj)
+
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+
+    if lineno:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+    else:
+        linespec = ""
+
+    fn = relpath(fn, start=dirname(fitlins.__file__))
+
+    if 'dev' in fitlins.__version__:
+        return "https://github.com/poldracklab/fitlins/blob/master/fitlins/%s%s" % (
+           fn, linespec)
+    else:
+        return "https://github.com/poldracklab/fitlins/blob/v%s/fitlins/%s%s" % (
+           fitlins.__version__, fn, linespec)
