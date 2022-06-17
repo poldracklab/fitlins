@@ -10,10 +10,10 @@ You can select the AFNI estimator by passing `--estimator afni` in your fitlins 
 
 Nilearn
 -------
-Fits a normal general linear model (GLM). This is quick and no-frills.
+Fits a normal general linear model (GLM) assuming that the residuals are not autocorrelated. This is quick and no-frills.
 
 AFNI
 ----
 Fits a "prewhitened" GLM with an ARMA(1,1) model to each voxel to account for autocorrelated time series noise.
 The GLM and the ARMA(1,1) model are simultaneously optimized with a restricted maximum likelihood approach.
-The downside of the approach is that it's a bit slower.
+The downside of the approach is that it's a bit slower as it has to iteratively fit the GLM and ARMA model at each voxel.
