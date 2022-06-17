@@ -57,6 +57,10 @@ apidoc_extra_args = ['-H', 'API']
 
 source_suffix = ['.rst', '.md']
 
+intersphinx_mapping = {
+    'statsmodels': ('https://bids-standard.github.io/stats-models/', None)
+}
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
