@@ -145,9 +145,7 @@ def linkcode_resolve(domain, info):
 
     fn = relpath(fn, start=dirname(fitlins.__file__))
 
-    if 'dev' in fitlins.__version__:
-        return "https://github.com/poldracklab/fitlins/blob/master/fitlins/%s%s" % (
-           fn, linespec)
-    else:
-        return "https://github.com/poldracklab/fitlins/blob/v%s/fitlins/%s%s" % (
-           fitlins.__version__, fn, linespec)
+    ver = fitlins.__version__
+    if 'dev' in ver:
+        ver = 'dev'
+    return f"https://github.com/poldracklab/fitlins/blob/{ver}/fitlins/{fn}{linespec}"
