@@ -11,16 +11,18 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 # import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import inspect
+from os.path import relpath, dirname
+import sys
+import fitlins
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'FitLins'
-copyright = '2019, Center for Reproducible Neuroscience'
+copyright = '2022, Center for Reproducible Neuroscience'
 author = 'Center for Reproducible Neuroscience'
-
+version = fitlins.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -34,7 +36,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.linkcode',
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
@@ -77,3 +79,52 @@ example_gallery_config = {
     'dont_preprocess': ['../examples/notebooks/ds003_sample_analysis.ipynb'],
     'toctree_depth': 1,
     }
+
+
+# -----------------------------------------------------------------------------
+# Source code links
+# -----------------------------------------------------------------------------
+
+def linkcode_resolve(domain, info):
+    """
+    Determine the URL corresponding to Python object
+    """
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    obj = inspect.unwrap(obj)
+
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        linespec = ""
+    else:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+
+    fn = relpath(fn, start=dirname(fitlins.__file__))
+
+    ver = fitlins.__version__
+    if 'dev' in ver:
+        ver = 'dev'
+    return f"https://github.com/poldracklab/fitlins/blob/{ver}/fitlins/{fn}{linespec}"
