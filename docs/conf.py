@@ -11,17 +11,18 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 # import os
+import inspect
+from os.path import relpath, dirname
 import sys
 import fitlins
-# sys.path.insert(0, os.path.abspath('../fitlins'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'FitLins'
-copyright = '2019, Center for Reproducible Neuroscience'
+copyright = '2022, Center for Reproducible Neuroscience'
 author = 'Center for Reproducible Neuroscience'
-
+version = fitlins.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -35,6 +36,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    'sphinx.ext.linkcode',
     'sphinxarg.ext',  # argparse extension
     'sphinxcontrib.apidoc',
     'texext.math_dollar',
@@ -83,19 +85,6 @@ example_gallery_config = {
 # Source code links
 # -----------------------------------------------------------------------------
 
-import inspect
-from os.path import relpath, dirname
-
-for name in ['sphinx.ext.linkcode', 'numpydoc.linkcode']:
-    try:
-        __import__(name)
-        extensions.append(name)
-        break
-    except ImportError:
-        pass
-else:
-    print("NOTE: linkcode extension not found -- no links to source generated")
-
 def linkcode_resolve(domain, info):
     """
     Determine the URL corresponding to Python object
@@ -117,14 +106,7 @@ def linkcode_resolve(domain, info):
         except Exception:
             return None
 
-    # strip decorators, which would resolve to the source of the decorator
-    # possibly an upstream bug in getsourcefile, bpo-1764286
-    try:
-        unwrap = inspect.unwrap
-    except AttributeError:
-        pass
-    else:
-        obj = unwrap(obj)
+    obj = inspect.unwrap(obj)
 
     try:
         fn = inspect.getsourcefile(obj)
@@ -136,12 +118,9 @@ def linkcode_resolve(domain, info):
     try:
         source, lineno = inspect.getsourcelines(obj)
     except Exception:
-        lineno = None
-
-    if lineno:
-        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
-    else:
         linespec = ""
+    else:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
 
     fn = relpath(fn, start=dirname(fitlins.__file__))
 
