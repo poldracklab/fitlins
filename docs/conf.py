@@ -58,7 +58,7 @@ apidoc_extra_args = ['-H', 'API']
 source_suffix = ['.rst', '.md']
 
 intersphinx_mapping = {
-    'nilearn': ('https://nilearn.github.io/', None),
+    'nilearn': ('https://nilearn.github.io/stable/', None),
     'afni': ('https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/', None)
 }
 
