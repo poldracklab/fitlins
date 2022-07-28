@@ -41,7 +41,8 @@ def init_fitlins_wf(
 
     if estimator == 'afni':
         from ..interfaces.afni import FirstLevelModel
-    else:
+    elif estimator in ('nilearn', 'nistats'):
+        estimator = 'nilearn'
         from ..interfaces.nistats import FirstLevelModel
 
     wf = pe.Workflow(name=name, base_dir=base_dir)
@@ -426,7 +427,7 @@ def init_fitlins_wf(
 
         if smoothing and smoothing_level == level:
             # No need to do smoothing independently if it's nistats iso
-            if (smoothing_type == "iso") and (estimator == "nistats"):
+            if (smoothing_type == "iso") and (estimator == "nilearn"):
                 model.inputs.smoothing_fwhm = smoothing_fwhm
                 model.inputs.smoothing_type = smoothing_type
             else:

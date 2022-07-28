@@ -16,6 +16,7 @@ Contents
 
    installation
    usage
+   estimators
    examples/index
    changes
    support

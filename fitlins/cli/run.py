@@ -233,9 +233,12 @@ def get_parser():
         "--estimator",
         action="store",
         type=str,
-        help="estimator to use to fit the model",
+        help="| Estimator to use to fit the (first level) models."
+        "| nilearn: Default estimator using nilearn.glm"
+        "| nistats: Deprecated synonym for nilearn"
+        "| afni: 3dREMLfit",
         default="nistats",
-        choices=["nistats", "afni"],
+        choices=["nistats", "nilearn", "afni"],
     )
     g_other.add_argument(
         "--drift-model",
@@ -324,6 +327,9 @@ def run_fitlins(argv=None):
                 " the afni estimator. If this is a feature you want"
                 f" for {opts.estimator} please let us know on github."
             )
+        if opts.estimator == 'nistats':
+            warnings.warn("`--estimator nistats` is a deprecated synonym for "
+                          "`--estimator nilearn`. Future versions will raise an error.")
 
 
     if opts.derivative_label:
