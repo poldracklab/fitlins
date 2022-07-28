@@ -11,7 +11,7 @@ FitLins - Fitting Linear Models to BIDS Datasets
    :target: https://circleci.com/gh/poldracklab/fitlins
 
 FitLins is a tool for estimating linear models, defined by the
-`BIDS Stats Models`_ specification proposal, to `BIDS`_-formatted datasets.
+`BIDS Stats-Models`_ specification proposal, to `BIDS`_-formatted datasets.
 
 FitLins is developed against `fMRIPrep`_-preprocessed datasets, but is intended to
 work with any dataset following the `BIDS Derivatives`_ draft specification.
@@ -25,7 +25,7 @@ Neuroscience (CRN) <http://reproducibility.stanford.edu/>`_, as well as for
 open-source software distribution.
 
 .. _BIDS: https://bids.neuroimaging.io/
-.. _`BIDS Stats Models`: https://bids-specification.github.io/stats-models/
+.. _`BIDS Stats-Models`: https://bids-specification.github.io/stats-models/
 .. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/derivatives/05-derivatives/01-introduction.html
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _fMRIPrep: https://fmriprep.readthedocs.io
