@@ -16,6 +16,7 @@ Contents
    installation
    usage
    model
+   estimators
    examples/index
    changes
    support
