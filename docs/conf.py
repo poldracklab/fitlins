@@ -60,8 +60,9 @@ apidoc_extra_args = ['-H', 'API']
 source_suffix = ['.rst', '.md']
 
 intersphinx_mapping = {
+    'statsmodels': ('https://bids-standard.github.io/stats-models/', None),
     'nilearn': ('https://nilearn.github.io/stable/', None),
-    'afni': ('https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/', None)
+    'afni': ('https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/', None),
 }
 
 # -- Options for HTML output -------------------------------------------------

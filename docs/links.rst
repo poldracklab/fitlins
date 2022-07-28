@@ -2,7 +2,7 @@
 .. _BIDS: https://bids.neuroimaging.io/
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/derivatives/05-derivatives/01-introduction.html
-.. _`BIDS Stats Models`: https://docs.google.com/document/d/1bq5eNDHTb6Nkx3WUiOBgKvLNnaa5OMcGtD0AZ9yms2M/
+.. _`BIDS Stats Models`: https://bids-standard.github.io/stats-models/
 .. _`PyBIDS`: https://github.com/bids-standard/pybids/
 
 .. _fMRIPrep: https://fmriprep.readthedocs.io
