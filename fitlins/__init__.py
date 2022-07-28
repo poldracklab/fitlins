@@ -24,5 +24,6 @@ try:
 except ImportError:
     pass
 else:
-    bids.modeling.transformations.Factor._sync_kwargs = False
+    # bids.modeling.transformations.Factor._sync_kwargs = False
+    bids.modeling.transformations.Convolve._sync_kwargs = False
     del bids
