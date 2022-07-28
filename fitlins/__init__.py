@@ -18,3 +18,11 @@ else:
     del matplotlib
 
 from .__about__ import __version__
+
+try:
+    import bids.modeling
+except ImportError:
+    pass
+else:
+    bids.modeling.transformations.Factor._sync_kwargs = False
+    del bids
