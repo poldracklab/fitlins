@@ -1,5 +1,5 @@
 0.10.1 (March 29, 2022)
-=======================
+-----------------------
 Bug-fix release in the 0.10.x series.
 
 Most of the fixes come in the upstream fixes of PyBIDS, which will get bundled in
@@ -14,7 +14,7 @@ the Docker image.
 * Build(deps): Bump actions/setup-python from 2 to 3 (https://github.com/poldracklab/fitlins/pull/340)
 
 0.10.0 (February 01, 2022)
-==========================
+--------------------------
 New feature release in the 0.10.x series.
 
 This release implements support for BIDS Stats Models 1.0.0-rc1.
@@ -31,7 +31,7 @@ While we have attempted not to break old-style models, we no longer support them
 * CI: Check for secrets before deploying, switch to python-build (https://github.com/poldracklab/fitlins/pull/332)
 
 0.9.2 (July 21, 2021)
-======================
+----------------------
 
 Minor bugfix release in the 0.9.x series.
 
@@ -40,7 +40,7 @@ Minor bugfix release in the 0.9.x series.
 * MNT: codespell run + ignore (https://github.com/poldracklab/fitlins/pull/289) 
 
 0.9.1 (April 21, 2021)
-======================
+----------------------
 
 Bugfix release in the 0.9.x series.
 Upgrades pybids and nilearn to latest versions. 
@@ -49,7 +49,7 @@ Upgrades pybids and nilearn to latest versions.
 * PIN: Upgrade pybids to 0.13 (https://github.com/poldracklab/fitlins/pull/284)
 
 0.9.0 (February 26, 2021)
-========================
+------------------------
 
 New feature release in the 0.9.x series.
 
@@ -68,7 +68,7 @@ in favor of nilearn.stats, added test reference outputs, among other minor impro
 
 
 0.8.0 (October 19, 2020)
-========================
+------------------------
 
 New feature release in the 0.8.x series.
 
@@ -78,7 +78,7 @@ are modeled with boxcar functions instead of the nistats default.
 * FIX: Sparse matrix should be in long format, and HRF should be None by default (https://github.com/poldracklab/fitlins/pull/259)
 
 0.7.1 (October 09, 2020)
-========================
+------------------------
 
 Bug-fix release in the 0.7.x series.
 
@@ -87,7 +87,7 @@ This release requires PyBIDS 0.12.2 or higher, fixing various bugs that affected
 * Only drop modulation if needed (https://github.com/poldracklab/fitlins/pull/253)
 
 0.7.0 (August 05, 2020)
-=======================
+-----------------------
 
 New feature release in the 0.7.x series. This is an accumulation of changes over
 several months.
@@ -109,7 +109,7 @@ as well as log-likelihood and R^2 maps for assessing goodness of fit.
 * CI: Improve outputs (https://github.com/poldracklab/fitlins/pull/218)
 
 0.6.2 (December 13, 2019)
-=========================
+-------------------------
 
 Hotfix release.
 
@@ -117,7 +117,7 @@ Hotfix release.
 
 
 0.6.1 (December 12, 2019)
-=========================
+-------------------------
 
 Hotfix release.
 
@@ -125,7 +125,7 @@ Hotfix release.
 
 
 0.6.0 (December 11, 2019)
-=========================
+-------------------------
 
 New feature release in the 0.6.x series.
 
@@ -154,7 +154,7 @@ for large datasets by caching BIDS layout information.
 
 
 0.5.1 (September 23, 2019)
-==========================
+--------------------------
 
 Bug fix release to work with PyBIDS 0.9.4+.
 
@@ -163,7 +163,7 @@ Bug fix release to work with PyBIDS 0.9.4+.
 
 
 0.5.0 (July 03, 2019)
-=====================
+---------------------
 
 This release features significant improvements to reporting and documentation,
 including a Jupyter notebook to demonstrate usage. Example models are now in
@@ -182,7 +182,7 @@ the main branch of the repository, and annotated in the documentation.
 
 
 0.4.0 (May 10, 2019)
-====================
+--------------------
 
 This release produces effect, variance, statistic (t or F), Z-score, and p-value
 maps at every level, and enables smoothing at higher levels if preferred.
@@ -204,7 +204,7 @@ versioning/packaging issues have been resolved.
 
 
 0.3.0 (April 19, 2019)
-======================
+----------------------
 
 This release restores reports at the second level and higher, and enables isotropic
 smoothing with the nistats backend. Reporting has also been refactored to reduce
@@ -226,7 +226,7 @@ With thanks to Karolina Finc, Rastko Ciric and Mathias Goncalves for contributio
 * MAINT: Use numpy 1.15 to accommodate pytables (https://github.com/poldracklab/fitlins/pull/106)
 
 0.2.0 (February 1, 2019)
-========================
+------------------------
 
 This release marks a substantial refactoring in the wake of
 [BIDS Derivatives RC1](https://docs.google.com/document/d/17ebopupQxuRwp7U7TFvS6BH03ALJOgGHufxK8ToAvyI/),
@@ -248,7 +248,7 @@ With thanks to Alejandro de la Vega, Adina Wagner and Yaroslav Halchenko for con
 * MAINT: Pybids 0.7.0 compatibility (https://github.com/poldracklab/fitlins/pull/84)
 
 0.1.0 (August 24, 2018)
-=======================
+-----------------------
 
 This release moves FitLins to a Nipype workflow and provides a set of Nipype interfaces for interacting with BIDS Models and the nistats statistical package.
 
@@ -259,7 +259,7 @@ This release moves FitLins to a Nipype workflow and provides a set of Nipype int
 * MAINT: Update nipype, grabbit and pybids dependencies (https://github.com/poldracklab/fitlins/pull/70)
 
 0.0.6 (August 06, 2018)
-=======================
+-----------------------
 
 Hotfix release.
 
@@ -267,13 +267,13 @@ Hotfix release.
 
 
 0.0.5 (August 01, 2018)
-=======================
+-----------------------
 
 * FIX: Limit NaN imputation and use mean non-zero value (https://github.com/poldracklab/fitlins/pull/57)
 
 
 0.0.4 (July 05, 2018)
-=====================
+---------------------
 
 * ENH: Allow models without non-HRF variables (https://github.com/poldracklab/fitlins/pull/55)
 * ENH: Make dataset_description optional (https://github.com/poldracklab/fitlins/pull/51)
@@ -299,7 +299,7 @@ Hotfix release.
 
 
 0.0.3 (March 9, 2018)
-=====================
+---------------------
 
 Maintenance release
 
@@ -309,12 +309,12 @@ Maintenance release
 
 
 0.0.2 (March 5, 2018)
-=====================
+---------------------
 
 Hotfix, addressing deployment issues.
 
 
 0.0.1 (March 5, 2018)
-=====================
+---------------------
 
 Initial release of FitLins, a BIDS-model fitting BIDS app.
