@@ -13,9 +13,9 @@ Contents
    :maxdepth: 2
    :caption: Contents:
 
+
    installation
    usage
-   model
    examples/index
    changes
    support
