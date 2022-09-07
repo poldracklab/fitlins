@@ -13,4 +13,4 @@ into the BIDS data structure with the following naming convention::
 FitLins accepts models that are present in a BIDS directory or are passed with the
 ``-m``/``--model`` flag.
 
-.. _BIDS Stats-Models: https://docs.google.com/document/d/1bq5eNDHTb6Nkx3WUiOBgKvLNnaa5OMcGtD0AZ9yms2M/
+.. _BIDS Stats-Models: https://bids-standard.github.io/stats-models/

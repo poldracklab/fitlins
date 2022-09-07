@@ -25,8 +25,8 @@ Neuroscience (CRN) <http://reproducibility.stanford.edu/>`_, as well as for
 open-source software distribution.
 
 .. _BIDS: https://bids.neuroimaging.io/
-.. _`BIDS Stats-Models`: https://bids-specification.github.io/stats-models/
-.. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/derivatives/05-derivatives/01-introduction.html
+.. _`BIDS Stats-Models`: https://bids-standard.github.io/stats-models/
+.. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/stable/05-derivatives/01-introduction.html
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
 .. _fMRIPrep: https://fmriprep.readthedocs.io
 .. _`OpenFMRI dataset ds000030`: http://datasets.datalad.org/?dir=/openfmri/ds000030/

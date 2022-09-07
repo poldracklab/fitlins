@@ -1,7 +1,7 @@
 .. BIDS URLs
 .. _BIDS: https://bids.neuroimaging.io/
 .. _BIDS-Apps: http://bids-apps.neuroimaging.io
-.. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/derivatives/05-derivatives/01-introduction.html
+.. _`BIDS Derivatives`: https://bids-specification.readthedocs.io/en/stable/05-derivatives/01-introduction.html
 .. _`BIDS Stats Models`: https://bids-standard.github.io/stats-models/
 .. _`PyBIDS`: https://github.com/bids-standard/pybids/
 
