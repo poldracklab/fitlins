@@ -17,6 +17,10 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   INSTALL_TYPE: pip
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -153,9 +157,6 @@ jobs:
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -190,7 +191,57 @@ jobs:
         run: tools/ci/install.sh
       - name: Run tests
         run: tools/ci/check.sh
-        if: ${{ matrix.check != 'skiptests' }}
+      - uses: codecov/codecov-action@v3
+        with:
+          verbose: true
+        if: ${{ always() }}
+
+  pre-release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: [3]
+        # Check pre-release pybids and pre-release everything
+        pip-flags: ['', 'PRE_PIP_FLAGS']
+        check: ['test']
+    env:
+      CHECK_TYPE: ${{ matrix.check }}
+      EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
+      OS_TYPE: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: fitlins-ci
+          environment-file: tools/ci/conda_environment.yml
+          python-version: ${{ matrix.python-version }}
+      - name: Test conda installation
+        run: |
+          conda info
+          conda list
+          conda env list
+          conda config --show-sources
+          conda config --show
+      - name: Install dependencies
+        run: |
+          conda install -y --channel leej3 "afni-minimal"
+          conda list | grep afni
+      - name: Display Python version
+        run: |
+          which python
+          which pip
+          python -c "import sys; print(sys.version)"
+      - name: Install fitlins
+        run: tools/ci/install.sh
+      - name: Install pybids from GitHub
+        run: pip install git+https://github.com/bids-standard/pybids.git
+      - name: Run tests
+        run: tools/ci/check.sh
       - uses: codecov/codecov-action@v3
         with:
           verbose: true
@@ -210,9 +261,6 @@ jobs:
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -262,9 +310,6 @@ jobs:
       CHECK_TYPE: ${{ matrix.check }}
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v3
         with:
