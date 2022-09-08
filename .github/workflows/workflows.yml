@@ -11,6 +11,9 @@ on:
       - maint/*
     tags:
       - '*'
+  schedule:
+    # 7am EST / 8am EDT, daily
+    - cron: '0 12 * * *'
 
 env:
   REGISTRY: ghcr.io
