@@ -115,7 +115,7 @@ class DesignCorrelationPlot(Visualization):
         plot_and_save(
             out_name,
             plot_corr_matrix,
-            data.drop(columns='constant', errors='ignore').corr(),
+            data.drop(columns=['intercept', 'constant'], errors='ignore').corr(),
             len(evs),
         )
 
