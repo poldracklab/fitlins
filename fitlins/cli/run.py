@@ -261,6 +261,7 @@ def get_parser():
 
 def run_fitlins(argv=None):
     import re
+    import nipype
     from nipype import logging as nlogging
 
     warnings.showwarning = _warn_redirect
@@ -278,6 +279,9 @@ def run_fitlins(argv=None):
         # Iterate over empty tuple if undefined
         for ign in opts.ignore or ()
     ]
+
+    if opts.debug:
+        nipype.config.set('execution', 'remove_unnecessary_outputs', False)
 
     log_level = 25 + 5 * (opts.quiet - opts.verbose)
     logger.setLevel(log_level)

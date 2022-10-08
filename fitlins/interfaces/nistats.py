@@ -128,6 +128,13 @@ class DesignMatrix(NistatsBaseInterface, DesignMatrixInterface, SimpleInterface)
             add_reg_names=column_names,
             drift_model=drift_model,
         )
+        # Can get two intercepts from input and nilearn ("constant")
+        # Normalize to "intercept" unless that exists and is really non-1
+        # Force to be exactly 1, in case of weird rounding errors
+        intercept = 'intercept' in mat or 'constant' in mat
+        mat.drop(columns=['intercept', 'constant'], errors='ignore', inplace=True)
+        if intercept:
+            mat['intercept'] = np.ones(mat.shape[0], dtype='u1')
 
         mat.to_csv('design.tsv', sep='\t')
         self._results['design_matrix'] = os.path.join(runtime.cwd, 'design.tsv')

@@ -338,6 +338,8 @@ class FirstLevelModel(FirstLevelModel):
         # find the name of the constant column
         if 'constant' in mat.columns:
             const_name = 'constant'
+        elif 'intercept' in mat.columns:
+            const_name = 'intercept'
         else:
             const_name = mat.columns[np.isclose(mat, 1).all(0)].values[0]
         const_idx = np.where(np.array(vol_labels) == const_name)[0]
