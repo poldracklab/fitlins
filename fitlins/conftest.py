@@ -42,7 +42,7 @@ def sample_model_dict():
                 },
                 "Model": {"X": ["trial_type.ice_cream", "trial_type.cake", "food_sweats"]},
                 "DummyContrasts": {
-                    "Conditions": ["trial_type.ice_cream", "trial_type.cake"],
+                    "Contrasts": ["trial_type.ice_cream", "trial_type.cake"],
                     "Test": "t",
                 },
                 "Contrasts": [
@@ -69,13 +69,16 @@ def sample_model_dict():
             },
             {
                 "Level": "dataset",
-                "Name": "all_food_good_food",
+                "Name": "dataset",
                 "GroupBy": ["contrast"],
-                "Model": {"X": [1]},
-                "DummyContrasts": {
-                    "Conditions": ["icecream_gt_cake", "eating_vs_baseline"],
-                    "Test": "t",
-                },
+                "Model": {"X": [1], "Type": "glm"},
+                "DummyContrasts": {"Test": "t"},
+            },
+            {
+                "Level": "dataset",
+                "Name": "all_food_good_food",
+                "GroupBy": [],
+                "Model": {"X": ["trial_type.ice_cream", "trial_type.cake"], "Type": "glm"},
                 "Contrasts": [
                     {
                         "Name": "all_food_good_food",
@@ -90,8 +93,13 @@ def sample_model_dict():
             {"Source": "run", "Destination": "subject"},
             {
                 "Source": "subject",
-                "Destination": "all_food_good_food",
+                "Destination": "dataset",
                 "Filter": {"contrast": ["icecream_gt_cake", "eating_vs_baseline"]},
+            },
+            {
+                "Source": "subject",
+                "Destination": "all_food_good_food",
+                "Filter": {"contrast": ["trial_type.ice_cream", "trial_type.cake"]},
             },
         ],
     }
