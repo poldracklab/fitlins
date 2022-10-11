@@ -1,3 +1,20 @@
+0.11.0 (October 11, 2022)
+-------------------------
+New feature release in the 0.11.x series.
+
+This version bump reflects changes that appear mostly in PyBIDS, including
+improved handling of intercept columns and variables from tabular metadata
+files like `participants.tsv`.
+
+* FIX: Handle correct contrasts and intercepts being passed from PyBIDS (https://github.com/poldracklab/fitlins/pull/387)
+* RF: Fitlins output reorganization (https://github.com/poldracklab/fitlins/pull/355)
+* DOC: Link out to BIDS Stats Models docs instead of maintaining our own (https://github.com/poldracklab/fitlins/pull/378)
+* DOC: Adding a section on estimators (https://github.com/poldracklab/fitlins/pull/375)
+* DOC: add github source links (https://github.com/poldracklab/fitlins/pull/376)
+* MNT: Remove unused packages from docker image (https://github.com/poldracklab/fitlins/pull/353)
+* MNT: Use latest coverage (https://github.com/poldracklab/fitlins/pull/354)
+* CI: Add a build to test with unreleased pybids (https://github.com/poldracklab/fitlins/pull/386)
+
 0.10.1 (March 29, 2022)
 -----------------------
 Bug-fix release in the 0.10.x series.
