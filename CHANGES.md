@@ -1,4 +1,4 @@
-0.11.0 (October 11, 2022)
+0.11.0 (October 17, 2022)
 -------------------------
 New feature release in the 0.11.x series.
 
