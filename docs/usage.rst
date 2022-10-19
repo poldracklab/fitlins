@@ -32,7 +32,7 @@ Command-Line Arguments
    :nodefaultconst:
 
 A Note about Processing CIFTIs
-======================
+==============================
 
 FitLins (as of v0.7.0) can process CIFTI outputs (e.g., from fMRIPrep's ``--cifti-output`` flag).
 For FitLins to load fMRIPrep CIFTI outputs, define ``--space fsLR`` and ``--desc-label ""``.
