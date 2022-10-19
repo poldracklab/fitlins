@@ -34,4 +34,4 @@ Command-Line Arguments
 A Note about Processing CIFTIs
 ======================
 
-FitLins (as of v0.7.0) can process CIFTI outputs (e.g., from fMRIPrep's `--cifti-output` flag). For FitLins to load fMRIPrep CIFTI outputs, define `--space fsLR` and `--desc-label ""`. The FitLins statistical map outputs will be saved as `.dscalar.nii` images. Figures in the reports will include a surface representation as well as separate images for subcortical regions.
+FitLins (as of v0.7.0) can process CIFTI outputs (e.g., from fMRIPrep's ``--cifti-output`` flag). For FitLins to load fMRIPrep CIFTI outputs, define ``--space fsLR`` and ``--desc-label ""``. The FitLins statistical map outputs will be saved as ``.dscalar.nii`` images. Figures in the reports will include a surface representation as well as separate images for subcortical regions.
