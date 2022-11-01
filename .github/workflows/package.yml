@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: 3.9
+            python-version: 3
     steps:
       - uses: actions/checkout@v3
         with:
