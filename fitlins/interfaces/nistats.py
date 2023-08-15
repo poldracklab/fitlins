@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from functools import partial
 
+
+
 from nipype.interfaces.base import LibraryBaseInterface, SimpleInterface, isdefined
 
 from .abstract import (
@@ -322,7 +324,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             compute_fixed_effects,
             _compute_fixed_effects_params,
         )
-
+        from ..interfaces.pymare_extension import pymare_model, junk_test
+        print('HERE  MADE IT!!!')
         spec = self.inputs.spec
         smoothing_fwhm = self.inputs.smoothing_fwhm
         smoothing_type = self.inputs.smoothing_type
@@ -342,7 +345,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         spec_metadata = spec['metadata'].to_dict('records')
         out_ents = spec['entities'].copy()  # Same for all
         out_ents.setdefault("contrast", spec['contrasts'][0]['name'])
-
+    
         # Only keep files which match all entities for contrast
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
@@ -369,9 +372,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.nii.gz').format
 
         model_type = spec["model"].get("type", "")
-
-        # Do not fit model for meta-analyses
-        if model_type != 'Meta':
+        
+        if model_type.lower() != "meta":
             if len(filtered_effects) < 2:
                 raise RuntimeError(
                     "At least two inputs are required for a 't' for 'F' " "second level contrast"
@@ -386,6 +388,19 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             else:
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=spec['X'])
+        else:
+            if is_cifti:
+                effect_data = np.squeeze(
+                    [nb.load(effect).get_fdata(dtype='f4') for effect in filtered_effects]
+                )
+                variance_data = np.squeeze(
+                    [nb.load(variance).get_fdata(dtype='f4') for variance in filtered_variances]
+                )
+                model = pymare_model(is_cifti=True)
+                model.fit(effect_data, variance_data, spec['X'])
+            else:
+                model = pymare_model(is_cifti=False)
+                model.fit(filtered_effects, filtered_variances, spec['X'])
 
         for name, weights, cont_ents, contrast_test in contrasts:
             contrast_metadata.append(
@@ -398,39 +413,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             )
 
             # Pass-through happens automatically as it can handle 1 input
-            if model_type == 'Meta':
-                # Index design identity matrix on non-zero contrasts weights
-                con_ix = weights[0].astype(bool)
-                # Index of all input files "involved" with that contrast
-                dm_ix = spec['X'].iloc[:, con_ix].any(axis=1)
-
-                contrast_imgs = np.array(filtered_effects)[dm_ix]
-                variance_imgs = np.array(filtered_variances)[dm_ix]
-                if is_cifti:
-                    ffx_cont, ffx_var, ffx_t = _compute_fixed_effects_params(
-                        np.squeeze(
-                            [nb.load(fname).get_fdata(dtype='f4') for fname in contrast_imgs]
-                        ),
-                        np.squeeze(
-                            [nb.load(fname).get_fdata(dtype='f4') for fname in variance_imgs]
-                        ),
-                        precision_weighted=False,
-                    )
-                    img = nb.load(filtered_effects[0])
-                    maps = {
-                        'effect_size': dscalar_from_cifti(img, ffx_cont, "effect_size"),
-                        'effect_variance': dscalar_from_cifti(img, ffx_var, "effect_variance"),
-                        'stat': dscalar_from_cifti(img, ffx_t, "stat"),
-                    }
-
-                else:
-                    ffx_res = compute_fixed_effects(contrast_imgs, variance_imgs)
-                    maps = {
-                        'effect_size': ffx_res[0],
-                        'effect_variance': ffx_res[1],
-                        'stat': ffx_res[2],
-                    }
-            else:
+            if model_type.lower() != "meta":
                 if is_cifti:
                     contrast = compute_contrast(
                         labels, estimates, weights, contrast_type=contrast_test
@@ -452,6 +435,21 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         second_level_stat_type=contrast_test,
                         output_type='all',
                     )
+            else:
+                if is_cifti:
+                    map_arrays = model.compute_contrast(weights)
+                    maps = {
+                        map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
+                        for map_type in [
+                            'z_score',
+                            'stat',
+                            'p_value',
+                            'effect_size',
+                            'effect_variance',
+                        ]
+                    } 
+                else:
+                    maps = model.compute_contrast(weights)
 
             for map_type, map_list in (
                 ('effect_size', effect_maps),
