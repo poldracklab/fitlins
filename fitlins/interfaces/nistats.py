@@ -327,6 +327,10 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         from ..interfaces.pymare_extension import pymare_model, junk_test
         print('HERE  MADE IT!!!')
         spec = self.inputs.spec
+        print(spec)
+        print('Spec should be above')
+        print(self.inputs)
+        print('INPUTS ARE ABOVE!!')
         smoothing_fwhm = self.inputs.smoothing_fwhm
         smoothing_type = self.inputs.smoothing_type
         if not isdefined(smoothing_fwhm):
@@ -335,7 +339,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             raise NotImplementedError(
                 "Only the iso smoothing type is available for the nistats estimator."
             )
-
         effect_maps = []
         variance_maps = []
         stat_maps = []
@@ -350,7 +353,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
         stat_metadata = _flatten(self.inputs.stat_metadata)
         input_effects = _flatten(self.inputs.effect_maps)
         input_variances = _flatten(self.inputs.variance_maps)
-
         filtered_effects = []
         filtered_variances = []
         names = []
@@ -364,7 +366,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     names.append(m['contrast'])
 
         contrasts = prepare_contrasts(spec['contrasts'], spec['X'].columns)
-
+        print(filtered_effects)
+        print('FILTERED EFFECTS ARE ABOVE!!!!')
         is_cifti = filtered_effects[0].endswith('dscalar.nii')
         if is_cifti:
             fname_fmt = os.path.join(runtime.cwd, '{}_{}.dscalar.nii').format
