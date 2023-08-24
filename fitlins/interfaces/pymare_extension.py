@@ -11,10 +11,6 @@ def remove_zero_var_voxels_(effect_data, variance_data):
     effect_data_masked = effect_data[:, nonzero_var_mask]
     return effect_data_masked, variance_data_masked, nonzero_var_mask
 
-
-def junk_test():
-    print('THIS WORKED')
-
     
 
 class pymare_model:

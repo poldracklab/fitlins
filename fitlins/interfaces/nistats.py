@@ -324,7 +324,7 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
             compute_fixed_effects,
             _compute_fixed_effects_params,
         )
-        from ..interfaces.pymare_extension import pymare_model, junk_test
+        from ..interfaces.pymare_extension import pymare_model
         spec = self.inputs.spec
         smoothing_fwhm = self.inputs.smoothing_fwhm
         smoothing_type = self.inputs.smoothing_type
@@ -386,14 +386,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 model.fit(filtered_effects, design_matrix=spec['X'])
         else:
             if is_cifti:
-                effect_data = np.squeeze(
-                    [nb.load(effect).get_fdata(dtype='f4') for effect in filtered_effects]
-                )
-                variance_data = np.squeeze(
-                    [nb.load(variance).get_fdata(dtype='f4') for variance in filtered_variances]
-                )
                 model = pymare_model(is_cifti=True)
-                model.fit(effect_data, variance_data, spec['X'])
+                model.fit(filtered_effects, filtered_variances, spec['X'])
             else:
                 model = pymare_model(is_cifti=False)
                 model.fit(filtered_effects, filtered_variances, spec['X'])
@@ -408,7 +402,6 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 }
             )
 
-            # Pass-through happens automatically as it can handle 1 input
             if model_type.lower() != "meta":
                 if is_cifti:
                     contrast = compute_contrast(
@@ -433,16 +426,11 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                     )
             else:
                 if is_cifti:
-                    map_arrays = model.compute_contrast(weights)
+                    dict_maps = model.compute_contrast(weights)
+                    img = nb.load(filtered_effects[0])
                     maps = {
-                        map_type: dscalar_from_cifti(img, getattr(contrast, map_type)(), map_type)
-                        for map_type in [
-                            'z_score',
-                            'stat',
-                            'p_value',
-                            'effect_size',
-                            'effect_variance',
-                        ]
+                        map_type: dscalar_from_cifti(img, dict_maps[map_type], map_type)
+                        for map_type in dict_maps.keys()
                     } 
                 else:
                     maps = model.compute_contrast(weights)
