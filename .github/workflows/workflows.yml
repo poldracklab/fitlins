@@ -165,7 +165,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
           auto-update-conda: true
@@ -218,7 +218,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: fitlins-ci
           environment-file: tools/ci/conda_environment.yml
@@ -318,7 +318,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
           auto-update-conda: true
