@@ -83,7 +83,7 @@ jobs:
           ls -l /tmp/
 
       - name: Upload docker.tar as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker
           path: /tmp/docker.tar
