@@ -25,17 +25,17 @@ from nipype.utils.filemanip import copyfile
 
 from ..utils import snake_to_camel, to_alphanum
 
-iflogger = logging.getLogger('nipype.interface')
+iflogger = logging.getLogger("nipype.interface")
 
 ENTITY_WHITELIST = {
-    'task',
-    'run',
-    'session',
-    'subject',
-    'space',
-    'acquisition',
-    'reconstruction',
-    'echo',
+    "task",
+    "run",
+    "session",
+    "subject",
+    "space",
+    "acquisition",
+    "reconstruction",
+    "echo",
 }
 
 
@@ -85,7 +85,7 @@ def bids_split_filename(fname):
 
 
 def _ensure_model(model):
-    model = getattr(model, 'filename', model)
+    model = getattr(model, "filename", model)
 
     if isinstance(model, str):
         if os.path.exists(model):
@@ -97,14 +97,16 @@ def _ensure_model(model):
 
 
 class ModelSpecLoaderInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=False, desc='Path to bids database')
-    model = traits.Either('default', InputMultiPath(File(exists=True)), desc='Model filename')
-    selectors = traits.Dict(desc='Limit models to those with matching inputs')
+    database_path = Directory(exists=False, desc="Path to bids database")
+    model = traits.Either(
+        "default", InputMultiPath(File(exists=True)), desc="Model filename"
+    )
+    selectors = traits.Dict(desc="Limit models to those with matching inputs")
 
 
 class ModelSpecLoaderOutputSpec(TraitedSpec):
     model_spec = OutputMultiPath(
-        traits.Dict(), desc='Model specification(s) as Python dictionaries'
+        traits.Dict(), desc="Model specification(s) as Python dictionaries"
     )
 
 
@@ -129,7 +131,7 @@ class ModelSpecLoader(SimpleInterface):
                 # model is not yet standardized, so validate=False
                 # Ignore all subject directories and .git/ and .datalad/ directories
                 indexer = bids.BIDSLayoutIndexer(
-                    ignore=[re.compile(r'sub-'), re.compile(r'\.(git|datalad)')]
+                    ignore=[re.compile(r"sub-"), re.compile(r"\.(git|datalad)")]
                 )
                 small_layout = bids.BIDSLayout(
                     layout.root,
@@ -138,10 +140,10 @@ class ModelSpecLoader(SimpleInterface):
                     indexer=indexer,
                 )
                 # PyBIDS can double up, so find unique models
-                models = list(set(small_layout.get(suffix='smdl', return_type='file')))
+                models = list(set(small_layout.get(suffix="smdl", return_type="file")))
                 if not models:
                     raise ValueError("No models found")
-            elif models == 'default':
+            elif models == "default":
                 models = auto_model(layout)
 
         models = [_ensure_model(m) for m in models]
@@ -152,12 +154,12 @@ class ModelSpecLoader(SimpleInterface):
                 model
                 for model in models
                 if all(
-                    val in model['Input'].get(key, [val])
+                    val in model["Input"].get(key, [val])
                     for key, val in self.inputs.selectors.items()
                 )
             ]
 
-        self._results['model_spec'] = models
+        self._results["model_spec"] = models
 
         return runtime
 
@@ -173,18 +175,20 @@ IMPUTATION_SNIPPET = """\
 
 
 class LoadBIDSModelInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=True, mandatory=True, desc='Path to bids database directory.')
-    model = traits.Dict(desc='Model specification', mandatory=True)
-    selectors = traits.Dict(desc='Limit collected sessions', usedefault=True)
+    database_path = Directory(
+        exists=True, mandatory=True, desc="Path to bids database directory."
+    )
+    model = traits.Dict(desc="Model specification", mandatory=True)
+    selectors = traits.Dict(desc="Limit collected sessions", usedefault=True)
 
 
 class LoadBIDSModelOutputSpec(TraitedSpec):
     design_info = traits.List(
         traits.Dict,
-        desc='Descriptions of design matrices with sparse events, dense regressors and TR',
+        desc="Descriptions of design matrices with sparse events, dense regressors and TR",
     )
-    warnings = traits.List(File, desc='HTML warning snippet for reporting issues')
-    all_specs = traits.Dict(desc='A collection of all specs built from the statsmodel')
+    warnings = traits.List(File, desc="HTML warning snippet for reporting issues")
+    all_specs = traits.Dict(desc="A collection of all specs built from the statsmodel")
 
 
 class LoadBIDSModel(SimpleInterface):
@@ -245,7 +249,7 @@ class LoadBIDSModel(SimpleInterface):
         graph = BIDSStatsModelsGraph(layout, self.inputs.model)
         graph.load_collections(**selectors)
 
-        self._results['all_specs'] = self._load_graph(runtime, graph)
+        self._results["all_specs"] = self._load_graph(runtime, graph)
 
         return runtime
 
@@ -258,28 +262,46 @@ class LoadBIDSModel(SimpleInterface):
 
         base_entities = graph.model["input"]
 
-        if node.level == 'run':
+        if node.level == "run":
             self._load_run_level(runtime, graph, specs)
 
         all_specs = {
             node.name: [
                 {
-                    'contrasts': [c._asdict() for c in spec.contrasts],
-                    'entities': {**base_entities, **spec.entities},
-                    'level': spec.node.level,
-                    'X': spec.X,
-                    'name': spec.node.name,
-                    'model': spec.node.model,
+                    "contrasts": [c._asdict() for c in spec.contrasts],
+                    "entities": {**base_entities, **spec.entities},
+                    "level": spec.node.level,
+                    "X": spec.X,
+                    "name": spec.node.name,
+                    "model": spec.node.model,
                     # Metadata is only used in higher level models; save space
-                    'metadata': spec.metadata if spec.node.level != "run" else None,
+                    "metadata": spec.metadata if spec.node.level != "run" else None,
                 }
                 for spec in specs
             ]
         }
 
+        # Replace run entities with zero-padded run entities for 'contrasts' and 'entities'
+        if node.level == "run":
+            for ind, spec in enumerate(specs):
+                # Find a bold file that is a NifTI (not svg or other)
+                bold_files = graph.layout.get(**spec.entities, suffix="bold")
+                bold_nii_files = [f for f in bold_files if ".nii" in f.path]
+                fname = bold_nii_files[0].path
+                run_num_paddedint = graph.layout.entities["run"].files[fname]
+                # Update the run entity in the main spec
+                spec_entities = all_specs[node.name][ind]["entities"]
+                spec_entities["run"] = run_num_paddedint
+                # Update the run entity in contrasts if present
+                for contrast in all_specs[node.name][ind].get("contrasts", []):
+                    if "entities" in contrast and "run" in contrast["entities"]:
+                        contrast["entities"]["run"] = run_num_paddedint
+
         for child in node.children:
             all_specs.update(
-                self._load_graph(runtime, graph, child.destination, outputs, **child.filter)
+                self._load_graph(
+                    runtime, graph, child.destination, outputs, **child.filter
+                )
             )
 
         return all_specs
@@ -296,14 +318,15 @@ class LoadBIDSModel(SimpleInterface):
             if "RepetitionTime" not in spec.metadata:
                 # This shouldn't happen, so raise a (hopefully informative)
                 # exception if I'm wrong
-                fname = graph.layout.get(**spec.entities, suffix='bold')[0].path
+                fname = graph.layout.get(**spec.entities, suffix="bold")[0].path
                 raise ValueError(
-                    f"Preprocessed file {fname} does not have an " "associated RepetitionTime"
+                    f"Preprocessed file {fname} does not have an "
+                    "associated RepetitionTime"
                 )
 
-            info["repetition_time"] = spec.metadata['RepetitionTime'][0]
+            info["repetition_time"] = spec.metadata["RepetitionTime"][0]
 
-            ent_string = '_'.join(f"{key}-{val}" for key, val in spec.entities.items())
+            ent_string = "_".join(f"{key}-{val}" for key, val in spec.entities.items())
 
             # These confounds are defined pairwise with the current volume and its
             # predecessor, and thus may be undefined (have value NaN) at the first volume.
@@ -313,7 +336,7 @@ class LoadBIDSModel(SimpleInterface):
             initial_na = spec.data.columns[np.isnan(spec.data.values[0])]
             imputed = []
             for col in initial_na:
-                if col in ('framewise_displacement', 'std_dvars', 'dvars'):
+                if col in ("framewise_displacement", "std_dvars", "dvars"):
                     imputed.append(col)
                     vals = spec.data[col].values
                     spec.data[col][0] = np.nanmean(vals[vals != 0])
@@ -321,25 +344,27 @@ class LoadBIDSModel(SimpleInterface):
                     imputed.append(col)
                     spec.data[col][0] = 0
 
-            info["dense"] = str(step_subdir / '{}_dense.h5'.format(ent_string))
-            spec.data.to_hdf(info["dense"], key='dense')
+            info["dense"] = str(step_subdir / "{}_dense.h5".format(ent_string))
+            spec.data.to_hdf(info["dense"], key="dense")
 
-            warning_file = step_subdir / '{}_warning.html'.format(ent_string)
-            with warning_file.open('w') as fobj:
+            warning_file = step_subdir / "{}_warning.html".format(ent_string)
+            with warning_file.open("w") as fobj:
                 if imputed:
-                    fobj.write(IMPUTATION_SNIPPET.format(', '.join(imputed)))
+                    fobj.write(IMPUTATION_SNIPPET.format(", ".join(imputed)))
 
             design_info.append(info)
             warnings.append(str(warning_file))
 
-        self._results['warnings'] = warnings
-        self._results['design_info'] = design_info
+        self._results["warnings"] = warnings
+        self._results["design_info"] = design_info
 
 
 class BIDSSelectInputSpec(BaseInterfaceInputSpec):
-    database_path = Directory(exists=True, mandatory=True, desc='Path to bids database.')
+    database_path = Directory(
+        exists=True, mandatory=True, desc="Path to bids database."
+    )
     entities = InputMultiPath(traits.Dict(), mandatory=True)
-    selectors = traits.Dict(desc='Additional selectors to be applied', usedefault=True)
+    selectors = traits.Dict(desc="Additional selectors to be applied", usedefault=True)
 
 
 class BIDSSelectOutputSpec(TraitedSpec):
@@ -361,13 +386,14 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            selectors = {'desc': 'preproc', **ents, **self.inputs.selectors}
+            selectors = {"desc": "preproc", **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
 
             if len(bold_file) == 0:
                 raise FileNotFoundError(
-                    "Could not find BOLD file in {} with entities {}"
-                    "".format(layout.root, selectors)
+                    "Could not find BOLD file in {} with entities {}" "".format(
+                        layout.root, selectors
+                    )
                 )
             elif len(bold_file) > 1:
                 raise ValueError(
@@ -377,7 +403,7 @@ class BIDSSelect(SimpleInterface):
                         layout.root,
                         selectors,
                         "\n\t".join(
-                            '{} ({})'.format(f.path, layout.files[f.path].entities)
+                            "{} ({})".format(f.path, layout.files[f.path].entities)
                             for f in bold_file
                         ),
                     )
@@ -385,20 +411,20 @@ class BIDSSelect(SimpleInterface):
 
             # Select exactly matching mask file (may be over-cautious)
             bold_ents = layout.parse_file_entities(bold_file[0].path)
-            bold_ents['suffix'] = 'mask'
-            bold_ents['desc'] = 'brain'
-            bold_ents['extension'] = ['.nii', '.nii.gz']
+            bold_ents["suffix"] = "mask"
+            bold_ents["desc"] = "brain"
+            bold_ents["extension"] = [".nii", ".nii.gz"]
             mask_file = layout.get(**bold_ents)
-            bold_ents.pop('suffix')
-            bold_ents.pop('desc')
+            bold_ents.pop("suffix")
+            bold_ents.pop("desc")
 
             bold_files.append(bold_file[0].path)
             mask_files.append(mask_file[0].path if mask_file else None)
             entities.append(bold_ents)
 
-        self._results['bold_files'] = bold_files
-        self._results['mask_files'] = mask_files
-        self._results['entities'] = entities
+        self._results["bold_files"] = bold_files
+        self._results["mask_files"] = mask_files
+        self._results["entities"] = entities
 
         return runtime
 
@@ -413,11 +439,11 @@ def _copy_or_convert(in_file, out_file):
         return
 
     # gzip/gunzip if it's easy
-    if in_ext == out_ext + '.gz' or in_ext + '.gz' == out_ext:
-        read_open = GzipFile if in_ext.endswith('.gz') else open
-        write_open = GzipFile if out_ext.endswith('.gz') else open
-        with read_open(in_file, mode='rb') as in_fobj:
-            with write_open(out_file, mode='wb') as out_fobj:
+    if in_ext == out_ext + ".gz" or in_ext + ".gz" == out_ext:
+        read_open = GzipFile if in_ext.endswith(".gz") else open
+        write_open = GzipFile if out_ext.endswith(".gz") else open
+        with read_open(in_file, mode="rb") as in_fobj:
+            with write_open(out_file, mode="wb") as out_fobj:
                 shutil.copyfileobj(in_fobj, out_fobj)
         return
 
@@ -433,19 +459,23 @@ def _copy_or_convert(in_file, out_file):
 
 
 class BIDSDataSinkInputSpec(BaseInterfaceInputSpec):
-    base_directory = Directory(mandatory=True, desc='Path to BIDS (or derivatives) root directory')
+    base_directory = Directory(
+        mandatory=True, desc="Path to BIDS (or derivatives) root directory"
+    )
     in_file = InputMultiPath(File(exists=True), mandatory=True)
     entities = InputMultiPath(
-        traits.Dict, usedefault=True, desc='Per-file entities to include in filename'
+        traits.Dict, usedefault=True, desc="Per-file entities to include in filename"
     )
-    fixed_entities = traits.Dict(usedefault=True, desc='Entities to include in all filenames')
+    fixed_entities = traits.Dict(
+        usedefault=True, desc="Entities to include in all filenames"
+    )
     path_patterns = InputMultiPath(
-        traits.Str, desc='BIDS path patterns describing format of file names'
+        traits.Str, desc="BIDS path patterns describing format of file names"
     )
 
 
 class BIDSDataSinkOutputSpec(TraitedSpec):
-    out_file = OutputMultiPath(File, desc='output file')
+    out_file = OutputMultiPath(File, desc="output file")
 
 
 class BIDSDataSink(IOBase):
@@ -472,7 +502,7 @@ class BIDSDataSink(IOBase):
             ents = {**self.inputs.fixed_entities}
             ents.update(entities)
             ext = bids_split_filename(in_file)[2]
-            ents['extension'] = self._extension_map.get(ext, ext)
+            ents["extension"] = self._extension_map.get(ext, ext)
 
             # In some instances, name/contrast could have the following
             # format (eg: gain.Range, gain.EqualIndifference).
@@ -489,4 +519,4 @@ class BIDSDataSink(IOBase):
             _copy_or_convert(in_file, out_fname)
             out_files.append(out_fname)
 
-        return {'out_file': out_files}
+        return {"out_file": out_files}
