@@ -281,18 +281,28 @@ class LoadBIDSModel(SimpleInterface):
             ]
         }
 
-        # Replace run entities with zero-padded run entities for 'contrasts' and 'entities'
+        # Replace run entities with zero-padded values for 'contrasts' and 'entities'
         if node.level == "run":
             for ind, spec in enumerate(specs):
-                # Find a bold file that is a NifTI (not svg or other)
+                # Get bold NIfTI files (excluding other formats)
                 bold_files = graph.layout.get(**spec.entities, suffix="bold")
-                bold_nii_files = [f for f in bold_files if ".nii" in f.path]
-                fname = bold_nii_files[0].path
-                run_num_paddedint = graph.layout.entities["run"].files[fname]
-                # Update the run entity in the main spec
+                bold_nii_files = {f.path for f in bold_files if ".nii" in f.path}
+                layout_entity_files = graph.layout.entities["run"].files
+
+                # Ensure the file exists in layout_entity_files
+                # (derivatives may be missing from layout_entit_files, causing errors)
+                matching_files = bold_nii_files & layout_entity_files.keys()
+                if not matching_files:
+                    print("WARNING: No matching file found in layout_entity_files!")
+                    continue  # Skip zero padded run number efforts
+
+                fname = next(iter(matching_files))  # Use the first valid file
+                run_num_paddedint = layout_entity_files[fname]
+
+                # Update the run entity in specs and contrasts
                 spec_entities = all_specs[node.name][ind]["entities"]
                 spec_entities["run"] = run_num_paddedint
-                # Update the run entity in contrasts if present
+
                 for contrast in all_specs[node.name][ind].get("contrasts", []):
                     if "entities" in contrast and "run" in contrast["entities"]:
                         contrast["entities"]["run"] = run_num_paddedint
