@@ -299,7 +299,8 @@ class LoadBIDSModel(SimpleInterface):
                 fname = next(iter(matching_files))  # Use the first valid file
                 run_num_paddedint = layout_entity_files[fname]
 
-                # Update the run entity in specs and contrasts
+                # Update the run entity (for model_map_pattern files)
+                # and contrasts (for contrast_pattern files)
                 spec_entities = all_specs[node.name][ind]["entities"]
                 spec_entities["run"] = run_num_paddedint
 
