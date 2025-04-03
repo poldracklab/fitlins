@@ -100,11 +100,9 @@ class DesignCorrelationPlot(Visualization):
             if len(np.array(c['weights']).shape) > 1:
                 for cond in c['conditions']:
                     name = c['name'] + '_' + cond
-                    contrast_matrix.loc[name][c['conditions']] = c['weights'][
-                        c['conditions'].index(cond)
-                    ]
+                    contrast_matrix.loc[name, c['conditions']] = c['weights'][c['conditions'].index(cond)]
             else:
-                contrast_matrix.loc[c['name']][c['conditions']] = c['weights']
+                contrast_matrix.loc[c['name'], c['conditions']] = c['weights']
 
         all_cols = list(data.columns)
         evs = set(contrast_matrix.index)
