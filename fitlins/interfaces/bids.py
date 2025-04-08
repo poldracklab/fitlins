@@ -212,7 +212,7 @@ class LoadBIDSModel(SimpleInterface):
                     'name': str,
                     'conditions': list,
                     'weights: list,
-                    test: str,
+                    'test': str,
                     'entities': dict,
                   }
             'entities'  : The entities list contains a list for each level of analysis.
