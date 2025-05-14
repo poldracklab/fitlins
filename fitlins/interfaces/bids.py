@@ -361,6 +361,14 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
+            if 'run' in ents:
+                # Case: run is an integer (01, 1, etc.)
+                if isinstance(ents['run'], (int, float)):
+                    ents['run'] = [ents['run'], None]
+                # Case: run is a list with one element [1]
+                elif isinstance(ents['run'], list) and len(ents['run']) == 1:
+                    ents['run'].append(None)
+                    
             selectors = {'desc': 'preproc', **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
 
