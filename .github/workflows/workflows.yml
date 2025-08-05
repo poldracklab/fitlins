@@ -205,7 +205,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.10']
+        python-version: ['3.13']
         # Check pre-release pybids and pre-release everything
         pip-flags: ['', 'PRE_PIP_FLAGS']
         check: ['test']
@@ -256,7 +256,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["nistats_smooth"]
         pip-flags: ['']
         check: ['workflow']
@@ -305,7 +305,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["afni_smooth", "afni_blurto"]
         pip-flags: ['']
         check: ['workflow']
