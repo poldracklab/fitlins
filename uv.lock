@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -463,11 +463,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf57
 
 [[package]]
 name = "docutils"
-version = "0.17.1"
+version = "0.19"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4c/17/559b4d020f4b46e0287a2eddf2d8ebf76318fd3bd495f1625414b052fdc9/docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125", size = 2016138, upload-time = "2021-04-17T14:13:28.434Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/5c/330ea8d383eb2ce973df34d1239b3b21e91cd8c865d21ff82902d952f91f/docutils-0.19.tar.gz", hash = "sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6", size = 2056383, upload-time = "2022-07-05T20:17:31.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/5e/6003a0d1f37725ec2ebd4046b657abb9372202655f96e76795dca8c0063c/docutils-0.17.1-py2.py3-none-any.whl", hash = "sha256:cf316c8370a737a022b72b56874f6602acf974a37a9fba42ec2876387549fc61", size = 575533, upload-time = "2021-04-17T14:13:24.796Z" },
+    { url = "https://files.pythonhosted.org/packages/93/69/e391bd51bc08ed9141ecd899a0ddb61ab6465309f1eb470905c0c8868081/docutils-0.19-py3-none-any.whl", hash = "sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc", size = 570472, upload-time = "2022-07-05T20:17:26.388Z" },
 ]
 
 [[package]]
@@ -579,7 +579,7 @@ requires-dist = [
     { name = "fitlins", extras = ["test"], marker = "extra == 'workflow'" },
     { name = "flake8", marker = "extra == 'style'", specifier = ">=3.7.0" },
     { name = "jinja2", specifier = ">=3.1.3" },
-    { name = "myst-parser", marker = "extra == 'docs'", specifier = "~=0.17.0" },
+    { name = "myst-parser", marker = "extra == 'docs'", specifier = "~=0.19.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = "~=0.8.8" },
     { name = "nibabel", specifier = ">=5.1" },
     { name = "nilearn", specifier = ">=0.9.1" },
@@ -591,7 +591,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "seaborn", specifier = ">=0.13" },
     { name = "setuptools" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = "~=4.5.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = "~=6.2" },
     { name = "sphinx-argparse", marker = "extra == 'docs'", specifier = "~=0.3.1" },
     { name = "sphinxcontrib-apidoc", marker = "extra == 'docs'", specifier = "~=0.3.0" },
     { name = "tables", specifier = ">=3.9.1" },
@@ -1190,7 +1190,7 @@ wheels = [
 
 [[package]]
 name = "myst-parser"
-version = "0.17.2"
+version = "0.19.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
@@ -1199,11 +1199,10 @@ dependencies = [
     { name = "mdit-py-plugins" },
     { name = "pyyaml" },
     { name = "sphinx" },
-    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/5f/798bf04c9ee4a638546c19b1f4ff8234424cf7e05830dda46144be230daf/myst-parser-0.17.2.tar.gz", hash = "sha256:4c076d649e066f9f5c7c661bae2658be1ca06e76b002bb97f02a09398707686c", size = 61658, upload-time = "2022-04-17T07:24:46.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/cd/48fbdce913b09498d300be6d9ffe1b20883966fda0b2f9c8e8f69e0bae08/myst-parser-0.19.2.tar.gz", hash = "sha256:043540aecc6d9cffbc17109afab21c024c2a9b7d32cdada28b6e9735fd7fce3a", size = 84157, upload-time = "2023-03-07T18:29:46.137Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/03/73f7e16daf35633b2c16b198f8aaf1eb32933e835ae6791cb556c33fd75d/myst_parser-0.17.2-py3-none-any.whl", hash = "sha256:1635ce3c18965a528d6de980f989ff64d6a1effb482e1f611b1bfb79e38f3d98", size = 53840, upload-time = "2022-04-17T07:24:45.49Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/2f/bba657533726bdfc341ea997f5b4ab7ed6ab7d6c00bb351a35145b5d320f/myst_parser-0.19.2-py3-none-any.whl", hash = "sha256:593afb8fa5566406f7ebd37a6167195f17327ee165398fa9806747e6f68a2729", size = 77326, upload-time = "2023-03-07T18:29:44.08Z" },
 ]
 
 [[package]]
@@ -2318,7 +2317,7 @@ wheels = [
 
 [[package]]
 name = "sphinx"
-version = "4.5.0"
+version = "6.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alabaster" },
@@ -2338,9 +2337,9 @@ dependencies = [
     { name = "sphinxcontrib-qthelp" },
     { name = "sphinxcontrib-serializinghtml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/b9/b831ea20dde3c3b726e41403eaee92cc448083cef310790c31c6ccfb22e3/Sphinx-4.5.0.tar.gz", hash = "sha256:7bf8ca9637a4ee15af412d1a1d9689fec70523a68ca9bb9127c2f3eeb344e2e6", size = 6698212, upload-time = "2022-03-27T15:56:51.618Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/6d/392defcc95ca48daf62aecb89550143e97a4651275e62a3d7755efe35a3a/Sphinx-6.2.1.tar.gz", hash = "sha256:6d56a34697bb749ffa0152feafc4b19836c755d90a7c59b72bc7dfd371b9cc6b", size = 6681092, upload-time = "2023-04-25T11:01:40.914Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/96/9cbbc7103fb482d5809fe4976ecb9b627058210d02817fcbfeebeaa8f762/Sphinx-4.5.0-py3-none-any.whl", hash = "sha256:ebf612653238bcc8f4359627a9b7ce44ede6fdd75d9d30f68255c7383d3a6226", size = 3099508, upload-time = "2022-03-27T15:56:46.437Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/d8/45ba6097c39ba44d9f0e1462fb232e13ca4ddb5aea93a385dcfa964687da/sphinx-6.2.1-py3-none-any.whl", hash = "sha256:97787ff1fa3256a3eef9eda523a63dbf299f7b47e053cfcf684a1c2a8380c912", size = 3024615, upload-time = "2023-04-25T11:01:08.562Z" },
 ]
 
 [[package]]

@@ -41,12 +41,12 @@ test = [
 ]
 workflow = ["fitlins[test]"]
 docs = [
-    "sphinx~=4.5.0",
+    "sphinx~=6.2",
     "sphinxcontrib-apidoc~=0.3.0",
     "sphinx-argparse~=0.3.1",
     "nbsphinx~=0.8.8",
     "texext~=0.6.6",
-    "myst-parser~=0.17.0",
+    "myst-parser~=0.19.0",
 ]
 style = ["flake8 >= 3.7.0"]
 all = [
