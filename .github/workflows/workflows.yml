@@ -31,7 +31,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3
 
       - uses: actions/checkout@v4
         with:
@@ -101,18 +101,14 @@ jobs:
           git config --global user.name 'Fitlins GH-Action User' && \
           git config --global user.email 'shashankbansal56@gmail.com'
 
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.9
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y git-annex
-          python -m pip install --upgrade pip
-          pip install datalad==0.14.7
+          uv tool install git-annex
+          uv tool install --with=datalad-next --with-executables-from=datalad-osf datalad
 
       - name: Datalad WTF
         run: |
@@ -153,7 +149,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest']
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.11"]  #, "3.12", "3.13"]
         pip-flags: ['']
         check: ['test']
     env:
@@ -205,7 +201,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.10']
+        python-version: ['3.13']
         # Check pre-release pybids and pre-release everything
         pip-flags: ['', 'PRE_PIP_FLAGS']
         check: ['test']
@@ -256,7 +252,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["nistats_smooth"]
         pip-flags: ['']
         check: ['workflow']
@@ -305,7 +301,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["afni_smooth", "afni_blurto"]
         pip-flags: ['']
         check: ['workflow']
