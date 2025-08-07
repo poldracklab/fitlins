@@ -361,13 +361,11 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
-            if 'run' in ents:
-                # Case: run is an integer (01, 1, etc.)
-                if isinstance(ents['run'], (int, float)):
-                    ents['run'] = [ents['run'], None]
-                # Case: run is a list with one element [1]
-                elif isinstance(ents['run'], list) and len(ents['run']) == 1:
-                    ents['run'].append(None)
+            # Hack around implicit "run-1" being added to files without run entities
+            # This problem may be worth addressing in spec generation instead, but doing it here for now
+            # See https://github.com/poldracklab/fitlins/pull/411
+            if ents.get('run') in (1, [1]):
+                ents['run'] = [1, None]
                     
             selectors = {'desc': 'preproc', **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
