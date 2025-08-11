@@ -190,7 +190,7 @@ jobs:
         run: tools/ci/install.sh
       - name: Run tests
         run: tools/ci/check.sh
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           verbose: true
         if: ${{ always() }}
@@ -241,7 +241,7 @@ jobs:
         run: pip install git+https://github.com/bids-standard/pybids.git
       - name: Run tests
         run: tools/ci/check.sh
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           verbose: true
         if: ${{ always() }}
@@ -291,7 +291,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
@@ -354,7 +354,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
@@ -416,7 +416,7 @@ jobs:
           WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
