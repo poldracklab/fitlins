@@ -397,6 +397,12 @@ class BIDSSelect(SimpleInterface):
         mask_files = []
         entities = []
         for ents in self.inputs.entities:
+            # Hack around implicit "run-1" being added to files without run entities
+            # This problem may be worth addressing in spec generation instead, but doing it here for now
+            # See https://github.com/poldracklab/fitlins/pull/411
+            if ents.get('run') in (1, [1]):
+                ents['run'] = [1, None]
+
             selectors = {"desc": "preproc", **ents, **self.inputs.selectors}
             bold_file = layout.get(**selectors)
 
