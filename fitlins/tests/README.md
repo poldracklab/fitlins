@@ -1,6 +1,6 @@
 # Integration tests for the fitlins commandline
 
-The tests in this directory call fitlins from the commandline in order to compare outputs with known reference values. Refernce data can be obtained with datalad via:
+The tests in this directory call fitlins from the commandline in order to compare outputs with known reference values. Reference data can be obtained with datalad via:
 ```
 datalad install -r -s https://gin.g-node.org/shotgunosine/fitlins_tests
 datalad get fitlins_tests/ds003/ds003_fmriprep/sub-0{1,2,3}/func/*_space-MNI152NLin2009cAsym_desc-*.nii.gz \
@@ -20,5 +20,5 @@ pytest fitlins/fitlins/tests --bids-dir=${tests_dir}ds003/ds003_fmriprep/sourced
 
 The three tests are:
 - afni_smooth: AFNI estimator with 10mm isotropic smoothing added
-- afni_blurto: AFNI estimator blured to 5mm smoothness
+- afni_blurto: AFNI estimator blurred to 5mm smoothness
 - nistats_smooth: Nistats estimator with 10mm isotropic smoothing added
