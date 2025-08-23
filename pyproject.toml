@@ -96,3 +96,10 @@ omit = ["*/tests/*"]
 line-length = 99
 skip-string-normalization = true
 extend-exclude = '_version.py|versioneer.py'
+
+[tool.codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+skip = '.git*,*.pdf,*.svg,venvs,*.lock,*.css,*.min.*,*.gii'
+check-hidden = true
+ignore-regex = '^\s*"image/\S+": ".*'
+ignore-words-list = 'baloon'

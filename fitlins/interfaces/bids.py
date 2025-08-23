@@ -210,7 +210,7 @@ class LoadBIDSModel(SimpleInterface):
         The collection of specs from each level. Each dict at individual levels
         contains the following keys:
             'contrasts'  : a list of ContrastInfo objects each unit of analysis.
-                A contrast specifiction is a list of contrast
+                A contrast specification is a list of contrast
                 dictionaries. Each dict has form:
                   {
                     'name': str,
@@ -228,7 +228,7 @@ class LoadBIDSModel(SimpleInterface):
             'X'  : The design matrix
             'model'  : The model part from the BIDS-StatsModels specification.
             'metadata' (only higher-levels): a parallel DataFrame with the same number of
-                rows as X that contains all known metadata variabes that vary on a row-by-row
+                rows as X that contains all known metadata variables that vary on a row-by-row
                 basis but aren't actually predictiors
 
     warnings : list of files
