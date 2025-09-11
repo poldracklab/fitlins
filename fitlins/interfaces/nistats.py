@@ -421,15 +421,13 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                         output_type='all',
                     )
             else:
+                maps = model.compute_contrast(weights)
                 if is_cifti:
-                    dict_maps = model.compute_contrast(weights)
                     img = nb.load(filtered_effects[0])
                     maps = {
-                        map_type: dscalar_from_cifti(img, dict_maps[map_type], map_type)
-                        for map_type in dict_maps.keys()
-                    } 
-                else:
-                    maps = model.compute_contrast(weights)
+                        map_type: dscalar_from_cifti(img, map, map_type)
+                        for map_type, map in maps.items()
+                    }
 
             for map_type, map_list in (
                 ('effect_size', effect_maps),
