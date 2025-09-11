@@ -405,7 +405,7 @@ jobs:
               -e CHECK_TYPE -e TEST_NAME \
               -e DATA -e WORK_DIR -e OUTPUT_DIR \
               -u $UID \
-              --entrypoint=/neurodocker/startup.sh \
+              --entrypoint=bash \
               $IMAGE tools/ci/check.sh
         env:
           IMAGE: ${{ github.repository }}:latest
