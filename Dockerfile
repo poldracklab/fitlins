@@ -16,6 +16,7 @@ COPY --from=conda-env /opt/conda /opt/conda
 WORKDIR /app
 
 COPY pyproject.toml uv.lock .
+COPY tools/ ./tools/
 
 COPY --from=wheel-builder /app/dist/*.whl /tmp/
 
