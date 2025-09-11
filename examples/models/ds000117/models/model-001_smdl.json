@@ -4,62 +4,104 @@
   "Input": {
     "task": "facerecognition"
   },
-  "Steps": [
+  "Nodes": [
     {
+      "Name": "run",
       "Level": "run",
-      "Transformations": [
-        {
-          "Name": "Factor",
-          "Input": ["stim_type"]
-        },
-        {
-          "Name": "Or",
-          "Input": [
-            "stim_type.FAMOUS",
-            "stim_type.UNFAMILIAR"
-          ],
-          "output": [
-            "stim_type.REAL"
-          ]
-        },
-        {
-          "Name": "Convolve",
-          "Input": [
-            "stim_type.REAL",
-            "stim_type.SCRAMBLED"
-          ]
-        }
+      "GroupBy": [
+        "run",
+        "session",
+        "subject"
       ],
+      "Transformations": {
+        "Transformer": "pybids-transforms-v1",
+        "Instructions": [
+          {
+            "Name": "Factor",
+            "Input": [
+              "trial_type"
+            ]
+          },
+          {
+            "Name": "Or",
+            "Input": [
+              "trial_type.FAMOUS",
+              "trial_type.UNFAMILIAR"
+            ],
+            "output": [
+              "trial_type.REAL"
+            ]
+          },
+          {
+            "Name": "Convolve",
+            "Input": [
+              "trial_type.REAL",
+              "trial_type.SCRAMBLED"
+            ]
+          }
+        ]
+      },
       "Model": {
         "X": [
-          "stim_type.SCRAMBLED",
-          "stim_type.REAL",
-          "trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"
+          "trial_type.SCRAMBLED",
+          "trial_type.REAL",
+          "trans_x",
+          "trans_y",
+          "trans_z",
+          "rot_x",
+          "rot_y",
+          "rot_z"
         ]
       },
       "Contrasts": [
         {
           "Name": "face_vs_scram",
           "ConditionList": [
-            "stim_type.REAL",
-            "stim_type.SCRAMBLED"
+            "trial_type.REAL",
+            "trial_type.SCRAMBLED"
           ],
-          "weights": [1, -1],
+          "weights": [
+            1,
+            -1
+          ],
           "type": "t"
         }
       ]
     },
     {
+      "Name": "subject",
       "Level": "subject",
+      "GroupBy": [
+        "contrast",
+        "subject"
+      ],
+      "Model": {
+        "X": [
+          1
+        ],
+        "Type": "glm"
+      },
       "DummyContrasts": {
-          "Conditions": ["face_vs_scram"],
-          "Type": "FEMA"
+        "Conditions": [
+          "face_vs_scram"
+        ],
+        "Type": "FEMA"
       }
     },
     {
+      "Name": "dataset",
       "Level": "dataset",
+      "GroupBy": ["contrast"],
+      "Model": {
+        "X": [
+          1
+        ],
+        "Type": "glm"
+      },
       "DummyContrasts": {
-        "Conditions": ["face_vs_scram"],
+        "Conditions": [
+          "face_vs_scram"
+        ],
         "Type": "t"
       }
     }

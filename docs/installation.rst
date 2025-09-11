@@ -149,7 +149,7 @@ For Windows users::
       singularityware/docker2singularity \
       poldracklab/fitlins:<VERSION>
 
-This image may now be transfered to your cluster.
+This image may now be transferred to your cluster.
 
 Running a Singularity image
 ---------------------------

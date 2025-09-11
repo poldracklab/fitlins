@@ -157,7 +157,7 @@ Pull requests titles should begin with a descriptive prefix:
 * ``DOC``: new or updated documentation
 * ``STY``: style changes
 * ``REF``: refactoring existing code
-* ``CI``: updates to continous integration infrastructure
+* ``CI``: updates to continuous integration infrastructure
 * ``MAINT``: general maintenance
 
 For example: `[ENH] Support for naive thresholding`

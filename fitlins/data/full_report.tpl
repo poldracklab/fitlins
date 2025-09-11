@@ -32,7 +32,7 @@ summary.heading-2 {
         <ul class="elem-desc">
             <li>Dataset: {{ dataset.name }}{% if dataset.doi %} (doi:<a href="https://doi.org/{{ dataset.doi }}">{{ dataset.doi }}</a>){% endif %}</li>
             <li>Model: {{ model.name }}</li>
-            <li>Participants ({{ subjects|count }}): {{ subjects|join(', ') }}
+            <li>Participants ({{ subjects|count }}): {{ subjects|join(', ') }}</li>
         </ul>
     </div>
     <div id="model">
@@ -49,9 +49,9 @@ summary.heading-2 {
         <!-- { % if loop.first %} -->
         <h3>Design matrices</h3>
         <p>A design matrix was generated for each {{ node.name }}. All but the
-        first are collapsed, but each should be inspected for correctness.
+        first are collapsed, but each should be inspected for correctness.</p>
         {% for analysis in node.analyses %}
-        <details{% if loop.first %} open{% endif %}>
+        <details{% if loop.first %} open=""{% endif %}>
         <summary class="heading-1">{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</summary>
         {{ analysis.warning }}
         <img src="{{ analysis.design_matrix }}" />
@@ -79,7 +79,7 @@ summary.heading-2 {
         in very rare cases, these should be identical, so these should be
         inspected to ensure no unexpected differences are present.</p>
         {% for analysis in node.analyses %}
-        <details{% if loop.first %} open{% endif %}>
+        <details{% if loop.first %} open=""{% endif %}>
         <summary class="heading-1">{{ analysis.entities.items()|map('join', ': ')|map('capitalize')|join(', ') }}</summary>
         <img src="{{ analysis.contrast_matrix }}" />
         </details>

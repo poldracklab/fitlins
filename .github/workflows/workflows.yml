@@ -29,17 +29,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.9
+          python-version: 3
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Add version to environment
         run: |
@@ -51,7 +51,7 @@ jobs:
 
       - name: Build image and export
         timeout-minutes: 30
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           build-args: |
@@ -83,7 +83,7 @@ jobs:
           ls -l /tmp/
 
       - name: Upload docker.tar as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker
           path: /tmp/docker.tar
@@ -101,25 +101,21 @@ jobs:
           git config --global user.name 'Fitlins GH-Action User' && \
           git config --global user.email 'shashankbansal56@gmail.com'
 
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y git-annex
-          python -m pip install --upgrade pip
-          pip install datalad==0.14.7
+          uv tool install git-annex
+          uv tool install --with=datalad-next --with-executables-from=datalad-osf datalad
 
       - name: Datalad WTF
         run: |
          datalad wtf
 
       - name: Install cached data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         with:
           path: /tmp/.cache/data
@@ -153,7 +149,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest']
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.11"]  #, "3.12", "3.13"]
         pip-flags: ['']
         check: ['test']
     env:
@@ -161,11 +157,11 @@ jobs:
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
           auto-update-conda: true
@@ -194,7 +190,7 @@ jobs:
         run: tools/ci/install.sh
       - name: Run tests
         run: tools/ci/check.sh
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           verbose: true
         if: ${{ always() }}
@@ -205,7 +201,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.10']
+        python-version: ['3.13']
         # Check pre-release pybids and pre-release everything
         pip-flags: ['', 'PRE_PIP_FLAGS']
         check: ['test']
@@ -214,11 +210,11 @@ jobs:
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: fitlins-ci
           environment-file: tools/ci/conda_environment.yml
@@ -245,7 +241,7 @@ jobs:
         run: pip install git+https://github.com/bids-standard/pybids.git
       - name: Run tests
         run: tools/ci/check.sh
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           verbose: true
         if: ${{ always() }}
@@ -256,7 +252,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["nistats_smooth"]
         pip-flags: ['']
         check: ['workflow']
@@ -265,19 +261,19 @@ jobs:
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install fitlins
         run: tools/ci/install.sh
 
       - name: Restore cached test data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         with:
           path: /tmp/.cache/data
@@ -295,7 +291,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
@@ -305,7 +301,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         test_name: ["afni_smooth", "afni_blurto"]
         pip-flags: ['']
         check: ['workflow']
@@ -314,11 +310,11 @@ jobs:
       EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
       OS_TYPE: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
           auto-update-conda: true
@@ -340,7 +336,7 @@ jobs:
         run: tools/ci/install.sh
 
       - name: Restore cached test data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         with:
           path: /tmp/.cache/data
@@ -358,7 +354,7 @@ jobs:
           OUTPUT_DIR: /tmp/ds003/derivatives
           WORK_DIR: /tmp/ds003/work
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
@@ -370,13 +366,13 @@ jobs:
       matrix:
         test_name: ["nistats_blurto"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           name: docker
           path: /tmp
@@ -390,7 +386,7 @@ jobs:
           docker images
 
       - name: Restore cached test data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         with:
           path: /tmp/.cache/data
@@ -408,8 +404,7 @@ jobs:
               -v $PWD:/work \
               -e CHECK_TYPE -e TEST_NAME \
               -e DATA -e WORK_DIR -e OUTPUT_DIR \
-              -u $UID \
-              --entrypoint=/neurodocker/startup.sh \
+              --entrypoint=bash \
               $IMAGE tools/ci/check.sh
         env:
           IMAGE: ${{ github.repository }}:latest
@@ -420,7 +415,7 @@ jobs:
           WORK_DIR: /tmp/ds003/work
 
       - name: Combine coverage and submit
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
 
@@ -430,10 +425,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           name: docker
           path: /tmp
@@ -457,7 +452,7 @@ jobs:
         run: docker images
 
       - name: Login to Github Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -468,7 +463,7 @@ jobs:
         run: docker push $REGISTRY/$IMAGE_NAME:${{ github.ref_name }}
 
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -46,7 +46,7 @@ collinear regressor.
 
    Correlations between regressors are plotted.
    Bold black lines separate variables that are included in contrasts, or *variables
-   of interest*, and variables that are not, or *nuissance regressors*.
+   of interest*, and variables that are not, or *nuisance regressors*.
 
 Contrast matrices
 -----------------
