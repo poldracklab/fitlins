@@ -385,12 +385,8 @@ class SecondLevelModel(NistatsBaseInterface, SecondLevelEstimatorInterface, Simp
                 model = level2.SecondLevelModel(smoothing_fwhm=smoothing_fwhm)
                 model.fit(filtered_effects, design_matrix=spec['X'])
         else:
-            if is_cifti:
-                model = pymare_model(is_cifti=True)
-                model.fit(filtered_effects, filtered_variances, spec['X'])
-            else:
-                model = pymare_model(is_cifti=False)
-                model.fit(filtered_effects, filtered_variances, spec['X'])
+            model = pymare_model(is_cifti=is_cifti)
+            model.fit(filtered_effects, filtered_variances, spec['X'])
 
         for name, weights, cont_ents, contrast_test in contrasts:
             contrast_metadata.append(
