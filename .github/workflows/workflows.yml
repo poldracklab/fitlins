@@ -404,7 +404,6 @@ jobs:
               -v $PWD:/work \
               -e CHECK_TYPE -e TEST_NAME \
               -e DATA -e WORK_DIR -e OUTPUT_DIR \
-              -u $UID \
               --entrypoint=bash \
               $IMAGE tools/ci/check.sh
         env:
