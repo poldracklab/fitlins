@@ -36,9 +36,6 @@ class pymare_model:
             variance_data = np.squeeze(
                 [nb.load(variance).get_fdata(dtype='f4') for variance in filtered_variances]
             )
-            self.effect_data_, self.variance_data_, self.nonzero_var_mask_ = \
-                remove_zero_var_voxels_(effect_data, variance_data)
-
         else:
             self.masker_ = NiftiMasker(
                 smoothing_fwhm=self.smoothing_fwhm,
@@ -47,8 +44,9 @@ class pymare_model:
             self.masker_.fit(sample_map)
             effect_data = self.masker_.transform(filtered_effects)
             variance_data = self.masker_.transform(filtered_variances)
-            self.effect_data_, self.variance_data_, self.nonzero_var_mask_ = \
-                remove_zero_var_voxels_(effect_data, variance_data)
+
+        self.effect_data_, self.variance_data_, self.nonzero_var_mask_ = \
+            remove_zero_var_voxels_(effect_data, variance_data)
 
         self.wls_ = estimators.WeightedLeastSquares()
         self.wls_.fit(y=self.effect_data_,
