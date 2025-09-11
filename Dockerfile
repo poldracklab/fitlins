@@ -17,10 +17,11 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock .
 COPY tools/ ./tools/
+COPY fitlins/ ./fitlins/
 
 COPY --from=wheel-builder /app/dist/*.whl /tmp/
 
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --extra test
 RUN --mount=type=cache,target=/root/.cache/uv uv pip install /tmp/*.whl
 
 ENV PATH="/app/.venv/bin:/opt/conda/bin:$PATH"
