@@ -90,7 +90,13 @@ def build_report_dict(deriv_dir, work_dir, graph):
                     if k in ("name", "contrast"):
                         cents.update({k: to_alphanum(str(v))})
 
-                glassbrain = fl_layout.get(suffix='ortho', extension='png', **cents)
+                # Remove non-file entities from cents (level and name are workflow metadata, not file entities)
+                file_entities = {
+                    k: v for k, v in cents.items() if k not in ['level', 'name']
+                }
+                glassbrain = fl_layout.get(
+                    suffix='ortho', extension='png', **file_entities
+                )
 
                 analysis_dict['entities'] = {
                     key: val
