@@ -90,7 +90,11 @@ def build_report_dict(deriv_dir, work_dir, graph):
                     if k in ("name", "contrast"):
                         cents.update({k: to_alphanum(str(v))})
 
-                glassbrain = fl_layout.get(suffix='ortho', extension='png', **cents)
+                # Can't use cents directly since it has keys that are not filename entities
+                # Can't use contrast_info.entities directly since some formatting is done to make things filename friendly
+                file_entities = {key: val for key, val in cents.items() if key in contrast_info.entities}
+
+                glassbrain = fl_layout.get(suffix='ortho', extension='png', **file_entities)
 
                 analysis_dict['entities'] = {
                     key: val
