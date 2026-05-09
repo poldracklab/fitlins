@@ -1,0 +1,12 @@
+name: nocircle
+
+on:
+  push:
+
+jobs:
+  nocircle:
+    runs-on: ubuntu-latest
+    container:
+      image: busybox:latest
+    steps:
+      - run: echo Not running Circle on this branch!
