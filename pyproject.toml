@@ -103,4 +103,4 @@ extend-exclude = '_version.py|versioneer.py'
 skip = '.git*,*.pdf,*.svg,venvs,*.lock,*.css,*.min.*,*.gii'
 check-hidden = true
 ignore-regex = '^\s*"image/\S+": ".*'
-ignore-words-list = 'baloon'
+ignore-words-list = 'baloon,Ttest'
