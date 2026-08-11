@@ -1,9 +1,9 @@
 from os import path as op
 from pathlib import Path
 import jinja2
-import pkg_resources as pkgr
 from bids.layout import add_config_paths, BIDSLayout
 
+from ..data import load_resource
 from ..utils import snake_to_camel, to_alphanum
 from ..utils.bids import load_all_specs
 
@@ -12,7 +12,7 @@ PATH_PATTERNS = [
     '[run-{run}_]model-{model}.html'
 ]
 
-add_config_paths(fitlins=pkgr.resource_filename('fitlins', 'data/fitlins.json'))
+add_config_paths(fitlins=load_resource('fitlins.json'))
 
 
 def displayify(contrast_name):
@@ -141,10 +141,10 @@ def write_full_report(report_dict, run_context, deriv_dir):
     fl_layout = BIDSLayout(deriv_dir, config=['bids', 'derivatives', 'fitlins'])
 
     env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(searchpath=pkgr.resource_filename('fitlins', '/'))
+        loader=jinja2.FileSystemLoader(searchpath=load_resource())
     )
 
-    tpl = env.get_template('data/full_report.tpl')
+    tpl = env.get_template('full_report.tpl')
 
     model_name = snake_to_camel(report_dict['model'].get('name') or "untitled")
     target_file = op.join(

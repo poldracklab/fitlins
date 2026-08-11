@@ -1,4 +1,3 @@
-from pkg_resources import resource_filename
 import numpy as np
 import pandas as pd
 import nibabel as nb
@@ -15,6 +14,7 @@ from nipype.interfaces.base import (
 )
 from nipype.utils.filemanip import fname_presuffix, split_filename
 
+from ..data import load_resource
 from ..viz import plot_and_save, plot_corr_matrix, plot_contrast_matrix
 
 
@@ -223,9 +223,10 @@ def plot_dscalar(
     ax3 = plt.subplot2grid((3, 2), (1, 0), projection='3d')
     ax4 = plt.subplot2grid((3, 2), (1, 1), projection='3d')
     ax5 = plt.subplot2grid((3, 2), (2, 0), colspan=2)
-    surf_fmt = 'data/conte69/tpl-conte69_hemi-{hemi}_space-fsLR_den-32k_inflated.surf.gii'.format
-    lsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='L'))).agg_data()
-    rsurf = nb.load(resource_filename('fitlins', surf_fmt(hemi='R'))).agg_data()
+    surf_fmt = 'tpl-conte69_hemi-{hemi}_space-fsLR_den-32k_inflated.surf.gii'.format
+    with load_resource.as_path('conte69') as surf_dir:
+        lsurf = nb.load(surf_dir / surf_fmt(hemi='L')).agg_data()
+        rsurf = nb.load(surf_dir / surf_fmt(hemi='R')).agg_data()
     kwargs = {
         'threshold': None if threshold == 'auto' else threshold,
         'colorbar': False,

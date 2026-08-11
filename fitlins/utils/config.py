@@ -1,7 +1,8 @@
 import os
 from configparser import ConfigParser
 from nipype.utils import config as nuc
-from pkg_resources import resource_filename
+
+from ..data import load_resource
 
 
 def get_fitlins_config():
@@ -15,12 +16,12 @@ def get_fitlins_config():
     config = nuc.NipypeConfig()
     config.set_default_config()
 
-    fitlins_config_file = resource_filename('fitlins', 'data/nipype.cfg')
     global_config_file = os.path.join(
         os.path.expanduser(os.getenv("NIPYPE_CONFIG_DIR", default="~/.nipype")), "nipype.cfg"
     )
     local_config_file = "nipype.cfg"
     fitlins_conf = ConfigParser()
-    fitlins_conf.read([fitlins_config_file, global_config_file, local_config_file])
+    with load_resource.as_path('nipype.cfg') as fitlins_config_file:
+        fitlins_conf.read([fitlins_config_file, global_config_file, local_config_file])
     config.update_config(fitlins_conf)
     return config
