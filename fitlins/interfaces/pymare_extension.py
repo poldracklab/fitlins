@@ -1,6 +1,6 @@
 import nibabel as nb
 import numpy as np
-from nilearn.input_data import NiftiMasker
+from nilearn.maskers import NiftiMasker
 from pymare import estimators
 from nilearn.image import mean_img
 

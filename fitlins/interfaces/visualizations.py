@@ -67,7 +67,8 @@ class DesignPlot(Visualization):
         from matplotlib import pyplot as plt
 
         plt.set_cmap('viridis')
-        plot_and_save(out_name, nlp.plot_design_matrix, data)
+        # Hack to trigger use of axes for nilearn.plotting
+        plot_and_save(out_name, nlp.plot_design_matrix, data, axes=None)
 
 
 class DesignCorrelationPlotInputSpec(VisualizationInputSpec):
