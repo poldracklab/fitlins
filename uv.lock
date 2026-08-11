@@ -584,7 +584,7 @@ requires-dist = [
     { name = "myst-parser", marker = "extra == 'docs'", specifier = "~=0.19.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = "~=0.8.8" },
     { name = "nibabel", specifier = ">=5.1" },
-    { name = "nilearn", specifier = ">=0.9.1" },
+    { name = "nilearn", specifier = ">=0.11.0" },
     { name = "nipype", specifier = ">=1.8.6" },
     { name = "numpy", specifier = ">=1.25" },
     { name = "pandas", specifier = ">=2.1" },
