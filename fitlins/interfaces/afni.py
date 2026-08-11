@@ -141,7 +141,7 @@ class FirstLevelModel(FirstLevelModel):
         fwhm.inputs.in_file = reml_res.outputs.wherr_file
         fwhm.inputs.out_file = fname_fmt("model", "residsmoothness").replace('.nii.gz', '.tsv')
         fwhm_res = fwhm.run()
-        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file, delim_whitespace=True, header=None)
+        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file, sep=r'\s+', header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
         out_maps = nb.load(reml_res.outputs.out_file)
