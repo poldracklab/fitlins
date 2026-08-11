@@ -342,8 +342,7 @@ class FirstLevelModel(FirstLevelModel):
             const_name = 'intercept'
         else:
             const_name = mat.columns[np.isclose(mat, 1).all(0)].values[0]
-        const_idx = np.where(np.array(vol_labels) == const_name)[0]
-        const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
+        const_dat = rbetas.dataobj[..., vol_labels.index(const_name)]
         std_img = rvars.slicer[..., 3]
         std_dat = std_img.get_fdata()
         # scaled units are percent signal change
