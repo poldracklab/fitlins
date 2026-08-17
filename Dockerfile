@@ -6,6 +6,14 @@ RUN uv build --wheel /app
 # Stage 3: Final runtime environment
 FROM python:3.13-slim AS runtime
 
+# Dependency for 3dBlurToFWHM, 3dFWHMx
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+                    libexpat1 \
+                    libgomp1 \
+                    && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Install AFNI from Docker container
