@@ -141,7 +141,7 @@ class FirstLevelModel(FirstLevelModel):
         fwhm.inputs.in_file = reml_res.outputs.wherr_file
         fwhm.inputs.out_file = fname_fmt("model", "residsmoothness").replace('.nii.gz', '.tsv')
         fwhm_res = fwhm.run()
-        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file, delim_whitespace=True, header=None)
+        fwhm_dat = pd.read_csv(fwhm_res.outputs.out_file, sep=r'\s+', header=None)
         fwhm_dat.to_csv(fwhm_res.outputs.out_file, index=None, header=False, sep='\t')
 
         out_maps = nb.load(reml_res.outputs.out_file)
@@ -342,8 +342,7 @@ class FirstLevelModel(FirstLevelModel):
             const_name = 'intercept'
         else:
             const_name = mat.columns[np.isclose(mat, 1).all(0)].values[0]
-        const_idx = np.where(np.array(vol_labels) == const_name)[0]
-        const_dat = rbetas.slicer[..., int(const_idx)].get_fdata()
+        const_dat = rbetas.dataobj[..., vol_labels.index(const_name)]
         std_img = rvars.slicer[..., 3]
         std_dat = std_img.get_fdata()
         # scaled units are percent signal change

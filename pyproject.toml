@@ -19,17 +19,17 @@ classifiers = [
 urls = {Homepage = "https://github.com/poldracklab/fitlins"}
 requires-python = ">=3.11"
 dependencies = [
+    "acres>=0.5",
     "nibabel>=5.1",
     "nipype>=1.8.6",
     "seaborn>=0.13",
     "numpy>=1.25",
-    "nilearn>=0.9.1",
+    "nilearn>=0.11.0",
     "pandas>=2.1",
     "tables>=3.9.1",
     "pybids>=0.16.0",
     "jinja2>=3.1.3",
     "pymare>=0.0.3",
-    "setuptools",
 ]
 dynamic = ["version"]
 
@@ -103,4 +103,4 @@ extend-exclude = '_version.py|versioneer.py'
 skip = '.git*,*.pdf,*.svg,venvs,*.lock,*.css,*.min.*,*.gii'
 check-hidden = true
 ignore-regex = '^\s*"image/\S+": ".*'
-ignore-words-list = 'baloon'
+ignore-words-list = 'baloon,Ttest'
